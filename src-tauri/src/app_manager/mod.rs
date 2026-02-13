@@ -40,6 +40,15 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
                                             state::AppRuntimeState::Hibernated { last_url: url };
                                     }
                                 }
+                                // Update persisted config
+                                let mut cfg = config_manager.get_config();
+                                if let Some(a) =
+                                    cfg.apps.iter_mut().find(|a| a.id == *app_id)
+                                {
+                                    a.hibernated = true;
+                                }
+                                let _ = config_manager.save_config(cfg);
+
                                 let _ = app_handle.emit("app-auto-hibernated", app_id.clone());
                             }
                         }

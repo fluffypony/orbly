@@ -62,7 +62,7 @@ pub fn activate_app(
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
-    let config = config_manager.get_config();
+    let mut config = config_manager.get_config();
     let app_config = config
         .apps
         .iter()
@@ -70,13 +70,32 @@ pub fn activate_app(
         .ok_or_else(|| format!("App '{}' not found in config", app_id))?
         .clone();
 
+    if !app_config.enabled {
+        return Err(format!("App '{}' is disabled; enable it first", app_id));
+    }
+
     // Default content area position/size — will be refined by frontend in later phases
     let position = tauri::LogicalPosition::new(56.0, 40.0);
     let size = tauri::LogicalSize::new(1024.0, 680.0);
 
-    // If webview doesn't exist, create it
+    // Determine the URL to load: use last_url from hibernated state if available
+    let load_url = {
+        let apps_lock = app_manager.apps.lock().unwrap();
+        if let Some(runtime) = apps_lock.get(&app_id) {
+            match &runtime.state {
+                AppRuntimeState::Hibernated { last_url } => last_url.clone(),
+                _ => app_config.url.clone(),
+            }
+        } else {
+            app_config.url.clone()
+        }
+    };
+
+    // If webview doesn't exist, create it with the appropriate URL
     if app_handle.get_webview(&app_id).is_none() {
-        lifecycle::create_app_webview(&app_handle, &app_config, position, size)?;
+        let mut wake_config = app_config.clone();
+        wake_config.url = load_url.clone();
+        lifecycle::create_app_webview(&app_handle, &wake_config, position, size)?;
     }
 
     // Hide all other webviews
@@ -99,10 +118,18 @@ pub fn activate_app(
     app_manager.set_state(
         &app_id,
         AppRuntimeState::Active {
-            current_url: app_config.url.clone(),
+            current_url: load_url,
         },
     );
     app_manager.touch_interaction(&app_id);
+
+    // Clear persisted hibernated flag
+    if app_config.hibernated {
+        if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+            app.hibernated = false;
+        }
+        let _ = config_manager.save_config(config);
+    }
 
     let _ = app_handle.emit("app-activated", &app_id);
 
@@ -198,10 +225,12 @@ pub fn enable_app(
         .ok_or_else(|| format!("App '{}' not found in config", app_id))?
         .clone();
 
-    let position = tauri::LogicalPosition::new(56.0, 40.0);
-    let size = tauri::LogicalSize::new(1024.0, 680.0);
-
-    lifecycle::create_app_webview(&app_handle, &app_config, position, size)?;
+    // Only create webview if it doesn't already exist
+    if app_handle.get_webview(&app_id).is_none() {
+        let position = tauri::LogicalPosition::new(56.0, 40.0);
+        let size = tauri::LogicalSize::new(1024.0, 680.0);
+        lifecycle::create_app_webview(&app_handle, &app_config, position, size)?;
+    }
 
     app_manager.set_state(
         &app_id,
