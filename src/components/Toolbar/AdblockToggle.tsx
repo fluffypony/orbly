@@ -1,5 +1,6 @@
 import { Component } from "solid-js";
-import { setAppConfigs } from "../../stores/uiStore";
+import { appConfigs, setAppConfigs } from "../../stores/uiStore";
+import { updateApp } from "../../lib/ipc";
 
 interface AdblockToggleProps {
   appId: string;
@@ -7,12 +8,24 @@ interface AdblockToggleProps {
 }
 
 const AdblockToggle: Component<AdblockToggleProps> = (props) => {
-  const toggle = () => {
+  const toggle = async () => {
+    const config = appConfigs.find((a) => a.id === props.appId);
+    if (!config) return;
     setAppConfigs(
       (a) => a.id === props.appId,
       "adblock_enabled",
       !props.adblockEnabled
     );
+    try {
+      await updateApp({ ...config, adblock_enabled: !props.adblockEnabled });
+    } catch (err) {
+      console.error("Failed to update adblock:", err);
+      setAppConfigs(
+        (a) => a.id === props.appId,
+        "adblock_enabled",
+        props.adblockEnabled
+      );
+    }
   };
 
   return (

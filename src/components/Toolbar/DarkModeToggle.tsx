@@ -1,5 +1,6 @@
 import { Component } from "solid-js";
-import { setAppConfigs } from "../../stores/uiStore";
+import { appConfigs, setAppConfigs } from "../../stores/uiStore";
+import { updateApp } from "../../lib/ipc";
 import type { DarkModeType } from "../../types/config";
 
 interface DarkModeToggleProps {
@@ -16,10 +17,18 @@ const modeLabels: Record<DarkModeType, string> = {
 };
 
 const DarkModeToggle: Component<DarkModeToggleProps> = (props) => {
-  const cycle = () => {
+  const cycle = async () => {
     const currentIndex = modeOrder.indexOf(props.darkMode);
     const next = modeOrder[(currentIndex + 1) % modeOrder.length];
+    const config = appConfigs.find((a) => a.id === props.appId);
+    if (!config) return;
     setAppConfigs((a) => a.id === props.appId, "dark_mode", next);
+    try {
+      await updateApp({ ...config, dark_mode: next });
+    } catch (err) {
+      console.error("Failed to update dark mode:", err);
+      setAppConfigs((a) => a.id === props.appId, "dark_mode", props.darkMode);
+    }
   };
 
   const isActive = () => props.darkMode !== "off";

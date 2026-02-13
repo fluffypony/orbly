@@ -1,12 +1,18 @@
-import { Component, onMount } from "solid-js";
+import { Component, onMount, onCleanup } from "solid-js";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Toolbar from "./components/Toolbar/Toolbar";
 import ContentArea from "./components/ContentArea/ContentArea";
-import { loadMockData } from "./stores/mockData";
+import { initializeState } from "./lib/stateSync";
+import { setupEventListeners, teardownEventListeners } from "./lib/events";
 
 const App: Component = () => {
-  onMount(() => {
-    loadMockData();
+  onMount(async () => {
+    await initializeState();
+    await setupEventListeners();
+  });
+
+  onCleanup(() => {
+    teardownEventListeners();
   });
 
   return (

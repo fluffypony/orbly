@@ -2,6 +2,7 @@ import { Component } from "solid-js";
 
 interface CrashedStateProps {
   appName: string;
+  onReload?: () => void;
 }
 
 const CrashedState: Component<CrashedStateProps> = (props) => {
@@ -16,7 +17,10 @@ const CrashedState: Component<CrashedStateProps> = (props) => {
       <p class="text-sm text-gray-400 max-w-xs">
         The app has stopped responding. Reload to try again.
       </p>
-      <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm mt-2">
+      <button
+        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm mt-2"
+        onClick={props.onReload}
+      >
         Reload
       </button>
     </div>

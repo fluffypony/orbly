@@ -24,8 +24,8 @@ import {
   appConfigs,
   setAppConfigs,
   appStates,
-  setActiveAppId,
 } from "../../stores/uiStore";
+import { activateApp } from "../../lib/ipc";
 
 interface SortableAppIconProps {
   app: {
@@ -117,8 +117,12 @@ const AppIconList: Component = () => {
     return result;
   });
 
-  const handleClick = (id: string) => {
-    setActiveAppId(id);
+  const handleClick = async (id: string) => {
+    try {
+      await activateApp(id);
+    } catch (err) {
+      console.error("Failed to activate app:", err);
+    }
   };
 
   const handleContextMenu = (e: MouseEvent, id: string) => {

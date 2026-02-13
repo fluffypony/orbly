@@ -1,5 +1,7 @@
 import { Component, createSignal, onMount, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
+import { reloadApp, hibernateApp, disableApp } from "../../lib/ipc";
+import { appStates } from "../../stores/uiStore";
 
 interface AppMenuProps {
   appId: string;
@@ -27,8 +29,33 @@ const AppMenu: Component<AppMenuProps> = (props) => {
     setOpen(!open());
   };
 
-  const handleAction = (action: string) => {
-    console.log(`App menu action: ${action} for app: ${props.appId}`);
+  const handleAction = async (action: string) => {
+    try {
+      switch (action) {
+        case "reload":
+          await reloadApp(props.appId);
+          break;
+        case "hibernate":
+          await hibernateApp(props.appId);
+          break;
+        case "disable":
+          await disableApp(props.appId);
+          break;
+        case "open-external": {
+          const state = appStates.find((s) => s.id === props.appId);
+          if (state?.current_url) {
+            const { open } = await import("@tauri-apps/plugin-shell");
+            await open(state.current_url);
+          }
+          break;
+        }
+        default:
+          console.log(`App menu action: ${action} for app: ${props.appId}`);
+          break;
+      }
+    } catch (err) {
+      console.error(`Failed to execute ${action}:`, err);
+    }
     setOpen(false);
   };
 

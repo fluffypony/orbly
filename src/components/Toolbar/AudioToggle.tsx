@@ -1,5 +1,6 @@
 import { Component } from "solid-js";
-import { setAppConfigs } from "../../stores/uiStore";
+import { updateApp } from "../../lib/ipc";
+import { appConfigs, setAppConfigs } from "../../stores/uiStore";
 
 interface AudioToggleProps {
   appId: string;
@@ -7,12 +8,26 @@ interface AudioToggleProps {
 }
 
 const AudioToggle: Component<AudioToggleProps> = (props) => {
-  const toggle = () => {
+  const toggle = async () => {
+    const config = appConfigs.find((a) => a.id === props.appId);
+    if (!config) return;
+    const updated = { ...config, audio_muted: !props.audioMuted };
     setAppConfigs(
       (a) => a.id === props.appId,
       "audio_muted",
       !props.audioMuted
     );
+    try {
+      await updateApp(updated);
+    } catch (err) {
+      console.error("Failed to update audio mute:", err);
+      // Revert on failure
+      setAppConfigs(
+        (a) => a.id === props.appId,
+        "audio_muted",
+        props.audioMuted
+      );
+    }
   };
 
   return (
