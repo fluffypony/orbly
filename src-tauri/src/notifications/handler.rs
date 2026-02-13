@@ -150,4 +150,6 @@ fn update_aggregated_badge(app_manager: &AppManager, app_handle: &AppHandle) {
     let apps = app_manager.apps.lock().unwrap();
     let total: u32 = apps.values().filter_map(|a| a.badge_count).sum();
     let _ = app_handle.emit("total-badge-updated", total);
+
+    crate::tray::update_tray_badge(app_handle, total);
 }

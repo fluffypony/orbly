@@ -139,6 +139,7 @@ impl Default for GeneralConfig {
             show_badge_in_tray: true,
             launch_at_login: false,
             check_for_updates: true,
+            window_state: WindowState::default(),
         }
     }
 }

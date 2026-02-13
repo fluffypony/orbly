@@ -129,6 +129,8 @@ pub struct GeneralConfig {
     pub launch_at_login: bool,
     #[serde(default = "default_true")]
     pub check_for_updates: bool,
+    #[serde(default)]
+    pub window_state: WindowState,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -197,4 +199,14 @@ pub struct DownloadGlobalConfig {
 pub struct SyncConfig {
     #[serde(default)]
     pub enabled: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct WindowState {
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+    #[serde(default)]
+    pub maximized: bool,
 }

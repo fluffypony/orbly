@@ -86,5 +86,10 @@ export const findInPage = (appId: string, query: string, forward: boolean) =>
 export const clearFindInPage = (appId: string) =>
   invoke<void>("clear_find_in_page", { app_id: appId });
 
+// Tray commands
+export const setLaunchAtLogin = (enabled: boolean) =>
+  invoke<void>("set_launch_at_login", { enabled });
+export const getLaunchAtLogin = () => invoke<boolean>("get_launch_at_login");
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

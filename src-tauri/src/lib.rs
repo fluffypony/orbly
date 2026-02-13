@@ -5,6 +5,10 @@ mod config;
 mod darkmode;
 mod downloads;
 mod notifications;
+mod tray;
+
+use std::sync::Mutex;
+use std::time::Instant;
 
 use tauri::Manager;
 
@@ -14,6 +18,31 @@ use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
 use darkmode::DarkModeManager;
 use downloads::DownloadManager;
+
+/// Tracks the last time we persisted window state, for debouncing.
+struct WindowStateSaveTimer {
+    last_save: Mutex<Instant>,
+}
+
+impl WindowStateSaveTimer {
+    fn new() -> Self {
+        Self {
+            last_save: Mutex::new(Instant::now()),
+        }
+    }
+
+    /// Returns true if at least `min_interval_ms` have elapsed since the last save.
+    fn should_save(&self, min_interval_ms: u64) -> bool {
+        let mut last = self.last_save.lock().unwrap();
+        let elapsed = last.elapsed().as_millis() as u64;
+        if elapsed >= min_interval_ms {
+            *last = Instant::now();
+            true
+        } else {
+            false
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -54,6 +83,7 @@ pub fn run() {
             app.manage(dark_mode_manager);
             app.manage(adblock_state);
             app.manage(DownloadManager::new());
+            app.manage(WindowStateSaveTimer::new());
 
             // Load adblock filter lists in the background
             let adblock_handle = app.handle().clone();
@@ -85,6 +115,27 @@ pub fn run() {
             });
 
             app_manager::start_auto_hibernate_task(app.handle().clone());
+
+            // Restore window state from config
+            let ws = app.state::<ConfigManager>().get_config().general.window_state;
+            if let Some(window) = app.get_webview_window("main") {
+                if let (Some(w), Some(h)) = (ws.width, ws.height) {
+                    if w >= 800.0 && h >= 600.0 {
+                        let size = tauri::LogicalSize::new(w, h);
+                        let _ = window.set_size(tauri::Size::Logical(size));
+                    }
+                }
+                if let (Some(x), Some(y)) = (ws.x, ws.y) {
+                    let pos = tauri::LogicalPosition::new(x, y);
+                    let _ = window.set_position(tauri::Position::Logical(pos));
+                }
+                if ws.maximized {
+                    let _ = window.maximize();
+                }
+            }
+
+            // Set up system tray
+            tray::setup_tray(app)?;
 
             log::info!("Orbly v{} starting up", env!("CARGO_PKG_VERSION"));
             Ok(())
@@ -138,7 +189,49 @@ pub fn run() {
             commands::zoom_commands::zoom_reset,
             commands::find_commands::find_in_page,
             commands::find_commands::clear_find_in_page,
+            commands::tray_commands::set_launch_at_login,
+            commands::tray_commands::get_launch_at_login,
         ])
+        .on_window_event(|window, event| {
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    let config_manager =
+                        window.app_handle().state::<ConfigManager>();
+                    let config = config_manager.get_config();
+
+                    if config.general.tray_mode {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                    // If tray_mode is false, allow the window to close normally
+                }
+                tauri::WindowEvent::Moved(pos) => {
+                    let timer = window.app_handle().state::<WindowStateSaveTimer>();
+                    if timer.should_save(500) {
+                        let cm = window.app_handle().state::<ConfigManager>();
+                        let mut config = cm.get_config();
+                        config.general.window_state.x = Some(pos.x as f64);
+                        config.general.window_state.y = Some(pos.y as f64);
+                        let _ = cm.save_config(config);
+                    }
+                }
+                tauri::WindowEvent::Resized(size) => {
+                    let timer = window.app_handle().state::<WindowStateSaveTimer>();
+                    if timer.should_save(500) {
+                        let cm = window.app_handle().state::<ConfigManager>();
+                        let mut config = cm.get_config();
+                        let maximized = window.is_maximized().unwrap_or(false);
+                        config.general.window_state.maximized = maximized;
+                        if !maximized {
+                            config.general.window_state.width = Some(size.width as f64);
+                            config.general.window_state.height = Some(size.height as f64);
+                        }
+                        let _ = cm.save_config(config);
+                    }
+                }
+                _ => {}
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running Orbly");
 }

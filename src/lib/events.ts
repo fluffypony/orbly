@@ -6,7 +6,7 @@ import {
 } from "../stores/uiStore";
 import { refreshAppStates } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
-import { getActiveDownloadCount } from "./ipc";
+import { activateApp, getActiveDownloadCount } from "./ipc";
 
 let unlisteners: UnlistenFn[] = [];
 let downloadCountInterval: ReturnType<typeof setInterval> | undefined;
@@ -52,6 +52,12 @@ export async function setupEventListeners() {
     }),
     await listen<string>("workspace-switched", (event) => {
       setActiveWorkspaceId(event.payload);
+      refreshAppStates();
+    }),
+    await listen<string>("switch-to-app", (event) => {
+      activateApp(event.payload);
+    }),
+    await listen<void>("dnd-toggled", () => {
       refreshAppStates();
     }),
   );
