@@ -11,7 +11,7 @@ pub fn start_resource_polling(app_handle: AppHandle) {
             let config_manager = app_handle.state::<crate::config::manager::ConfigManager>();
 
             let config = config_manager.get_config();
-            let apps = app_manager.apps.lock().unwrap().clone();
+            let apps = app_manager.apps.lock().expect("apps lock").clone();
 
             let mut usages = Vec::new();
 
@@ -55,7 +55,7 @@ fn get_webview_resources(_app_handle: &AppHandle, _app_id: &str) -> (Option<f64>
 
 fn check_high_usage_alerts(app_handle: &AppHandle, usages: &[super::AppResourceUsage]) {
     let monitor = app_handle.state::<super::ResourceMonitor>();
-    let mut alerted = monitor.alerted.lock().unwrap();
+    let mut alerted = monitor.alerted.lock().expect("resource alerted lock");
 
     for usage in usages {
         if let Some(cpu) = usage.cpu_percent {

@@ -19,7 +19,7 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
             let config_manager = app_handle.state::<ConfigManager>();
 
             let config = config_manager.get_config();
-            let apps = app_manager.apps.lock().unwrap().clone();
+            let apps = app_manager.apps.lock().expect("apps lock").clone();
 
             for (app_id, runtime) in &apps {
                 if let state::AppRuntimeState::Active { .. } = &runtime.state {
@@ -33,7 +33,7 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
                             if elapsed_minutes >= app_config.hibernation_timeout_minutes as u64 {
                                 // Re-check current state under lock before destroying
                                 let should_hibernate = {
-                                    let apps_lock = app_manager.apps.lock().unwrap();
+                                    let apps_lock = app_manager.apps.lock().expect("apps lock");
                                     if let Some(current_runtime) = apps_lock.get(app_id) {
                                         if let state::AppRuntimeState::Active { .. } = &current_runtime.state {
                                             current_runtime.last_interaction
@@ -52,7 +52,7 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
                                         lifecycle::destroy_app_webview(&app_handle, app_id)
                                     {
                                         let url = last_url.unwrap_or_else(|| app_config.url.clone());
-                                        let mut apps_lock = app_manager.apps.lock().unwrap();
+                                        let mut apps_lock = app_manager.apps.lock().expect("apps lock");
                                         if let Some(rt) = apps_lock.get_mut(app_id) {
                                             rt.state =
                                                 state::AppRuntimeState::Hibernated { last_url: url };

@@ -38,14 +38,14 @@ impl SessionState {
 
     /// Record that an app is active at the given URL.
     pub fn set_active(&self, app_id: &str, url: &str) {
-        let mut data = self.inner.lock().unwrap();
+        let mut data = self.inner.lock().expect("session state lock");
         data.active_apps.insert(app_id.to_string(), url.to_string());
         self.persist(&data);
     }
 
     /// Record that an app is no longer active (hibernated/disabled/killed).
     pub fn remove(&self, app_id: &str) {
-        let mut data = self.inner.lock().unwrap();
+        let mut data = self.inner.lock().expect("session state lock");
         data.active_apps.remove(app_id);
         self.persist(&data);
     }
@@ -53,12 +53,12 @@ impl SessionState {
     /// Get the last known active apps from the previous session.
     /// This is used on startup for crash recovery.
     pub fn get_previous_session(&self) -> HashMap<String, String> {
-        self.inner.lock().unwrap().active_apps.clone()
+        self.inner.lock().expect("session state lock").active_apps.clone()
     }
 
     /// Clear the session state (called after successful restore).
     pub fn clear(&self) {
-        let mut data = self.inner.lock().unwrap();
+        let mut data = self.inner.lock().expect("session state lock");
         data.active_apps.clear();
         self.persist(&data);
     }

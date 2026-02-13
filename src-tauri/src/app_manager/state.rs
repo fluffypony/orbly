@@ -15,7 +15,7 @@ pub enum AppRuntimeState {
 #[derive(Debug, Clone)]
 pub struct AppRuntime {
     pub state: AppRuntimeState,
-    pub badge_count: Option<u32>,
+    pub badge_count: Option<i32>,
     pub last_interaction: Option<Instant>,
 }
 
@@ -34,7 +34,7 @@ impl AppManager {
 
     /// Initialize runtime state from persisted config on startup
     pub fn init_from_config(&self, apps: &[crate::config::models::AppConfig]) {
-        let mut map = self.apps.lock().unwrap();
+        let mut map = self.apps.lock().expect("apps lock");
         for app in apps {
             let state = if !app.enabled {
                 AppRuntimeState::Disabled
@@ -60,29 +60,29 @@ impl AppManager {
     }
 
     pub fn get_state(&self, app_id: &str) -> Option<AppRuntime> {
-        self.apps.lock().unwrap().get(app_id).cloned()
+        self.apps.lock().expect("apps lock").get(app_id).cloned()
     }
 
     pub fn set_state(&self, app_id: &str, state: AppRuntimeState) {
-        if let Some(runtime) = self.apps.lock().unwrap().get_mut(app_id) {
+        if let Some(runtime) = self.apps.lock().expect("apps lock").get_mut(app_id) {
             runtime.state = state;
         }
     }
 
-    pub fn set_badge_count(&self, app_id: &str, count: Option<u32>) {
-        if let Some(runtime) = self.apps.lock().unwrap().get_mut(app_id) {
+    pub fn set_badge_count(&self, app_id: &str, count: Option<i32>) {
+        if let Some(runtime) = self.apps.lock().expect("apps lock").get_mut(app_id) {
             runtime.badge_count = count;
         }
     }
 
     pub fn touch_interaction(&self, app_id: &str) {
-        if let Some(runtime) = self.apps.lock().unwrap().get_mut(app_id) {
+        if let Some(runtime) = self.apps.lock().expect("apps lock").get_mut(app_id) {
             runtime.last_interaction = Some(Instant::now());
         }
     }
 
     pub fn remove(&self, app_id: &str) {
-        self.apps.lock().unwrap().remove(app_id);
+        self.apps.lock().expect("apps lock").remove(app_id);
     }
 }
 
@@ -111,7 +111,7 @@ impl ContentBounds {
     }
 
     pub fn set(&self, x: f64, y: f64, width: f64, height: f64) {
-        let mut bounds = self.inner.lock().unwrap();
+        let mut bounds = self.inner.lock().expect("content bounds lock");
         bounds.x = x;
         bounds.y = y;
         bounds.width = width;
@@ -119,6 +119,6 @@ impl ContentBounds {
     }
 
     pub fn get(&self) -> ContentBoundsInner {
-        *self.inner.lock().unwrap()
+        *self.inner.lock().expect("content bounds lock")
     }
 }

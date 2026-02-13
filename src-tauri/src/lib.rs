@@ -39,7 +39,7 @@ impl WindowStateSaveTimer {
 
     /// Returns true if at least `min_interval_ms` have elapsed since the last save.
     fn should_save(&self, min_interval_ms: u64) -> bool {
-        let mut last = self.last_save.lock().unwrap();
+        let mut last = self.last_save.lock().expect("save timer lock");
         match *last {
             None => {
                 *last = Some(Instant::now());

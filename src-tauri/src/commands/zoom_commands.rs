@@ -13,10 +13,7 @@ struct ZoomChangedPayload {
 fn apply_zoom_to_webview(app_handle: &AppHandle, app_id: &str, zoom: u32) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(app_id) {
         let scale = zoom as f64 / 100.0;
-        let script = format!(
-            "(function() {{ if (document.body) document.body.style.zoom = '{scale}'; }})()"
-        );
-        webview.eval(&script).map_err(|e| e.to_string())?;
+        webview.set_zoom(scale).map_err(|e| e.to_string())?;
     }
     Ok(())
 }

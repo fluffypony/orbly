@@ -10,7 +10,7 @@ pub struct AppStateInfo {
     pub id: String,
     pub name: String,
     pub state: String, // "active", "hibernated", "disabled"
-    pub badge_count: Option<u32>,
+    pub badge_count: Option<i32>,
     pub current_url: Option<String>,
 }
 
@@ -20,7 +20,7 @@ pub fn get_app_states(
     config_manager: State<'_, ConfigManager>,
 ) -> Vec<AppStateInfo> {
     let config = config_manager.get_config();
-    let apps_lock = app_manager.apps.lock().unwrap();
+    let apps_lock = app_manager.apps.lock().expect("apps lock");
 
     config
         .apps
@@ -82,7 +82,7 @@ pub async fn activate_app(
 
     // Determine the URL to load: use last_url from hibernated state if available
     let load_url = {
-        let apps_lock = app_manager.apps.lock().unwrap();
+        let apps_lock = app_manager.apps.lock().expect("apps lock");
         if let Some(runtime) = apps_lock.get(&app_id) {
             match &runtime.state {
                 AppRuntimeState::Hibernated { last_url } => last_url.clone(),
@@ -101,7 +101,7 @@ pub async fn activate_app(
     }
 
     // Hide all other webviews
-    let apps_lock = app_manager.apps.lock().unwrap();
+    let apps_lock = app_manager.apps.lock().expect("apps lock");
     let other_ids: Vec<String> = apps_lock
         .keys()
         .filter(|id| *id != &app_id)
@@ -286,7 +286,7 @@ pub fn set_content_area_bounds(
     let position = tauri::LogicalPosition::new(x, y);
     let size = tauri::LogicalSize::new(width, height);
 
-    let apps_lock = app_manager.apps.lock().unwrap();
+    let apps_lock = app_manager.apps.lock().expect("apps lock");
     for (app_id, runtime) in apps_lock.iter() {
         if let AppRuntimeState::Active { .. } = &runtime.state {
             if let Some(webview) = app_handle.get_webview(app_id) {

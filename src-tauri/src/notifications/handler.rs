@@ -65,9 +65,9 @@ pub fn on_badge_update(
     app_handle: AppHandle,
 ) -> Result<(), String> {
     let count = match update.count {
-        Some(c) if c > 0 => Some(c as u32),
-        Some(c) if c == 0 => Some(0),
-        Some(_) => Some(0), // -1 means "has unread" — represent as 0 (dot indicator)
+        Some(c) if c > 0 => Some(c),
+        Some(0) => Some(0),
+        Some(_) => Some(-1), // Negative values mean "has unread, unknown count"
         None => None,
     };
 
@@ -148,9 +148,22 @@ fn parse_time(time_str: &str) -> Option<u32> {
 }
 
 fn update_aggregated_badge(app_manager: &AppManager, app_handle: &AppHandle) {
-    let apps = app_manager.apps.lock().unwrap();
-    let total: u32 = apps.values().filter_map(|a| a.badge_count).sum();
+    let apps = app_manager.apps.lock().expect("apps lock");
+    let total: u32 = apps
+        .values()
+        .filter_map(|a| a.badge_count)
+        .filter(|c| *c > 0)
+        .map(|c| c as u32)
+        .sum();
+    let has_unread_dot = total == 0
+        && apps
+            .values()
+            .any(|a| matches!(a.badge_count, Some(c) if c < 0));
     let _ = app_handle.emit("total-badge-updated", total);
 
-    crate::tray::update_tray_badge(app_handle, total);
+    if has_unread_dot {
+        crate::tray::update_tray_badge(app_handle, 1);
+    } else {
+        crate::tray::update_tray_badge(app_handle, total);
+    }
 }

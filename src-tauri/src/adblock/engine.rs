@@ -38,8 +38,8 @@ impl AdblockState {
 
     /// Load filter rules into the engine. Rebuilds the cached Engine.
     pub fn load_rules(&self, rules_text: &str, custom_rules: &[String]) {
-        *self.filter_rules_text.lock().unwrap() = Some(rules_text.to_string());
-        *self.custom_rules.lock().unwrap() = custom_rules.to_vec();
+        *self.filter_rules_text.lock().expect("filter rules lock") = Some(rules_text.to_string());
+        *self.custom_rules.lock().expect("custom rules lock") = custom_rules.to_vec();
 
         // Build and cache the engine
         let mut filter_set = FilterSet::new(false);
@@ -48,14 +48,14 @@ impl AdblockState {
             let _ = filter_set.add_filter(rule, ParseOptions::default());
         }
         let new_engine = Engine::from_filter_set(filter_set, true);
-        *self.engine.lock().unwrap() = Some(new_engine);
+        *self.engine.lock().expect("adblock engine lock") = Some(new_engine);
 
         // Build content-blocking JSON on macOS
         #[cfg(target_os = "macos")]
         {
             match self.build_content_blocking_json(rules_text, custom_rules) {
                 Ok(json) => {
-                    *self.content_blocking_json.lock().unwrap() = Some(json);
+                    *self.content_blocking_json.lock().expect("content blocking lock") = Some(json);
                     log::info!("Content-blocking JSON generated for macOS");
                 }
                 Err(e) => {
@@ -69,7 +69,7 @@ impl AdblockState {
 
     /// Check if a URL should be blocked.
     pub fn should_block(&self, url: &str, source_url: &str, request_type: &str) -> bool {
-        let engine_guard = self.engine.lock().unwrap();
+        let engine_guard = self.engine.lock().expect("adblock engine lock");
         let Some(ref engine) = *engine_guard else {
             return false;
         };
@@ -82,7 +82,7 @@ impl AdblockState {
 
     /// Get cosmetic filter CSS rules for a given URL.
     pub fn get_cosmetic_filters(&self, url: &str) -> Vec<String> {
-        let engine_guard = self.engine.lock().unwrap();
+        let engine_guard = self.engine.lock().expect("adblock engine lock");
         let Some(ref engine) = *engine_guard else {
             return Vec::new();
         };
@@ -98,7 +98,7 @@ impl AdblockState {
     /// Generate WKContentRuleList JSON (macOS only).
     #[cfg(target_os = "macos")]
     pub fn get_content_blocking_json(&self) -> Option<String> {
-        self.content_blocking_json.lock().unwrap().clone()
+        self.content_blocking_json.lock().expect("content blocking lock").clone()
     }
 
     #[cfg(target_os = "macos")]
@@ -123,22 +123,22 @@ impl AdblockState {
     }
 
     pub fn increment_blocked(&self, app_id: &str) {
-        let mut counts = self.blocked_counts.lock().unwrap();
+        let mut counts = self.blocked_counts.lock().expect("blocked counts lock");
         *counts.entry(app_id.to_string()).or_insert(0) += 1;
     }
 
     pub fn get_blocked_count(&self, app_id: &str) -> u32 {
-        let counts = self.blocked_counts.lock().unwrap();
+        let counts = self.blocked_counts.lock().expect("blocked counts lock");
         counts.get(app_id).copied().unwrap_or(0)
     }
 
     pub fn reset_blocked_count(&self, app_id: &str) {
-        let mut counts = self.blocked_counts.lock().unwrap();
+        let mut counts = self.blocked_counts.lock().expect("blocked counts lock");
         counts.remove(app_id);
     }
 
     /// Get the stored filter rules text (for reloading with updated custom rules).
     pub fn get_filter_rules_text(&self) -> Option<String> {
-        self.filter_rules_text.lock().unwrap().clone()
+        self.filter_rules_text.lock().expect("filter rules lock").clone()
     }
 }

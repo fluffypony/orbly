@@ -142,9 +142,9 @@ impl RecipeManager {
 
         // Update in-memory state with verified manifest only
         let now = chrono::Utc::now();
-        *self.manifest.lock().unwrap() = Some(verified_manifest);
-        *self.last_updated.lock().unwrap() = Some(now);
-        *self.last_error.lock().unwrap() = None;
+        *self.manifest.lock().expect("recipe manifest lock") = Some(verified_manifest);
+        *self.last_updated.lock().expect("recipe last_updated lock") = Some(now);
+        *self.last_error.lock().expect("recipe last_error lock") = None;
 
         log::info!("Recipe manifest updated successfully");
         Ok(())
@@ -157,7 +157,7 @@ impl RecipeManager {
         }
 
         // 1. Check in-memory manifest
-        if let Some(ref manifest) = *self.manifest.lock().unwrap() {
+        if let Some(ref manifest) = *self.manifest.lock().expect("recipe manifest lock") {
             if let Some(recipe) = manifest.services.get(service_id) {
                 return Some(recipe.clone());
             }
@@ -187,9 +187,9 @@ impl RecipeManager {
 
     /// Get current status for displaying in the Settings UI
     pub fn get_status(&self) -> RecipeStatus {
-        let manifest = self.manifest.lock().unwrap();
-        let last_updated = self.last_updated.lock().unwrap();
-        let last_error = self.last_error.lock().unwrap();
+        let manifest = self.manifest.lock().expect("recipe manifest lock");
+        let last_updated = self.last_updated.lock().expect("recipe last_updated lock");
+        let last_error = self.last_error.lock().expect("recipe last_error lock");
 
         let status = if last_error.is_some() {
             "fetch-failed".to_string()
@@ -211,6 +211,6 @@ impl RecipeManager {
 
     /// Record a fetch error
     pub fn set_error(&self, error: String) {
-        *self.last_error.lock().unwrap() = Some(error);
+        *self.last_error.lock().expect("recipe last_error lock") = Some(error);
     }
 }

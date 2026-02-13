@@ -21,7 +21,6 @@
     "core:webview:allow-create-webview-window",
     "store:default",
     "shell:default",
-    "shell:allow-open",
     "notification:default",
     "notification:allow-notify",
     "notification:allow-request-permission",

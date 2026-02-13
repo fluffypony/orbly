@@ -20,12 +20,12 @@ impl CertificateExceptions {
         let expiry = chrono::Utc::now() + chrono::Duration::days(days);
         self.exceptions
             .lock()
-            .unwrap()
+            .expect("certificate exceptions lock")
             .insert(host.to_string(), expiry);
     }
 
     pub fn is_excepted(&self, host: &str) -> bool {
-        let exceptions = self.exceptions.lock().unwrap();
+        let exceptions = self.exceptions.lock().expect("certificate exceptions lock");
         if let Some(expiry) = exceptions.get(host) {
             chrono::Utc::now() < *expiry
         } else {
@@ -34,13 +34,13 @@ impl CertificateExceptions {
     }
 
     pub fn remove_exception(&self, host: &str) {
-        self.exceptions.lock().unwrap().remove(host);
+        self.exceptions.lock().expect("certificate exceptions lock").remove(host);
     }
 
     pub fn get_all(&self) -> Vec<(String, String)> {
         self.exceptions
             .lock()
-            .unwrap()
+            .expect("certificate exceptions lock")
             .iter()
             .filter(|(_, expiry)| chrono::Utc::now() < **expiry)
             .map(|(host, expiry)| (host.clone(), expiry.to_rfc3339()))

@@ -37,12 +37,12 @@ impl DownloadManager {
 
     pub fn add_download(&self, entry: DownloadEntry) -> String {
         let id = entry.id.clone();
-        self.downloads.lock().unwrap().push(entry);
+        self.downloads.lock().expect("downloads lock").push(entry);
         id
     }
 
     pub fn update_progress(&self, id: &str, progress: f64) {
-        let mut downloads = self.downloads.lock().unwrap();
+        let mut downloads = self.downloads.lock().expect("downloads lock");
         if let Some(entry) = downloads.iter_mut().find(|d| d.id == id) {
             entry.status = DownloadStatus::Downloading {
                 progress: progress.clamp(0.0, 1.0),
@@ -51,46 +51,46 @@ impl DownloadManager {
     }
 
     pub fn complete_download(&self, id: &str) {
-        let mut downloads = self.downloads.lock().unwrap();
+        let mut downloads = self.downloads.lock().expect("downloads lock");
         if let Some(entry) = downloads.iter_mut().find(|d| d.id == id) {
             entry.status = DownloadStatus::Complete;
         }
     }
 
     pub fn fail_download(&self, id: &str, error: String) {
-        let mut downloads = self.downloads.lock().unwrap();
+        let mut downloads = self.downloads.lock().expect("downloads lock");
         if let Some(entry) = downloads.iter_mut().find(|d| d.id == id) {
             entry.status = DownloadStatus::Failed { error };
         }
     }
 
     pub fn cancel_download(&self, id: &str) {
-        let mut downloads = self.downloads.lock().unwrap();
+        let mut downloads = self.downloads.lock().expect("downloads lock");
         if let Some(entry) = downloads.iter_mut().find(|d| d.id == id) {
             entry.status = DownloadStatus::Cancelled;
         }
     }
 
     pub fn get_all(&self) -> Vec<DownloadEntry> {
-        self.downloads.lock().unwrap().clone()
+        self.downloads.lock().expect("downloads lock").clone()
     }
 
     pub fn get_active_count(&self) -> usize {
         self.downloads
             .lock()
-            .unwrap()
+            .expect("downloads lock")
             .iter()
             .filter(|d| matches!(d.status, DownloadStatus::Downloading { .. }))
             .count()
     }
 
     pub fn clear_completed(&self) {
-        let mut downloads = self.downloads.lock().unwrap();
+        let mut downloads = self.downloads.lock().expect("downloads lock");
         downloads.retain(|d| !matches!(d.status, DownloadStatus::Complete));
     }
 
     pub fn remove(&self, id: &str) {
-        let mut downloads = self.downloads.lock().unwrap();
+        let mut downloads = self.downloads.lock().expect("downloads lock");
         downloads.retain(|d| d.id != id);
     }
 
@@ -98,7 +98,7 @@ impl DownloadManager {
     pub fn find_by_url(&self, url: &str) -> Option<String> {
         self.downloads
             .lock()
-            .unwrap()
+            .expect("downloads lock")
             .iter()
             .find(|d| d.url == url && matches!(d.status, DownloadStatus::Downloading { .. }))
             .map(|d| d.id.clone())

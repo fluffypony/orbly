@@ -19,7 +19,7 @@ pub fn kill_app(
 ) -> Result<(), String> {
     let destroyed_url = lifecycle::destroy_app_webview(&app_handle, &app_id)?;
 
-    let mut apps = app_manager.apps.lock().unwrap();
+    let mut apps = app_manager.apps.lock().expect("apps lock");
     if let Some(runtime) = apps.get_mut(&app_id) {
         match &runtime.state {
             AppRuntimeState::Active { current_url } => {

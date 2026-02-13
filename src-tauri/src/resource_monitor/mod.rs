@@ -29,14 +29,14 @@ impl ResourceMonitor {
     }
 
     pub fn update(&self, app_id: &str, usage: AppResourceUsage) {
-        self.usage.lock().unwrap().insert(app_id.to_string(), usage);
+        self.usage.lock().expect("resource usage lock").insert(app_id.to_string(), usage);
     }
 
     pub fn get_all(&self) -> Vec<AppResourceUsage> {
-        self.usage.lock().unwrap().values().cloned().collect()
+        self.usage.lock().expect("resource usage lock").values().cloned().collect()
     }
 
     pub fn get_usage(&self, app_id: &str) -> Option<AppResourceUsage> {
-        self.usage.lock().unwrap().get(app_id).cloned()
+        self.usage.lock().expect("resource usage lock").get(app_id).cloned()
     }
 }

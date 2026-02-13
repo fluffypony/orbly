@@ -28,11 +28,11 @@ impl ConfigManager {
     }
 
     pub fn get_config(&self) -> OrblyConfig {
-        self.config.lock().unwrap().clone()
+        self.config.lock().expect("config lock").clone()
     }
 
     pub fn save_config(&self, config: OrblyConfig) -> Result<(), Box<dyn std::error::Error>> {
-        let mut guard = self.config.lock().unwrap();
+        let mut guard = self.config.lock().expect("config lock");
         Self::write_to_disk(&self.config_path, &config)?;
         *guard = config;
         Ok(())
@@ -42,7 +42,7 @@ impl ConfigManager {
     where
         F: FnOnce(&mut OrblyConfig),
     {
-        let mut guard = self.config.lock().unwrap();
+        let mut guard = self.config.lock().expect("config lock");
         updater(&mut guard);
         Self::write_to_disk(&self.config_path, &guard)?;
         Ok(())
@@ -51,7 +51,7 @@ impl ConfigManager {
     pub fn get_app(&self, app_id: &str) -> Option<AppConfig> {
         self.config
             .lock()
-            .unwrap()
+            .expect("config lock")
             .apps
             .iter()
             .find(|a| a.id == app_id)
@@ -63,14 +63,14 @@ impl ConfigManager {
             app.data_store_uuid = Uuid::new_v4();
         }
 
-        let mut config = self.config.lock().unwrap();
+        let mut config = self.config.lock().expect("config lock");
         config.apps.push(app);
         Self::write_to_disk(&self.config_path, &config)?;
         Ok(())
     }
 
     pub fn update_app(&self, app: AppConfig) -> Result<(), Box<dyn std::error::Error>> {
-        let mut config = self.config.lock().unwrap();
+        let mut config = self.config.lock().expect("config lock");
         if let Some(existing) = config.apps.iter_mut().find(|a| a.id == app.id) {
             *existing = app;
             Self::write_to_disk(&self.config_path, &config)?;
@@ -84,7 +84,7 @@ impl ConfigManager {
         &self,
         app_id: &str,
     ) -> Result<Option<AppConfig>, Box<dyn std::error::Error>> {
-        let mut config = self.config.lock().unwrap();
+        let mut config = self.config.lock().expect("config lock");
         let pos = config.apps.iter().position(|a| a.id == app_id);
         if let Some(idx) = pos {
             let removed = config.apps.remove(idx);
