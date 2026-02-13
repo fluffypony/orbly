@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use serde::Serialize;
+use sysinfo::System;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct AppResourceUsage {
@@ -17,6 +18,7 @@ pub struct AppResourceUsage {
 pub struct ResourceMonitor {
     usage: Mutex<HashMap<String, AppResourceUsage>>,
     alerted: Mutex<HashMap<String, std::time::Instant>>,
+    pub(crate) sys: Mutex<System>,
 }
 
 #[allow(dead_code)]
@@ -25,6 +27,7 @@ impl ResourceMonitor {
         Self {
             usage: Mutex::new(HashMap::new()),
             alerted: Mutex::new(HashMap::new()),
+            sys: Mutex::new(System::new()),
         }
     }
 

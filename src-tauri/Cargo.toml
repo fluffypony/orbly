@@ -39,3 +39,4 @@ dirs = "6"
 adblock = { version = "0.12", default-features = false, features = ["content-blocking", "css-validation", "embedded-domain-resolver"] }
 open = "5"
 shellexpand = "3"
+sysinfo = "0.33"
