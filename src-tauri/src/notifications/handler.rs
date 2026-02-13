@@ -148,17 +148,21 @@ fn parse_time(time_str: &str) -> Option<u32> {
 }
 
 fn update_aggregated_badge(app_manager: &AppManager, app_handle: &AppHandle) {
-    let apps = app_manager.apps.lock().expect("apps lock");
-    let total: u32 = apps
-        .values()
-        .filter_map(|a| a.badge_count)
-        .filter(|c| *c > 0)
-        .map(|c| c as u32)
-        .sum();
-    let has_unread_dot = total == 0
-        && apps
+    let (total, has_unread_dot) = {
+        let apps = app_manager.apps.lock().expect("apps lock");
+        let total: u32 = apps
             .values()
-            .any(|a| matches!(a.badge_count, Some(c) if c < 0));
+            .filter_map(|a| a.badge_count)
+            .filter(|c| *c > 0)
+            .map(|c| c as u32)
+            .sum();
+        let has_unread_dot = total == 0
+            && apps
+                .values()
+                .any(|a| matches!(a.badge_count, Some(c) if c < 0));
+        (total, has_unread_dot)
+    };
+
     let _ = app_handle.emit("total-badge-updated", total);
 
     if has_unread_dot {

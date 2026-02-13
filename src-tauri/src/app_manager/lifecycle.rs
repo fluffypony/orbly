@@ -124,7 +124,9 @@ pub fn create_app_webview(
     if app_config.zoom_level != 100 {
         if let Some(webview) = app_handle.get_webview(&app_config.id) {
             let scale = app_config.zoom_level as f64 / 100.0;
-            let _ = webview.set_zoom(scale);
+            if let Err(e) = webview.set_zoom(scale) {
+                log::warn!("Failed to set zoom for {}: {}", app_config.id, e);
+            }
         }
     }
 
