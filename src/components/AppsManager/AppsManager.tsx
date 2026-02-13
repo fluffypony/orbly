@@ -1,6 +1,6 @@
 import { Component, For, Show, createSignal, createEffect, onCleanup } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/core";
+import { getResourceUsage, reloadApp, hibernateApp, disableApp, killApp } from "../../lib/ipc";
 
 interface AppsManagerProps {
   visible: boolean;
@@ -25,8 +25,8 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
   createEffect(() => {
     if (!props.visible) return;
 
-    invoke<AppResourceUsage[]>("get_resource_usage")
-      .then(setUsages)
+    getResourceUsage()
+      .then((data) => setUsages(data as AppResourceUsage[]))
       .catch(console.error);
 
     const unlistenPromise = listen<AppResourceUsage[]>("resource-usage-updated", (event) => {
@@ -109,16 +109,16 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
     try {
       switch (action) {
         case "reload":
-          await invoke("reload_app", { app_id: appId });
+          await reloadApp(appId);
           break;
         case "hibernate":
-          await invoke("hibernate_app", { app_id: appId });
+          await hibernateApp(appId);
           break;
         case "disable":
-          await invoke("disable_app", { app_id: appId });
+          await disableApp(appId);
           break;
         case "kill":
-          await invoke("kill_app", { app_id: appId });
+          await killApp(appId);
           break;
       }
     } catch (err) {

@@ -1,5 +1,5 @@
 import { Component, createSignal } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { updateApp, reloadApp } from "../../lib/ipc";
 import type { AppConfig } from "../../types/config";
 
 interface InjectionEditorProps {
@@ -22,8 +22,8 @@ const InjectionEditor: Component<InjectionEditorProps> = (props) => {
         custom_css: css(),
         custom_js: js(),
       };
-      await invoke("update_app", { app: updated });
-      await invoke("reload_app", { app_id: props.app.id });
+      await updateApp(updated);
+      await reloadApp(props.app.id);
       props.onSave(updated);
     } catch (err) {
       console.error("Failed to save injection settings:", err);

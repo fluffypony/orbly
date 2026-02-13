@@ -1,7 +1,6 @@
 import { Component, createSignal, onMount } from "solid-js";
 import { SettingSection, SettingRow, ToggleSwitch, Button } from "../SettingsControls";
-import { getConfig } from "../../../lib/ipc";
-import { invoke } from "@tauri-apps/api/core";
+import { getConfig, exportConfigJson, importConfigJson } from "../../../lib/ipc";
 
 const SyncTab: Component = () => {
   const [syncEnabled, setSyncEnabled] = createSignal(false);
@@ -17,7 +16,7 @@ const SyncTab: Component = () => {
 
   const handleExport = async () => {
     try {
-      const json = await invoke<string>("export_config_json");
+      const json = await exportConfigJson();
       const blob = new Blob([json], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -39,7 +38,7 @@ const SyncTab: Component = () => {
       if (!file) return;
       try {
         const text = await file.text();
-        await invoke("import_config_json", { json: text });
+        await importConfigJson(text);
         window.location.reload();
       } catch (err) {
         console.error("Failed to import config:", err);

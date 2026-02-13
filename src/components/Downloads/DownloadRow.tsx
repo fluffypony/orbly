@@ -1,5 +1,5 @@
 import { Component, Show, Switch, Match } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { openDownloadFile, openDownloadFolder, cancelDownload as ipcCancelDownload } from "../../lib/ipc";
 import type { DownloadEntry } from "../../types/downloads";
 
 interface DownloadRowProps {
@@ -41,7 +41,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const openFile = async () => {
     try {
-      await invoke("open_download_file", { path: props.download.save_path });
+      await openDownloadFile(props.download.save_path);
     } catch (err) {
       console.error("Failed to open file:", err);
     }
@@ -49,7 +49,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const openFolder = async () => {
     try {
-      await invoke("open_download_folder", { path: props.download.save_path });
+      await openDownloadFolder(props.download.save_path);
     } catch (err) {
       console.error("Failed to open folder:", err);
     }
@@ -57,7 +57,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const cancelDownload = async () => {
     try {
-      await invoke("cancel_download", { download_id: props.download.id });
+      await ipcCancelDownload(props.download.id);
     } catch (err) {
       console.error("Failed to cancel download:", err);
     }

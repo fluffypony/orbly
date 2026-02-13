@@ -41,6 +41,13 @@ export const updateDarkModeSettings = (
   textColor: string,
 ) => invoke<void>("update_dark_mode_settings", { app_id: appId, mode, brightness, contrast, sepia, bg_color: bgColor, text_color: textColor });
 
+// Config section commands
+export const updateLinkRoutingConfig = (linkRouting: import("../types/config").LinkRoutingConfig) =>
+  invoke<void>("update_link_routing_config", { link_routing: linkRouting });
+export const testLinkRoute = (url: string) => invoke<string>("test_link_route", { url });
+export const exportConfigJson = () => invoke<string>("export_config_json");
+export const importConfigJson = (json: string) => invoke<void>("import_config_json", { json });
+
 // Adblock commands
 export const toggleAdblock = (appId: string) => invoke<boolean>("toggle_adblock", { app_id: appId });
 export const getBlockedCount = (appId: string) => invoke<number>("get_blocked_count", { app_id: appId });

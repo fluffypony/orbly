@@ -1,9 +1,8 @@
 import { Component, For, Show, onMount, createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
 import { SettingSection, TextInput, Button } from "../SettingsControls";
-import { getConfig } from "../../../lib/ipc";
+import { getConfig, updateLinkRoutingConfig, testLinkRoute } from "../../../lib/ipc";
 import { appConfigs } from "../../../stores/uiStore";
-import { invoke } from "@tauri-apps/api/core";
 import type { LinkRoutingRule } from "../../../types/config";
 
 const LinkRoutingTab: Component = () => {
@@ -26,7 +25,7 @@ const LinkRoutingTab: Component = () => {
     setRules(newRules);
     if (!initialized) return;
     try {
-      await invoke("update_link_routing_config", { link_routing: { rules: newRules } });
+      await updateLinkRoutingConfig({ rules: newRules });
     } catch (err) {
       console.error("Failed to save link routing config:", err);
     }
@@ -57,7 +56,7 @@ const LinkRoutingTab: Component = () => {
     const url = testUrl().trim();
     if (!url) return;
     try {
-      const result = await invoke<string>("test_link_route", { url });
+      const result = await testLinkRoute(url);
       setTestResult(result);
     } catch (err) {
       setTestResult("Error: " + String(err));

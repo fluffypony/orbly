@@ -1,5 +1,5 @@
 import { Component, For, Show, createSignal, createEffect, onCleanup } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { getDownloads, clearCompletedDownloads as ipcClearCompleted, removeDownload as ipcRemoveDownload } from "../../lib/ipc";
 import type { DownloadEntry } from "../../types/downloads";
 import DownloadRow from "./DownloadRow";
 
@@ -14,7 +14,7 @@ const DownloadManager: Component<DownloadManagerProps> = (props) => {
 
   const fetchDownloads = async () => {
     try {
-      const dl = await invoke<DownloadEntry[]>("get_downloads");
+      const dl = await getDownloads();
       setDownloads(dl);
     } catch (err) {
       console.error("Failed to fetch downloads:", err);
@@ -51,7 +51,7 @@ const DownloadManager: Component<DownloadManagerProps> = (props) => {
 
   const clearCompleted = async () => {
     try {
-      await invoke("clear_completed_downloads");
+      await ipcClearCompleted();
       await fetchDownloads();
     } catch (err) {
       console.error("Failed to clear completed:", err);
@@ -60,7 +60,7 @@ const DownloadManager: Component<DownloadManagerProps> = (props) => {
 
   const removeDownload = async (id: string) => {
     try {
-      await invoke("remove_download", { download_id: id });
+      await ipcRemoveDownload(id);
       await fetchDownloads();
     } catch (err) {
       console.error("Failed to remove download:", err);
