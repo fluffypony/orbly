@@ -1,6 +1,6 @@
 import { Component } from "solid-js";
-import { appConfigs, setAppConfigs } from "../../stores/uiStore";
-import { updateApp } from "../../lib/ipc";
+import { setAppConfigs } from "../../stores/uiStore";
+import { toggleDarkMode } from "../../lib/ipc";
 import type { DarkModeType } from "../../types/config";
 
 interface DarkModeToggleProps {
@@ -8,7 +8,6 @@ interface DarkModeToggleProps {
   darkMode: DarkModeType;
 }
 
-const modeOrder: DarkModeType[] = ["off", "dynamic", "filter", "static"];
 const modeLabels: Record<DarkModeType, string> = {
   off: "Off",
   dynamic: "Dynamic",
@@ -18,16 +17,11 @@ const modeLabels: Record<DarkModeType, string> = {
 
 const DarkModeToggle: Component<DarkModeToggleProps> = (props) => {
   const cycle = async () => {
-    const currentIndex = modeOrder.indexOf(props.darkMode);
-    const next = modeOrder[(currentIndex + 1) % modeOrder.length];
-    const config = appConfigs.find((a) => a.id === props.appId);
-    if (!config) return;
-    setAppConfigs((a) => a.id === props.appId, "dark_mode", next);
     try {
-      await updateApp({ ...config, dark_mode: next });
+      const newMode = (await toggleDarkMode(props.appId)) as DarkModeType;
+      setAppConfigs((a) => a.id === props.appId, "dark_mode", newMode);
     } catch (err) {
-      console.error("Failed to update dark mode:", err);
-      setAppConfigs((a) => a.id === props.appId, "dark_mode", props.darkMode);
+      console.error("Failed to toggle dark mode:", err);
     }
   };
 

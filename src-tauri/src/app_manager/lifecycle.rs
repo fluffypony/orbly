@@ -1,6 +1,7 @@
 use tauri::{AppHandle, Manager, WebviewUrl};
 
-use crate::config::models::AppConfig;
+use crate::config::models::{AppConfig, DarkModeType};
+use crate::darkmode::DarkModeManager;
 
 /// Create a new webview for an app with isolated data store
 pub fn create_app_webview(
@@ -29,7 +30,7 @@ pub fn create_app_webview(
         builder = builder.user_agent(&app_config.user_agent);
     }
 
-    let init_js = build_initialization_script(app_config);
+    let init_js = build_initialization_script(app_handle, app_config);
     if !init_js.is_empty() {
         builder = builder.initialization_script(&init_js);
     }
@@ -64,7 +65,7 @@ pub fn destroy_app_webview(
 }
 
 /// Build the initialization script for an app webview.
-fn build_initialization_script(app_config: &AppConfig) -> String {
+fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -> String {
     let mut scripts = Vec::new();
 
     // Notification interception
@@ -78,6 +79,30 @@ fn build_initialization_script(app_config: &AppConfig) -> String {
     scripts.push(crate::notifications::badge_scripts::badge_scrape_script(
         &app_config.id,
     ));
+
+    // Dark mode injection
+    if app_config.dark_mode != DarkModeType::Off {
+        if let Some(dm_manager) = app_handle.try_state::<DarkModeManager>() {
+            let mode_str = match &app_config.dark_mode {
+                DarkModeType::Off => "off",
+                DarkModeType::Dynamic => "dynamic",
+                DarkModeType::Filter => "filter",
+                DarkModeType::Static => "static",
+            };
+            let dm_script = dm_manager.get_injection_script(
+                mode_str,
+                app_config.dark_mode_brightness,
+                app_config.dark_mode_contrast,
+                app_config.dark_mode_sepia,
+                &app_config.dark_mode_bg_color,
+                &app_config.dark_mode_text_color,
+                "",
+            );
+            if !dm_script.is_empty() {
+                scripts.push(dm_script);
+            }
+        }
+    }
 
     // Custom CSS injection
     if !app_config.custom_css.is_empty() {

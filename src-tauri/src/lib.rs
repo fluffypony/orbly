@@ -1,12 +1,14 @@
 mod app_manager;
 mod commands;
 mod config;
+mod darkmode;
 mod notifications;
 
 use tauri::Manager;
 
 use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
+use darkmode::DarkModeManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -32,9 +34,17 @@ pub fn run() {
             let app_mgr = AppManager::new();
             app_mgr.init_from_config(&config_manager.get_config().apps);
 
+            let resource_dir = app
+                .path()
+                .resource_dir()
+                .expect("Failed to resolve resource directory");
+            let dark_mode_manager = DarkModeManager::new(resource_dir)
+                .expect("Failed to initialize dark mode manager");
+
             app.manage(config_manager);
             app.manage(app_mgr);
             app.manage(ContentBounds::new());
+            app.manage(dark_mode_manager);
 
             app_manager::start_auto_hibernate_task(app.handle().clone());
 
@@ -63,6 +73,8 @@ pub fn run() {
             commands::app_lifecycle_commands::frontend_ready,
             notifications::handler::on_web_notification,
             notifications::handler::on_badge_update,
+            commands::darkmode_commands::toggle_dark_mode,
+            commands::darkmode_commands::update_dark_mode_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");

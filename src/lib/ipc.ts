@@ -29,5 +29,17 @@ export const getCurrentUrl = (appId: string) => invoke<string>("get_current_url"
 export const setContentAreaBounds = (x: number, y: number, width: number, height: number) =>
   invoke<void>("set_content_area_bounds", { x, y, width, height });
 
+// Dark mode commands
+export const toggleDarkMode = (appId: string) => invoke<string>("toggle_dark_mode", { app_id: appId });
+export const updateDarkModeSettings = (
+  appId: string,
+  mode: string,
+  brightness: number,
+  contrast: number,
+  sepia: number,
+  bgColor: string,
+  textColor: string,
+) => invoke<void>("update_dark_mode_settings", { app_id: appId, mode, brightness, contrast, sepia, bg_color: bgColor, text_color: textColor });
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");
