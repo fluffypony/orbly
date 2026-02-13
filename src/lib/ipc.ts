@@ -50,9 +50,9 @@ export const addCustomAdblockRule = (rule: string) => invoke<void>("add_custom_a
 // Download commands
 export const getDownloads = () => invoke<import("../types/downloads").DownloadEntry[]>("get_downloads");
 export const getActiveDownloadCount = () => invoke<number>("get_active_download_count");
-export const cancelDownload = (downloadId: string) => invoke<void>("cancel_download", { downloadId });
+export const cancelDownload = (downloadId: string) => invoke<void>("cancel_download", { download_id: downloadId });
 export const clearCompletedDownloads = () => invoke<void>("clear_completed_downloads");
-export const removeDownload = (downloadId: string) => invoke<void>("remove_download", { downloadId });
+export const removeDownload = (downloadId: string) => invoke<void>("remove_download", { download_id: downloadId });
 export const openDownloadFile = (path: string) => invoke<void>("open_download_file", { path });
 export const openDownloadFolder = (path: string) => invoke<void>("open_download_folder", { path });
 

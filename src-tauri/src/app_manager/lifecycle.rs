@@ -47,6 +47,10 @@ pub fn create_app_webview(
             shellexpand::tilde(&app_config.download_directory).to_string(),
         )
     };
+    if let Err(e) = std::fs::create_dir_all(&download_dir) {
+        log::warn!("Failed to create download directory {:?}: {}", download_dir, e);
+    }
+
     let app_id_clone = app_config.id.clone();
     let app_name_clone = app_config.name.clone();
     let handle_clone = app_handle.clone();

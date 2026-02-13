@@ -57,7 +57,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const cancelDownload = async () => {
     try {
-      await invoke("cancel_download", { downloadId: props.download.id });
+      await invoke("cancel_download", { download_id: props.download.id });
     } catch (err) {
       console.error("Failed to cancel download:", err);
     }

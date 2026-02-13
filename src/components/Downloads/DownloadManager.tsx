@@ -60,7 +60,7 @@ const DownloadManager: Component<DownloadManagerProps> = (props) => {
 
   const removeDownload = async (id: string) => {
     try {
-      await invoke("remove_download", { downloadId: id });
+      await invoke("remove_download", { download_id: id });
       await fetchDownloads();
     } catch (err) {
       console.error("Failed to remove download:", err);
