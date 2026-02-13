@@ -4,26 +4,16 @@ use adblock::Engine;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-/// Wrapper around adblock-rust's Engine.
+/// Thread-safe wrapper around adblock-rust's Engine.
 ///
-/// Because Engine is `!Send + !Sync` by default (with `single-thread` feature),
-/// we disable `single-thread` (via `default-features = false`) to get `Send + Sync`
-/// on FilterSet, which we then use to build the Engine on a single thread.
-///
-/// The Engine itself is `!Send + !Sync`, so we keep it on the main thread
-/// and use a Mutex<Option<Engine>> pattern — all operations go through the
-/// thread that created it. For Tauri commands (which run on the main thread),
-/// this is fine.
-///
-/// However, since Engine is !Send, we wrap the data we CAN share (blocked counts,
-/// cosmetic cache) separately, and perform engine operations via a dedicated approach.
+/// With `default-features = false` (which disables `single-thread`), Engine is
+/// Send + Sync, so we can safely store it in a Mutex and share across threads.
 pub struct AdblockState {
-    /// Pre-computed cosmetic CSS per URL origin, cached after engine queries.
-    cosmetic_cache: Mutex<HashMap<String, Vec<String>>>,
+    /// The cached adblock engine, rebuilt when rules change.
+    engine: Mutex<Option<Engine>>,
     /// Per-app blocked request counts.
     blocked_counts: Mutex<HashMap<String, u32>>,
-    /// Serialized engine data for content-blocking rule generation.
-    /// Stored as the raw filter rules text so we can rebuild as needed.
+    /// Raw filter rules text, stored for reload with updated custom rules.
     filter_rules_text: Mutex<Option<String>>,
     /// Custom user rules.
     custom_rules: Mutex<Vec<String>>,
@@ -35,7 +25,7 @@ pub struct AdblockState {
 impl AdblockState {
     pub fn new() -> Self {
         Self {
-            cosmetic_cache: Mutex::new(HashMap::new()),
+            engine: Mutex::new(None),
             blocked_counts: Mutex::new(HashMap::new()),
             filter_rules_text: Mutex::new(None),
             custom_rules: Mutex::new(Vec::new()),
@@ -44,15 +34,19 @@ impl AdblockState {
         }
     }
 
-    /// Load filter rules and pre-compute cosmetic filters and content-blocking JSON.
-    /// This must be called from a context where we can create an Engine (main thread).
+    /// Load filter rules into the engine. Rebuilds the cached Engine.
     pub fn load_rules(&self, rules_text: &str, custom_rules: &[String]) {
-        // Store the raw text for later re-use
         *self.filter_rules_text.lock().unwrap() = Some(rules_text.to_string());
         *self.custom_rules.lock().unwrap() = custom_rules.to_vec();
 
-        // Clear cosmetic cache so it's rebuilt on next query
-        self.cosmetic_cache.lock().unwrap().clear();
+        // Build and cache the engine
+        let mut filter_set = FilterSet::new(false);
+        filter_set.add_filter_list(rules_text, ParseOptions::default());
+        for rule in custom_rules {
+            let _ = filter_set.add_filter(rule, ParseOptions::default());
+        }
+        let new_engine = Engine::from_filter_set(filter_set, true);
+        *self.engine.lock().unwrap() = Some(new_engine);
 
         // Build content-blocking JSON on macOS
         #[cfg(target_os = "macos")]
@@ -68,73 +62,35 @@ impl AdblockState {
             }
         }
 
-        log::info!("Adblock rules loaded successfully");
-    }
-
-    /// Get cosmetic filter CSS rules for a given URL.
-    /// Creates a temporary Engine to query cosmetic resources.
-    pub fn get_cosmetic_filters(&self, url: &str) -> Vec<String> {
-        // Check cache first
-        {
-            let cache = self.cosmetic_cache.lock().unwrap();
-            if let Some(cached) = cache.get(url) {
-                return cached.clone();
-            }
-        }
-
-        let rules_text = self.filter_rules_text.lock().unwrap();
-        let custom = self.custom_rules.lock().unwrap();
-
-        let Some(ref rules) = *rules_text else {
-            return Vec::new();
-        };
-
-        // Build a temporary engine for cosmetic queries
-        let mut filter_set = FilterSet::new(false);
-        filter_set.add_filter_list(rules, ParseOptions::default());
-        for rule in custom.iter() {
-            let _ = filter_set.add_filter(rule, ParseOptions::default());
-        }
-
-        let engine = Engine::from_filter_set(filter_set, true);
-        let cosmetic = engine.url_cosmetic_resources(url);
-
-        let mut css_rules = Vec::new();
-        for selector in &cosmetic.hide_selectors {
-            css_rules.push(format!("{} {{ display: none !important; }}", selector));
-        }
-
-        // Cache the result
-        {
-            let mut cache = self.cosmetic_cache.lock().unwrap();
-            cache.insert(url.to_string(), css_rules.clone());
-        }
-
-        css_rules
+        log::info!("Adblock engine loaded and cached");
     }
 
     /// Check if a URL should be blocked.
-    /// Creates a temporary engine for the check.
     pub fn should_block(&self, url: &str, source_url: &str, request_type: &str) -> bool {
-        let rules_text = self.filter_rules_text.lock().unwrap();
-        let custom = self.custom_rules.lock().unwrap();
-
-        let Some(ref rules) = *rules_text else {
+        let engine_guard = self.engine.lock().unwrap();
+        let Some(ref engine) = *engine_guard else {
             return false;
         };
-
-        let mut filter_set = FilterSet::new(false);
-        filter_set.add_filter_list(rules, ParseOptions::default());
-        for rule in custom.iter() {
-            let _ = filter_set.add_filter(rule, ParseOptions::default());
-        }
-
-        let engine = Engine::from_filter_set(filter_set, true);
 
         match Request::new(url, source_url, request_type) {
             Ok(request) => engine.check_network_request(&request).matched,
             Err(_) => false,
         }
+    }
+
+    /// Get cosmetic filter CSS rules for a given URL.
+    pub fn get_cosmetic_filters(&self, url: &str) -> Vec<String> {
+        let engine_guard = self.engine.lock().unwrap();
+        let Some(ref engine) = *engine_guard else {
+            return Vec::new();
+        };
+
+        let cosmetic = engine.url_cosmetic_resources(url);
+        cosmetic
+            .hide_selectors
+            .iter()
+            .map(|sel| format!("{} {{ display: none !important; }}", sel))
+            .collect()
     }
 
     /// Generate WKContentRuleList JSON (macOS only).
@@ -149,7 +105,7 @@ impl AdblockState {
         rules_text: &str,
         custom_rules: &[String],
     ) -> Result<String, String> {
-        // content-blocking feature requires debug=true on FilterSet
+        // content-blocking requires debug=true on FilterSet
         let mut filter_set = FilterSet::new(true);
         filter_set.add_filter_list(rules_text, ParseOptions::default());
         for rule in custom_rules {
