@@ -1,4 +1,4 @@
-import { Component, createSignal, onMount, onCleanup } from "solid-js";
+import { Component, Show, createSignal, onMount, onCleanup } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Toolbar from "./components/Toolbar/Toolbar";
@@ -8,6 +8,7 @@ import ToastContainer from "./components/Toast/ToastContainer";
 import DownloadManagerPanel from "./components/Downloads/DownloadManager";
 import AppsManager from "./components/AppsManager/AppsManager";
 import Settings from "./components/Settings/Settings";
+import Onboarding from "./components/Onboarding/Onboarding";
 import { initializeState } from "./lib/stateSync";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
 import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
@@ -24,15 +25,16 @@ import {
   settingsVisible,
   setSettingsVisible,
 } from "./stores/uiStore";
-import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset } from "./lib/ipc";
+import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset, getConfig, frontendReady } from "./lib/ipc";
 import { showToast } from "./components/Toast/ToastContainer";
 
 const App: Component = () => {
   const [quickSwitcherVisible, setQuickSwitcherVisible] = createSignal(false);
   const [findBarVisible, setFindBarVisible] = createSignal(false);
+  const [showOnboarding, setShowOnboarding] = createSignal(false);
   let cleanupHighUsage: (() => void) | undefined;
 
-  onMount(async () => {
+  const initializeApp = async () => {
     await setupEventListeners();
     await initializeState();
 
@@ -124,7 +126,27 @@ const App: Component = () => {
     });
 
     await registerShortcuts(bindings);
+  };
+
+  onMount(async () => {
+    try {
+      const config = await getConfig();
+      if (config.apps.length === 0) {
+        setShowOnboarding(true);
+      } else {
+        await initializeApp();
+      }
+    } catch (err) {
+      console.error("Failed to check first launch:", err);
+      await initializeApp();
+    }
   });
+
+  const handleOnboardingComplete = async () => {
+    setShowOnboarding(false);
+    await initializeApp();
+    await frontendReady();
+  };
 
   onCleanup(() => {
     teardownEventListeners();
@@ -133,35 +155,42 @@ const App: Component = () => {
   });
 
   return (
-    <div class="flex h-screen w-screen bg-white dark:bg-[#121212] select-none">
-      <Sidebar />
-      <div class="flex-1 flex flex-col min-w-0">
-        <Toolbar />
-        <div class="flex-1 relative overflow-hidden">
-          <ContentArea
-            findBarVisible={findBarVisible()}
-            onCloseFindBar={() => setFindBarVisible(false)}
+    <>
+      <Show when={showOnboarding()}>
+        <Onboarding onComplete={handleOnboardingComplete} />
+      </Show>
+      <Show when={!showOnboarding()}>
+        <div class="flex h-screen w-screen bg-white dark:bg-[#121212] select-none">
+          <Sidebar />
+          <div class="flex-1 flex flex-col min-w-0">
+            <Toolbar />
+            <div class="flex-1 relative overflow-hidden">
+              <ContentArea
+                findBarVisible={findBarVisible()}
+                onCloseFindBar={() => setFindBarVisible(false)}
+              />
+              <DownloadManagerPanel
+                visible={downloadsVisible()}
+                onClose={() => setDownloadsVisible(false)}
+              />
+            </div>
+          </div>
+          <QuickSwitcher
+            visible={quickSwitcherVisible()}
+            onClose={() => setQuickSwitcherVisible(false)}
           />
-          <DownloadManagerPanel
-            visible={downloadsVisible()}
-            onClose={() => setDownloadsVisible(false)}
+          <ToastContainer />
+          <AppsManager
+            visible={appsManagerVisible()}
+            onClose={() => setAppsManagerVisible(false)}
+          />
+          <Settings
+            visible={settingsVisible()}
+            onClose={() => setSettingsVisible(false)}
           />
         </div>
-      </div>
-      <QuickSwitcher
-        visible={quickSwitcherVisible()}
-        onClose={() => setQuickSwitcherVisible(false)}
-      />
-      <ToastContainer />
-      <AppsManager
-        visible={appsManagerVisible()}
-        onClose={() => setAppsManagerVisible(false)}
-      />
-      <Settings
-        visible={settingsVisible()}
-        onClose={() => setSettingsVisible(false)}
-      />
-    </div>
+      </Show>
+    </>
   );
 };
 

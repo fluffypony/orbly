@@ -110,5 +110,9 @@ export const acceptCertificateException = (host: string, days?: number) =>
 export const getCertificateExceptions = () =>
   invoke<[string, string][]>("get_certificate_exceptions");
 
+// Recipe commands
+export const updateRecipes = () => invoke<void>("update_recipes");
+export const getRecipeStatus = () => invoke<{ status: string; last_updated: string; manifest_version: number | null; service_count: number }>("get_recipe_status");
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

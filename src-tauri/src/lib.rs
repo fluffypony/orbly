@@ -5,6 +5,7 @@ mod config;
 mod darkmode;
 mod downloads;
 mod notifications;
+mod recipes;
 mod resource_monitor;
 mod tray;
 
@@ -21,6 +22,7 @@ use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
 use darkmode::DarkModeManager;
 use downloads::DownloadManager;
+use recipes::RecipeManager;
 use resource_monitor::ResourceMonitor;
 
 /// Tracks the last time we persisted window state, for debouncing.
@@ -91,6 +93,8 @@ pub fn run() {
 
             let session_state = SessionState::new(app_data_dir.clone());
 
+            let recipe_manager = RecipeManager::new(app_data_dir.clone(), None);
+
             app.manage(config_manager);
             app.manage(app_mgr);
             app.manage(ContentBounds::new());
@@ -101,6 +105,7 @@ pub fn run() {
             app.manage(WindowStateSaveTimer::new());
             app.manage(CertificateExceptions::new());
             app.manage(session_state);
+            app.manage(recipe_manager);
 
             // Load adblock filter lists in the background
             let adblock_handle = app.handle().clone();
@@ -128,6 +133,16 @@ pub fn run() {
                     Err(e) => {
                         log::error!("Failed to load adblock filter lists: {}", e);
                     }
+                }
+            });
+
+            // Fetch recipes on startup (background)
+            let recipe_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let rm = recipe_handle.state::<RecipeManager>();
+                if let Err(e) = rm.update().await {
+                    log::info!("Recipe update on startup failed (may be offline): {}", e);
+                    rm.set_error(e.to_string());
                 }
             });
 
@@ -222,6 +237,8 @@ pub fn run() {
             commands::app_lifecycle_commands::open_in_external_browser,
             commands::app_lifecycle_commands::accept_certificate_exception,
             commands::app_lifecycle_commands::get_certificate_exceptions,
+            commands::recipe_commands::update_recipes,
+            commands::recipe_commands::get_recipe_status,
         ])
         .on_window_event(|window, event| {
             match event {

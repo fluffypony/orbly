@@ -6,6 +6,7 @@ use crate::adblock::engine::AdblockState;
 use crate::config::models::{AppConfig, DarkModeType};
 use crate::darkmode::DarkModeManager;
 use crate::downloads::{self, DownloadEntry, DownloadManager, DownloadStatus};
+use crate::recipes::RecipeManager;
 
 /// Create a new webview for an app with isolated data store
 pub fn create_app_webview(
@@ -146,10 +147,24 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         &notification_style,
     ));
 
-    // Badge scraping
-    scripts.push(crate::notifications::badge_scripts::badge_scrape_script(
-        &app_config.id,
-    ));
+    // Badge scraping — use recipe-specific script if available, otherwise generic
+    let recipe = app_handle
+        .try_state::<RecipeManager>()
+        .and_then(|rm| rm.get_recipe(&app_config.service_type));
+
+    if let Some(ref r) = recipe {
+        if let Some(ref badge_js) = r.badge_script {
+            scripts.push(badge_js.clone());
+        } else {
+            scripts.push(crate::notifications::badge_scripts::badge_scrape_script(
+                &app_config.id,
+            ));
+        }
+    } else {
+        scripts.push(crate::notifications::badge_scripts::badge_scrape_script(
+            &app_config.id,
+        ));
+    }
 
     // Dark mode injection — always inject the IIFE so runtime toggles work
     if let Some(dm_manager) = app_handle.try_state::<DarkModeManager>() {
@@ -189,6 +204,24 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
                 else {{ document.addEventListener('DOMContentLoaded', applyZoom); }}
             }})();"#
         ));
+    }
+
+    // Recipe CSS/JS injection (before user custom CSS/JS so user overrides take priority)
+    if let Some(ref r) = recipe {
+        if let Some(ref css) = r.injection_css {
+            scripts.push(format!(
+                r#"(function() {{
+                    const style = document.createElement('style');
+                    style.id = '__orbly_recipe_css__';
+                    style.textContent = {};
+                    document.head.appendChild(style);
+                }})();"#,
+                serde_json::to_string(css).unwrap_or_default()
+            ));
+        }
+        if let Some(ref js) = r.injection_js {
+            scripts.push(format!(r#"(function() {{ {} }})();"#, js));
+        }
     }
 
     // Custom CSS injection

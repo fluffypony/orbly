@@ -5,6 +5,7 @@ pub mod config_commands;
 pub mod darkmode_commands;
 pub mod download_commands;
 pub mod find_commands;
+pub mod recipe_commands;
 pub mod resource_commands;
 pub mod tray_commands;
 pub mod useragent_commands;
