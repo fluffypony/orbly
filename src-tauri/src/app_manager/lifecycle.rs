@@ -1,5 +1,6 @@
 use tauri::{AppHandle, Manager, WebviewUrl};
 
+use crate::adblock::engine::AdblockState;
 use crate::config::models::{AppConfig, DarkModeType};
 use crate::darkmode::DarkModeManager;
 
@@ -120,6 +121,25 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
             r#"(function() {{ {} }})();"#,
             app_config.custom_js
         ));
+    }
+
+    // Cosmetic filter CSS injection (ad blocking)
+    if app_config.adblock_enabled {
+        if let Some(adblock_state) = app_handle.try_state::<AdblockState>() {
+            let cosmetic_css = adblock_state.get_cosmetic_filters(&app_config.url);
+            if !cosmetic_css.is_empty() {
+                let css_string = cosmetic_css.join("\n");
+                scripts.push(format!(
+                    r#"(function() {{
+                        const style = document.createElement('style');
+                        style.id = '__orbly_adblock_cosmetic__';
+                        style.textContent = {};
+                        document.head.appendChild(style);
+                    }})();"#,
+                    serde_json::to_string(&css_string).unwrap_or_default()
+                ));
+            }
+        }
     }
 
     scripts.join("\n")

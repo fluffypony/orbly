@@ -41,5 +41,11 @@ export const updateDarkModeSettings = (
   textColor: string,
 ) => invoke<void>("update_dark_mode_settings", { app_id: appId, mode, brightness, contrast, sepia, bg_color: bgColor, text_color: textColor });
 
+// Adblock commands
+export const toggleAdblock = (appId: string) => invoke<boolean>("toggle_adblock", { app_id: appId });
+export const getBlockedCount = (appId: string) => invoke<number>("get_blocked_count", { app_id: appId });
+export const updateFilterLists = () => invoke<void>("update_filter_lists");
+export const addCustomAdblockRule = (rule: string) => invoke<void>("add_custom_adblock_rule", { rule });
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");
