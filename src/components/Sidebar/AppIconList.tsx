@@ -106,7 +106,16 @@ const AppIconList: Component = () => {
     return sectionMap;
   });
 
-  const sortedIds = createMemo(() => sortedApps().map((a) => a.id));
+  // Build IDs in the same order as the DOM (flattened from section groups)
+  const renderedIds = createMemo(() => {
+    const result: string[] = [];
+    for (const [, apps] of sections().entries()) {
+      for (const app of apps) {
+        result.push(app.id);
+      }
+    }
+    return result;
+  });
 
   const handleClick = (id: string) => {
     setActiveAppId(id);
@@ -123,7 +132,7 @@ const AppIconList: Component = () => {
   const onDragEnd = ({ draggable, droppable }: DragEvent) => {
     setActiveItem(null);
     if (draggable && droppable) {
-      const ids = sortedIds();
+      const ids = renderedIds();
       const fromIndex = ids.indexOf(draggable.id as string);
       const toIndex = ids.indexOf(droppable.id as string);
       if (fromIndex !== toIndex) {
@@ -152,7 +161,7 @@ const AppIconList: Component = () => {
         collisionDetector={closestCenter}
       >
         <DragDropSensors />
-        <SortableProvider ids={sortedIds()}>
+        <SortableProvider ids={renderedIds()}>
           <For each={[...sections().entries()]}>
             {([sectionName, apps], index) => (
               <>
