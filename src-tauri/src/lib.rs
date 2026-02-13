@@ -1,8 +1,10 @@
+mod app_manager;
 mod commands;
 mod config;
 
 use tauri::Manager;
 
+use app_manager::state::AppManager;
 use config::manager::ConfigManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,7 +27,15 @@ pub fn run() {
                 .expect("Failed to resolve app data directory");
             let config_manager = ConfigManager::new(app_data_dir)
                 .expect("Failed to initialize config manager");
+
+            let app_mgr = AppManager::new();
+            app_mgr.init_from_config(&config_manager.get_config().apps);
+
             app.manage(config_manager);
+            app.manage(app_mgr);
+
+            app_manager::start_auto_hibernate_task(app.handle().clone());
+
             log::info!("Orbly v{} starting up", env!("CARGO_PKG_VERSION"));
             Ok(())
         })
@@ -37,6 +47,13 @@ pub fn run() {
             commands::config_commands::update_app,
             commands::config_commands::remove_app,
             commands::config_commands::update_general_config,
+            commands::app_lifecycle_commands::get_app_states,
+            commands::app_lifecycle_commands::activate_app,
+            commands::app_lifecycle_commands::hibernate_app,
+            commands::app_lifecycle_commands::disable_app,
+            commands::app_lifecycle_commands::enable_app,
+            commands::app_lifecycle_commands::reload_app,
+            commands::app_lifecycle_commands::notify_app_interaction,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");

@@ -1,0 +1,51 @@
+pub mod lifecycle;
+pub mod state;
+
+use tauri::{Emitter, Manager};
+
+use crate::config::manager::ConfigManager;
+
+/// Spawns a background task that periodically checks for apps that should be auto-hibernated
+/// based on their configured inactivity timeout.
+pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        loop {
+            interval.tick().await;
+
+            let app_manager = app_handle.state::<state::AppManager>();
+            let config_manager = app_handle.state::<ConfigManager>();
+
+            let config = config_manager.get_config();
+            let apps = app_manager.apps.lock().unwrap().clone();
+
+            for (app_id, runtime) in &apps {
+                if let state::AppRuntimeState::Active { .. } = &runtime.state {
+                    if let Some(app_config) = config.apps.iter().find(|a| a.id == *app_id) {
+                        if app_config.hibernation_timeout_minutes == 0 {
+                            continue;
+                        }
+
+                        if let Some(last) = runtime.last_interaction {
+                            let elapsed_minutes = last.elapsed().as_secs() / 60;
+                            if elapsed_minutes >= app_config.hibernation_timeout_minutes as u64 {
+                                // Hibernate this app
+                                if let Ok(last_url) =
+                                    lifecycle::destroy_app_webview(&app_handle, app_id)
+                                {
+                                    let url = last_url.unwrap_or_else(|| app_config.url.clone());
+                                    let mut apps_lock = app_manager.apps.lock().unwrap();
+                                    if let Some(rt) = apps_lock.get_mut(app_id) {
+                                        rt.state =
+                                            state::AppRuntimeState::Hibernated { last_url: url };
+                                    }
+                                }
+                                let _ = app_handle.emit("app-auto-hibernated", app_id.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
