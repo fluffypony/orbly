@@ -5,12 +5,19 @@ use super::defaults::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OrblyConfig {
+    #[serde(default)]
     pub general: GeneralConfig,
+    #[serde(default)]
     pub adblock: AdblockConfig,
+    #[serde(default)]
     pub shortcuts: ShortcutConfig,
+    #[serde(default)]
     pub link_routing: LinkRoutingConfig,
+    #[serde(default)]
     pub workspaces: WorkspacesConfig,
+    #[serde(default)]
     pub downloads: DownloadGlobalConfig,
+    #[serde(default)]
     pub sync: SyncConfig,
     #[serde(default)]
     pub apps: Vec<AppConfig>,
@@ -25,6 +32,7 @@ pub struct AppConfig {
     pub url: String,
     #[serde(default)]
     pub icon: String,
+    #[serde(default)]
     pub data_store_uuid: Uuid,
     #[serde(default = "default_true")]
     pub enabled: bool,
@@ -151,7 +159,7 @@ pub struct ShortcutConfig {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LinkRoutingConfig {
-    #[serde(default)]
+    #[serde(default = "default_link_routing_rules")]
     pub rules: Vec<LinkRoutingRule>,
 }
 

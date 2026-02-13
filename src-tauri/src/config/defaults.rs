@@ -89,6 +89,13 @@ pub fn default_shortcut_prev_app() -> String {
     "CmdOrCtrl+Shift+Tab".to_string()
 }
 
+pub fn default_link_routing_rules() -> Vec<LinkRoutingRule> {
+    vec![LinkRoutingRule {
+        pattern: "*".to_string(),
+        target: "external".to_string(),
+    }]
+}
+
 pub fn default_workspace_items() -> Vec<Workspace> {
     vec![Workspace {
         id: "default".to_string(),

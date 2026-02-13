@@ -32,8 +32,9 @@ impl ConfigManager {
     }
 
     pub fn save_config(&self, config: OrblyConfig) -> Result<(), Box<dyn std::error::Error>> {
+        let mut guard = self.config.lock().unwrap();
         Self::write_to_disk(&self.config_path, &config)?;
-        *self.config.lock().unwrap() = config;
+        *guard = config;
         Ok(())
     }
 
@@ -108,6 +109,15 @@ impl ConfigManager {
 
         let tmp_path = path.with_extension("toml.tmp");
         fs::write(&tmp_path, &toml_str)?;
+
+        // On Windows, rename fails if the destination exists; remove first.
+        #[cfg(target_os = "windows")]
+        {
+            if path.exists() {
+                fs::remove_file(path)?;
+            }
+        }
+
         fs::rename(&tmp_path, path)?;
 
         Ok(())
