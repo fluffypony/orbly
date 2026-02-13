@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import Toolbar from "./components/Toolbar/Toolbar";
 import ContentArea from "./components/ContentArea/ContentArea";
 import QuickSwitcher from "./components/QuickSwitcher/QuickSwitcher";
+import ToastContainer from "./components/Toast/ToastContainer";
 import { initializeState } from "./lib/stateSync";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
 import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
@@ -98,6 +99,7 @@ const App: Component = () => {
         visible={quickSwitcherVisible()}
         onClose={() => setQuickSwitcherVisible(false)}
       />
+      <ToastContainer />
     </div>
   );
 };

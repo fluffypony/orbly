@@ -1,6 +1,7 @@
 mod app_manager;
 mod commands;
 mod config;
+mod notifications;
 
 use tauri::Manager;
 
@@ -60,6 +61,8 @@ pub fn run() {
             commands::app_lifecycle_commands::navigate_forward,
             commands::app_lifecycle_commands::get_current_url,
             commands::app_lifecycle_commands::frontend_ready,
+            notifications::handler::on_web_notification,
+            notifications::handler::on_badge_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");

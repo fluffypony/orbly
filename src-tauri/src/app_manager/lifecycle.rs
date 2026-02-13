@@ -64,9 +64,20 @@ pub fn destroy_app_webview(
 }
 
 /// Build the initialization script for an app webview.
-/// This will be expanded in later phases (notifications, dark mode, badges, etc.)
 fn build_initialization_script(app_config: &AppConfig) -> String {
     let mut scripts = Vec::new();
+
+    // Notification interception
+    let notification_style = format!("{:?}", app_config.notification_style).to_lowercase();
+    scripts.push(crate::notifications::scripts::notification_intercept_script(
+        &app_config.id,
+        &notification_style,
+    ));
+
+    // Badge scraping
+    scripts.push(crate::notifications::badge_scripts::badge_scrape_script(
+        &app_config.id,
+    ));
 
     // Custom CSS injection
     if !app_config.custom_css.is_empty() {
