@@ -71,9 +71,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         launch_at_login: settings.launchAtLogin,
       };
       await updateGeneralConfig(updatedGeneral);
-      if (settings.launchAtLogin) {
-        await setLaunchAtLogin(true);
-      }
+      await setLaunchAtLogin(settings.launchAtLogin);
     } catch (err) {
       console.error("Failed to save quick settings:", err);
     }

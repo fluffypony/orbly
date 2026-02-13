@@ -135,10 +135,12 @@ const App: Component = () => {
         setShowOnboarding(true);
       } else {
         await initializeApp();
+        await frontendReady();
       }
     } catch (err) {
       console.error("Failed to check first launch:", err);
       await initializeApp();
+      await frontendReady();
     }
   });
 

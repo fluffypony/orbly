@@ -82,6 +82,9 @@ impl RecipeManager {
         let response = reqwest::get(&self.manifest_url).await?;
         let manifest: RecipeManifest = response.json().await?;
 
+        // Build a verified manifest — only include services that pass hash verification
+        let mut verified_services = HashMap::new();
+
         for (service_id, recipe) in &manifest.services {
             // Verify SHA-256 hash
             let mut hasher = sha2::Sha256::new();
@@ -96,7 +99,7 @@ impl RecipeManager {
             }
             let hash = hex::encode(hasher.finalize());
 
-            if hash != recipe.sha256 {
+            if !hash.eq_ignore_ascii_case(&recipe.sha256) {
                 log::warn!("Recipe hash mismatch for service '{}', skipping", service_id);
                 continue;
             }
@@ -113,15 +116,22 @@ impl RecipeManager {
             if let Some(ref s) = recipe.injection_js {
                 std::fs::write(service_dir.join("inject.js"), s)?;
             }
+
+            verified_services.insert(service_id.clone(), recipe.clone());
         }
 
-        // Write manifest to disk
-        let manifest_path = self.cache_dir.join("manifest.json");
-        std::fs::write(&manifest_path, serde_json::to_string_pretty(&manifest)?)?;
+        let verified_manifest = RecipeManifest {
+            version: manifest.version,
+            services: verified_services,
+        };
 
-        // Update in-memory state
+        // Write verified manifest to disk
+        let manifest_path = self.cache_dir.join("manifest.json");
+        std::fs::write(&manifest_path, serde_json::to_string_pretty(&verified_manifest)?)?;
+
+        // Update in-memory state with verified manifest only
         let now = chrono::Utc::now();
-        *self.manifest.lock().unwrap() = Some(manifest);
+        *self.manifest.lock().unwrap() = Some(verified_manifest);
         *self.last_updated.lock().unwrap() = Some(now);
         *self.last_error.lock().unwrap() = None;
 
