@@ -79,7 +79,10 @@ impl RecipeManager {
 
     /// Fetch manifest from remote and cache scripts locally
     pub async fn update(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let response = reqwest::get(&self.manifest_url).await?;
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()?;
+        let response = client.get(&self.manifest_url).send().await?;
         let manifest: RecipeManifest = response.json().await?;
 
         // Build a verified manifest — only include services that pass hash verification

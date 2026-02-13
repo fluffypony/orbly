@@ -1,6 +1,6 @@
 import { Component, Show, Switch, Match, onMount, onCleanup } from "solid-js";
 import { activeAppId, appConfigs, appStates } from "../../stores/uiStore";
-import { setContentAreaBounds, frontendReady, enableApp, reloadApp } from "../../lib/ipc";
+import { setContentAreaBounds, enableApp, reloadApp } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
@@ -16,21 +16,15 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
   const activeApp = () => appConfigs.find((a) => a.id === activeAppId());
   const activeState = () => appStates.find((a) => a.id === activeAppId());
   let containerRef: HTMLDivElement | undefined;
-  let frontendReadySent = false;
 
   onMount(() => {
     if (containerRef) {
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const rect = entry.target.getBoundingClientRect();
-          setContentAreaBounds(rect.x, rect.y, rect.width, rect.height).then(() => {
-            if (!frontendReadySent) {
-              frontendReadySent = true;
-              frontendReady().catch((err) =>
-                console.error("Failed to signal frontend ready:", err)
-              );
-            }
-          }).catch((err) => console.error("Failed to set content area bounds:", err));
+          setContentAreaBounds(rect.x, rect.y, rect.width, rect.height).catch(
+            (err) => console.error("Failed to set content area bounds:", err)
+          );
         }
       });
       observer.observe(containerRef);

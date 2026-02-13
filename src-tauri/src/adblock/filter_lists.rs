@@ -66,7 +66,10 @@ impl FilterListManager {
 
     async fn download_list(&self, url: &str) -> Result<String, reqwest::Error> {
         log::info!("Downloading filter list: {}", url);
-        let response = reqwest::get(url).await?;
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()?;
+        let response = client.get(url).send().await?;
         response.text().await
     }
 

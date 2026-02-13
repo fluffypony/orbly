@@ -236,7 +236,8 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         ));
     }
 
-    // Custom JS injection (sandboxed — no access to window.__TAURI__)
+    // Custom JS injection — runs in the page's main world.
+    // Has full access to the page DOM and session data.
     if !app_config.custom_js.is_empty() {
         scripts.push(format!(
             r#"(function() {{ {} }})();"#,

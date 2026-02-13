@@ -26,7 +26,7 @@ import {
   appStates,
   visibleApps,
 } from "../../stores/uiStore";
-import { activateApp } from "../../lib/ipc";
+import { activateApp, updateApp } from "../../lib/ipc";
 
 interface SortableAppIconProps {
   app: {
@@ -147,6 +147,15 @@ const AppIconList: Component = () => {
           const configIndex = appConfigs.findIndex((c) => c.id === id);
           if (configIndex !== -1) {
             setAppConfigs(configIndex, "position", index);
+          }
+        });
+        // Persist updated positions to backend
+        reordered.forEach((id, index) => {
+          const app = appConfigs.find((c) => c.id === id);
+          if (app) {
+            updateApp({ ...app, position: index }).catch((err) =>
+              console.error("Failed to persist position:", err)
+            );
           }
         });
       }
