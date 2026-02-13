@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { OrblyConfig, AppConfig, GeneralConfig } from "../types/config";
+import type { OrblyConfig, AppConfig, GeneralConfig, Workspace } from "../types/config";
 import type { AppStateInfo } from "../types/appState";
 
 // Config commands
@@ -55,6 +55,18 @@ export const clearCompletedDownloads = () => invoke<void>("clear_completed_downl
 export const removeDownload = (downloadId: string) => invoke<void>("remove_download", { download_id: downloadId });
 export const openDownloadFile = (path: string) => invoke<void>("open_download_file", { path });
 export const openDownloadFolder = (path: string) => invoke<void>("open_download_folder", { path });
+
+// Workspace commands
+export const getWorkspaces = () => invoke<Workspace[]>("get_workspaces");
+export const getActiveWorkspace = () => invoke<string>("get_active_workspace");
+export const switchWorkspace = (workspaceId: string) =>
+  invoke<void>("switch_workspace", { workspaceId });
+export const createWorkspace = (name: string, appIds: string[]) =>
+  invoke<Workspace>("create_workspace", { name, appIds });
+export const updateWorkspace = (workspace: Workspace) =>
+  invoke<void>("update_workspace", { workspace });
+export const deleteWorkspace = (workspaceId: string) =>
+  invoke<void>("delete_workspace", { workspaceId });
 
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

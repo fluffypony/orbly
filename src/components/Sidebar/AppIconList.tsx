@@ -24,6 +24,7 @@ import {
   appConfigs,
   setAppConfigs,
   appStates,
+  visibleApps,
 } from "../../stores/uiStore";
 import { activateApp } from "../../lib/ipc";
 
@@ -72,7 +73,7 @@ const AppIconList: Component = () => {
   const [activeItem, setActiveItem] = createSignal<string | null>(null);
 
   const sortedApps = createMemo(() => {
-    return [...appConfigs]
+    return [...visibleApps()]
       .sort((a, b) => a.position - b.position)
       .map((config) => {
         const state = appStates.find((s) => s.id === config.id);

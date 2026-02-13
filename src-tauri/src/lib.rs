@@ -124,6 +124,12 @@ pub fn run() {
             commands::download_commands::remove_download,
             commands::download_commands::open_download_file,
             commands::download_commands::open_download_folder,
+            commands::workspace_commands::get_workspaces,
+            commands::workspace_commands::get_active_workspace,
+            commands::workspace_commands::switch_workspace,
+            commands::workspace_commands::create_workspace,
+            commands::workspace_commands::update_workspace,
+            commands::workspace_commands::delete_workspace,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");

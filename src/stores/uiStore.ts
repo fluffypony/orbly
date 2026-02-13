@@ -1,6 +1,6 @@
-import { createSignal } from "solid-js";
+import { createSignal, createMemo } from "solid-js";
 import { createStore } from "solid-js/store";
-import type { AppConfig } from "../types/config";
+import type { AppConfig, Workspace } from "../types/config";
 import type { AppStateInfo } from "../types/appState";
 
 // Sidebar state
@@ -10,6 +10,20 @@ export const [activeAppId, setActiveAppId] = createSignal<string | null>(null);
 // App data (will be populated from backend in Phase 6)
 export const [appConfigs, setAppConfigs] = createStore<AppConfig[]>([]);
 export const [appStates, setAppStates] = createStore<AppStateInfo[]>([]);
+
+// Workspace state
+export const [activeWorkspaceId, setActiveWorkspaceId] = createSignal("default");
+export const [workspaces, setWorkspaces] = createStore<Workspace[]>([]);
+
+// Derived: apps visible in current workspace
+export const visibleApps = createMemo(() => {
+  const wsId = activeWorkspaceId();
+  const ws = workspaces.find((w) => w.id === wsId);
+  if (!ws || ws.id === "default") {
+    return appConfigs;
+  }
+  return appConfigs.filter((a) => ws.app_ids.includes(a.id));
+});
 
 // DND state
 export const [dndEnabled, setDndEnabled] = createSignal(false);

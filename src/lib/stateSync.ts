@@ -1,11 +1,19 @@
 import { getConfig, getAppStates } from "./ipc";
-import { setAppConfigs, setAppStates, setDndEnabled } from "../stores/uiStore";
+import {
+  setAppConfigs,
+  setAppStates,
+  setDndEnabled,
+  setWorkspaces,
+  setActiveWorkspaceId,
+} from "../stores/uiStore";
 
 export async function initializeState() {
   try {
     const config = await getConfig();
     setAppConfigs(config.apps);
     setDndEnabled(config.general.dnd_enabled);
+    setWorkspaces(config.workspaces.items);
+    setActiveWorkspaceId(config.workspaces.active);
 
     const states = await getAppStates();
     setAppStates(states);

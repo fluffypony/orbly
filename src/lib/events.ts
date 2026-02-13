@@ -1,5 +1,9 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { setActiveAppId, setActiveDownloadCount } from "../stores/uiStore";
+import {
+  setActiveAppId,
+  setActiveDownloadCount,
+  setActiveWorkspaceId,
+} from "../stores/uiStore";
 import { refreshAppStates } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
 import { getActiveDownloadCount } from "./ipc";
@@ -45,6 +49,10 @@ export async function setupEventListeners() {
     }),
     await listen<string>("download-finished", () => {
       refreshDownloadCount();
+    }),
+    await listen<string>("workspace-switched", (event) => {
+      setActiveWorkspaceId(event.payload);
+      refreshAppStates();
     }),
   );
 }
