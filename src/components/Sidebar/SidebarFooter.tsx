@@ -4,6 +4,7 @@ import {
   dndEnabled,
   setDndEnabled,
   activeDownloadCount,
+  setDownloadsVisible,
 } from "../../stores/uiStore";
 
 interface IconButtonProps {
@@ -53,7 +54,7 @@ const SidebarFooter: Component = () => {
           label="Downloads"
           icon="⬇️"
           badge={activeDownloadCount()}
-          onClick={() => console.log("Open downloads")}
+          onClick={() => setDownloadsVisible((v) => !v)}
         />
         <IconButton
           label="Settings"

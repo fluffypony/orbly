@@ -47,5 +47,14 @@ export const getBlockedCount = (appId: string) => invoke<number>("get_blocked_co
 export const updateFilterLists = () => invoke<void>("update_filter_lists");
 export const addCustomAdblockRule = (rule: string) => invoke<void>("add_custom_adblock_rule", { rule });
 
+// Download commands
+export const getDownloads = () => invoke<import("../types/downloads").DownloadEntry[]>("get_downloads");
+export const getActiveDownloadCount = () => invoke<number>("get_active_download_count");
+export const cancelDownload = (downloadId: string) => invoke<void>("cancel_download", { downloadId });
+export const clearCompletedDownloads = () => invoke<void>("clear_completed_downloads");
+export const removeDownload = (downloadId: string) => invoke<void>("remove_download", { downloadId });
+export const openDownloadFile = (path: string) => invoke<void>("open_download_file", { path });
+export const openDownloadFolder = (path: string) => invoke<void>("open_download_folder", { path });
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

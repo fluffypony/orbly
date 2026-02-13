@@ -4,6 +4,7 @@ import Toolbar from "./components/Toolbar/Toolbar";
 import ContentArea from "./components/ContentArea/ContentArea";
 import QuickSwitcher from "./components/QuickSwitcher/QuickSwitcher";
 import ToastContainer from "./components/Toast/ToastContainer";
+import DownloadManagerPanel from "./components/Downloads/DownloadManager";
 import { initializeState } from "./lib/stateSync";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
 import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
@@ -13,6 +14,8 @@ import {
   appConfigs,
   setSidebarExpanded,
   setDndEnabled,
+  downloadsVisible,
+  setDownloadsVisible,
 } from "./stores/uiStore";
 import { activateApp, reloadApp } from "./lib/ipc";
 
@@ -54,7 +57,7 @@ const App: Component = () => {
         // Apps Manager modal will be wired in a later phase
       },
       downloads: () => {
-        // Download manager panel will be wired in a later phase
+        setDownloadsVisible((v) => !v);
       },
       settings: () => {
         // Settings panel will be wired in a later phase
@@ -90,10 +93,16 @@ const App: Component = () => {
       <Sidebar />
       <div class="flex-1 flex flex-col min-w-0">
         <Toolbar />
-        <ContentArea
-          findBarVisible={findBarVisible()}
-          onCloseFindBar={() => setFindBarVisible(false)}
-        />
+        <div class="flex-1 relative overflow-hidden">
+          <ContentArea
+            findBarVisible={findBarVisible()}
+            onCloseFindBar={() => setFindBarVisible(false)}
+          />
+          <DownloadManagerPanel
+            visible={downloadsVisible()}
+            onClose={() => setDownloadsVisible(false)}
+          />
+        </div>
       </div>
       <QuickSwitcher
         visible={quickSwitcherVisible()}

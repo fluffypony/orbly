@@ -16,3 +16,6 @@ export const [dndEnabled, setDndEnabled] = createSignal(false);
 
 // Active download count (for footer badge)
 export const [activeDownloadCount, setActiveDownloadCount] = createSignal(0);
+
+// Downloads panel visibility
+export const [downloadsVisible, setDownloadsVisible] = createSignal(false);
