@@ -38,9 +38,13 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .item(&quit)
         .build()?;
 
-    let _tray = TrayIconBuilder::with_id("main")
-        .icon(app.default_window_icon().unwrap().clone())
-        .icon_as_template(true)
+    let mut tray_builder = TrayIconBuilder::with_id("main");
+
+    if let Some(icon) = app.default_window_icon() {
+        tray_builder = tray_builder.icon(icon.clone()).icon_as_template(true);
+    }
+
+    let _tray = tray_builder
         .menu(&menu)
         .show_menu_on_left_click(false)
         .tooltip("Orbly")

@@ -21,25 +21,33 @@ use downloads::DownloadManager;
 
 /// Tracks the last time we persisted window state, for debouncing.
 struct WindowStateSaveTimer {
-    last_save: Mutex<Instant>,
+    last_save: Mutex<Option<Instant>>,
 }
 
 impl WindowStateSaveTimer {
     fn new() -> Self {
         Self {
-            last_save: Mutex::new(Instant::now()),
+            last_save: Mutex::new(None),
         }
     }
 
     /// Returns true if at least `min_interval_ms` have elapsed since the last save.
     fn should_save(&self, min_interval_ms: u64) -> bool {
         let mut last = self.last_save.lock().unwrap();
-        let elapsed = last.elapsed().as_millis() as u64;
-        if elapsed >= min_interval_ms {
-            *last = Instant::now();
-            true
-        } else {
-            false
+        match *last {
+            None => {
+                *last = Some(Instant::now());
+                true
+            }
+            Some(prev) => {
+                let elapsed = prev.elapsed().as_millis() as u64;
+                if elapsed >= min_interval_ms {
+                    *last = Some(Instant::now());
+                    true
+                } else {
+                    false
+                }
+            }
         }
     }
 }
@@ -208,10 +216,12 @@ pub fn run() {
                 tauri::WindowEvent::Moved(pos) => {
                     let timer = window.app_handle().state::<WindowStateSaveTimer>();
                     if timer.should_save(500) {
+                        let sf = window.scale_factor().unwrap_or(1.0);
+                        let logical = pos.to_logical::<f64>(sf);
                         let cm = window.app_handle().state::<ConfigManager>();
                         let mut config = cm.get_config();
-                        config.general.window_state.x = Some(pos.x as f64);
-                        config.general.window_state.y = Some(pos.y as f64);
+                        config.general.window_state.x = Some(logical.x);
+                        config.general.window_state.y = Some(logical.y);
                         let _ = cm.save_config(config);
                     }
                 }
@@ -223,8 +233,10 @@ pub fn run() {
                         let maximized = window.is_maximized().unwrap_or(false);
                         config.general.window_state.maximized = maximized;
                         if !maximized {
-                            config.general.window_state.width = Some(size.width as f64);
-                            config.general.window_state.height = Some(size.height as f64);
+                            let sf = window.scale_factor().unwrap_or(1.0);
+                            let logical = size.to_logical::<f64>(sf);
+                            config.general.window_state.width = Some(logical.width);
+                            config.general.window_state.height = Some(logical.height);
                         }
                         let _ = cm.save_config(config);
                     }
