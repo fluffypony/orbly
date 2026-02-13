@@ -182,7 +182,13 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
     // Zoom level initialization
     if app_config.zoom_level != 100 {
         let scale = app_config.zoom_level as f64 / 100.0;
-        scripts.push(format!("document.body.style.zoom = '{scale}'"));
+        scripts.push(format!(
+            r#"(function() {{
+                function applyZoom() {{ if (document.body) document.body.style.zoom = '{scale}'; }}
+                if (document.body) {{ applyZoom(); }}
+                else {{ document.addEventListener('DOMContentLoaded', applyZoom); }}
+            }})();"#
+        ));
     }
 
     // Custom CSS injection

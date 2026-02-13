@@ -13,10 +13,16 @@ struct ZoomChangedPayload {
 fn apply_zoom_to_webview(app_handle: &AppHandle, app_id: &str, zoom: u32) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(app_id) {
         let scale = zoom as f64 / 100.0;
-        let script = format!("document.body.style.zoom = '{scale}'");
-        let _ = webview.eval(&script);
+        let script = format!(
+            "(function() {{ if (document.body) document.body.style.zoom = '{scale}'; }})()"
+        );
+        webview.eval(&script).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+fn round_to_10(zoom: u32) -> u32 {
+    ((zoom + 5) / 10) * 10
 }
 
 fn set_zoom_inner(
@@ -25,7 +31,7 @@ fn set_zoom_inner(
     app_handle: &AppHandle,
     config_manager: &ConfigManager,
 ) -> Result<(), String> {
-    let zoom = zoom.clamp(50, 200);
+    let zoom = round_to_10(zoom).clamp(50, 200);
 
     let mut config = config_manager.get_config();
     let app = config

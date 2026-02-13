@@ -57,6 +57,10 @@ const FindBar: Component<FindBarProps> = (props) => {
 
   onCleanup(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
+    const appId = activeAppId();
+    if (appId) {
+      clearFindInPage(appId).catch(() => {});
+    }
   });
 
   return (
