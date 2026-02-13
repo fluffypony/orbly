@@ -9,6 +9,7 @@ impl DarkModeManager {
     pub fn new(resource_dir: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
         let script_path = resource_dir.join("darkmode-inject.js");
         let inject_script = if script_path.exists() {
+            log::info!("Loaded DarkReader injection script from {:?}", script_path);
             std::fs::read_to_string(&script_path)?
         } else {
             log::warn!("DarkReader injection script not found at {:?}", script_path);
@@ -19,7 +20,8 @@ impl DarkModeManager {
     }
 
     /// Returns the full initialization script for an app's dark mode.
-    /// If mode is "off" or the script is not loaded, returns an empty string.
+    /// Always includes the IIFE so that runtime toggles work even if mode starts as "off".
+    /// Returns empty string only if the bundled script is not loaded.
     pub fn get_injection_script(
         &self,
         mode: &str,
@@ -30,9 +32,14 @@ impl DarkModeManager {
         text_color: &str,
         custom_css: &str,
     ) -> String {
-        if mode == "off" || self.inject_script.is_empty() {
+        if self.inject_script.is_empty() {
             return String::new();
         }
+
+        let mode_json = serde_json::to_string(mode).unwrap_or_else(|_| "\"off\"".to_string());
+        let bg_json = serde_json::to_string(bg_color).unwrap_or_else(|_| "\"\"".to_string());
+        let text_json = serde_json::to_string(text_color).unwrap_or_else(|_| "\"\"".to_string());
+        let css_json = serde_json::to_string(custom_css).unwrap_or_else(|_| "\"\"".to_string());
 
         format!(
             r#"
@@ -40,29 +47,29 @@ impl DarkModeManager {
 
 if (window.__ORBLY_DARK_MODE__) {{
     window.__ORBLY_DARK_MODE__.apply({{
-        mode: '{}',
+        mode: {},
         brightness: {},
         contrast: {},
         sepia: {},
-        bgColor: '{}',
-        textColor: '{}',
+        bgColor: {},
+        textColor: {},
         customCss: {}
     }});
 }}
 "#,
             self.inject_script,
-            mode,
+            mode_json,
             brightness,
             contrast,
             sepia,
-            bg_color,
-            text_color,
-            serde_json::to_string(custom_css).unwrap_or_else(|_| "\"\"".to_string())
+            bg_json,
+            text_json,
+            css_json
         )
     }
 
     /// Returns a JS snippet to apply dark mode on an already-loaded webview
-    /// (where the injection script is already present).
+    /// (where the injection script is already present from initialization).
     pub fn get_apply_script(
         &self,
         mode: &str,
@@ -73,19 +80,19 @@ if (window.__ORBLY_DARK_MODE__) {{
         text_color: &str,
         custom_css: &str,
     ) -> String {
+        let mode_json = serde_json::to_string(mode).unwrap_or_else(|_| "\"off\"".to_string());
+
         if mode == "off" {
             return "if (window.__ORBLY_DARK_MODE__) window.__ORBLY_DARK_MODE__.disable();".to_string();
         }
 
+        let bg_json = serde_json::to_string(bg_color).unwrap_or_else(|_| "\"\"".to_string());
+        let text_json = serde_json::to_string(text_color).unwrap_or_else(|_| "\"\"".to_string());
+        let css_json = serde_json::to_string(custom_css).unwrap_or_else(|_| "\"\"".to_string());
+
         format!(
-            "if (window.__ORBLY_DARK_MODE__) window.__ORBLY_DARK_MODE__.apply({{ mode: '{}', brightness: {}, contrast: {}, sepia: {}, bgColor: '{}', textColor: '{}', customCss: {} }});",
-            mode,
-            brightness,
-            contrast,
-            sepia,
-            bg_color,
-            text_color,
-            serde_json::to_string(custom_css).unwrap_or_else(|_| "\"\"".to_string())
+            "if (window.__ORBLY_DARK_MODE__) window.__ORBLY_DARK_MODE__.apply({{ mode: {}, brightness: {}, contrast: {}, sepia: {}, bgColor: {}, textColor: {}, customCss: {} }});",
+            mode_json, brightness, contrast, sepia, bg_json, text_json, css_json
         )
     }
 }

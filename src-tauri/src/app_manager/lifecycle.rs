@@ -80,27 +80,25 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         &app_config.id,
     ));
 
-    // Dark mode injection
-    if app_config.dark_mode != DarkModeType::Off {
-        if let Some(dm_manager) = app_handle.try_state::<DarkModeManager>() {
-            let mode_str = match &app_config.dark_mode {
-                DarkModeType::Off => "off",
-                DarkModeType::Dynamic => "dynamic",
-                DarkModeType::Filter => "filter",
-                DarkModeType::Static => "static",
-            };
-            let dm_script = dm_manager.get_injection_script(
-                mode_str,
-                app_config.dark_mode_brightness,
-                app_config.dark_mode_contrast,
-                app_config.dark_mode_sepia,
-                &app_config.dark_mode_bg_color,
-                &app_config.dark_mode_text_color,
-                "",
-            );
-            if !dm_script.is_empty() {
-                scripts.push(dm_script);
-            }
+    // Dark mode injection — always inject the IIFE so runtime toggles work
+    if let Some(dm_manager) = app_handle.try_state::<DarkModeManager>() {
+        let mode_str = match &app_config.dark_mode {
+            DarkModeType::Off => "off",
+            DarkModeType::Dynamic => "dynamic",
+            DarkModeType::Filter => "filter",
+            DarkModeType::Static => "static",
+        };
+        let dm_script = dm_manager.get_injection_script(
+            mode_str,
+            app_config.dark_mode_brightness,
+            app_config.dark_mode_contrast,
+            app_config.dark_mode_sepia,
+            &app_config.dark_mode_bg_color,
+            &app_config.dark_mode_text_color,
+            "",
+        );
+        if !dm_script.is_empty() {
+            scripts.push(dm_script);
         }
     }
 
