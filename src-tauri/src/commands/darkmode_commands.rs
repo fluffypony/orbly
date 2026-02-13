@@ -4,7 +4,7 @@ use crate::config::manager::ConfigManager;
 use crate::config::models::DarkModeType;
 use crate::darkmode::DarkModeManager;
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn toggle_dark_mode(
     app_id: String,
     app_handle: AppHandle,
@@ -61,7 +61,7 @@ pub fn toggle_dark_mode(
     Ok(mode_str.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn update_dark_mode_settings(
     app_id: String,
     mode: String,

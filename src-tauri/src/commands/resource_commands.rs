@@ -11,7 +11,7 @@ pub fn get_resource_usage(
     monitor.get_all()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn kill_app(
     app_id: String,
     app_handle: AppHandle,

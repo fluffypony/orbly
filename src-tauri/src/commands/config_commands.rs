@@ -13,7 +13,7 @@ pub fn get_apps(config_manager: State<'_, ConfigManager>) -> Result<Vec<AppConfi
     Ok(config_manager.get_config().apps)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn get_app(
     app_id: String,
     config_manager: State<'_, ConfigManager>,
@@ -37,7 +37,7 @@ pub fn update_app(
     config_manager.update_app(app).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn remove_app(
     app_id: String,
     config_manager: State<'_, ConfigManager>,
@@ -83,7 +83,7 @@ pub fn update_downloads_config(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn update_link_routing_config(
     link_routing: crate::config::models::LinkRoutingConfig,
     config_manager: State<'_, ConfigManager>,

@@ -56,7 +56,7 @@ pub fn get_app_states(
         .collect()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn activate_app(
     app_id: String,
     app_handle: AppHandle,
@@ -138,7 +138,7 @@ pub fn activate_app(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn hibernate_app(
     app_id: String,
     app_handle: AppHandle,
@@ -178,7 +178,7 @@ pub fn hibernate_app(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn disable_app(
     app_id: String,
     app_handle: AppHandle,
@@ -203,7 +203,7 @@ pub fn disable_app(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn enable_app(
     app_id: String,
     app_handle: AppHandle,
@@ -249,7 +249,7 @@ pub fn enable_app(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn reload_app(app_id: String, app_handle: AppHandle) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview
@@ -261,7 +261,7 @@ pub fn reload_app(app_id: String, app_handle: AppHandle) -> Result<(), String> {
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn notify_app_interaction(
     app_id: String,
     app_manager: State<'_, AppManager>,
@@ -299,7 +299,7 @@ pub fn set_content_area_bounds(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn navigate_back(app_id: String, app_handle: AppHandle) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview
@@ -311,7 +311,7 @@ pub fn navigate_back(app_id: String, app_handle: AppHandle) -> Result<(), String
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn navigate_forward(app_id: String, app_handle: AppHandle) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview
@@ -323,7 +323,7 @@ pub fn navigate_forward(app_id: String, app_handle: AppHandle) -> Result<(), Str
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn get_current_url(app_id: String, app_handle: AppHandle) -> Result<String, String> {
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview
@@ -410,6 +410,11 @@ pub fn frontend_ready(
 
 #[tauri::command]
 pub fn open_in_external_browser(url: String) -> Result<(), String> {
+    let parsed = url::Url::parse(&url).map_err(|_| "Invalid URL".to_string())?;
+    match parsed.scheme() {
+        "http" | "https" | "mailto" => {}
+        _ => return Err(format!("Scheme '{}' is not allowed", parsed.scheme())),
+    }
     open::that(&url).map_err(|e| format!("Failed to open URL: {e}"))
 }
 

@@ -57,7 +57,7 @@ pub fn get_audio_mute_init_script(muted: bool) -> String {
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn set_audio_muted(
     app_id: String,
     muted: bool,

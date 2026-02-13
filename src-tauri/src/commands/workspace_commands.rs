@@ -17,7 +17,7 @@ pub fn get_active_workspace(
     Ok(config.workspaces.active.clone())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn switch_workspace(
     workspace_id: String,
     config_manager: State<'_, ConfigManager>,
@@ -38,7 +38,7 @@ pub fn switch_workspace(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn create_workspace(
     name: String,
     app_ids: Vec<String>,
@@ -86,7 +86,7 @@ pub fn update_workspace(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn delete_workspace(
     workspace_id: String,
     config_manager: State<'_, ConfigManager>,

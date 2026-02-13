@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Manager};
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn find_in_page(
     app_id: String,
     query: String,
@@ -23,7 +23,7 @@ pub fn find_in_page(
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn clear_find_in_page(app_id: String, app_handle: AppHandle) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview

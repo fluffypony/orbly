@@ -19,7 +19,7 @@ pub fn notification_intercept_script(app_id: &str, notification_style: &str) -> 
                     tag: options.tag || '',
                     style: ORBLY_NOTIFICATION_STYLE,
                 }};
-                window.__TAURI_INTERNALS__.invoke('on_web_notification', payload).catch(function() {{}});
+                window.__TAURI_INTERNALS__.invoke('on_web_notification', {{ notification: payload }}).catch(function() {{}});
             }}
 
             this._title = title;

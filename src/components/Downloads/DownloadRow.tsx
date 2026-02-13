@@ -41,7 +41,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const openFile = async () => {
     try {
-      await openDownloadFile(props.download.save_path);
+      await openDownloadFile(props.download.id);
     } catch (err) {
       console.error("Failed to open file:", err);
     }
@@ -49,7 +49,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const openFolder = async () => {
     try {
-      await openDownloadFolder(props.download.save_path);
+      await openDownloadFolder(props.download.id);
     } catch (err) {
       console.error("Failed to open folder:", err);
     }

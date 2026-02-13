@@ -51,8 +51,10 @@ pub fn badge_scrape_script(app_id: &str) -> String {
             lastReportedCount = count;
             if (window.__TAURI_INTERNALS__) {{
                 window.__TAURI_INTERNALS__.invoke('on_badge_update', {{
-                    app_id: ORBLY_APP_ID,
-                    count: count,
+                    update: {{
+                        app_id: ORBLY_APP_ID,
+                        count: count,
+                    }}
                 }}).catch(function() {{}});
             }}
         }}

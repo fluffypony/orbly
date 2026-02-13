@@ -15,7 +15,7 @@ pub fn get_ua_presets() -> Vec<(String, String)> {
     ]
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn set_user_agent(
     app_id: String,
     user_agent: String,

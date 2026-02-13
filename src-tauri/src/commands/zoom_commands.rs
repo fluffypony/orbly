@@ -59,7 +59,7 @@ fn set_zoom_inner(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn set_zoom_level(
     app_id: String,
     zoom: u32,
@@ -69,7 +69,7 @@ pub fn set_zoom_level(
     set_zoom_inner(&app_id, zoom, &app_handle, config_manager.inner())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn zoom_in(
     app_id: String,
     app_handle: AppHandle,
@@ -87,7 +87,7 @@ pub fn zoom_in(
     Ok(new_zoom)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn zoom_out(
     app_id: String,
     app_handle: AppHandle,
@@ -105,7 +105,7 @@ pub fn zoom_out(
     Ok(new_zoom)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn zoom_reset(
     app_id: String,
     app_handle: AppHandle,

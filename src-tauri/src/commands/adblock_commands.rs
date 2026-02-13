@@ -4,7 +4,7 @@ use crate::adblock::engine::AdblockState;
 use crate::adblock::filter_lists::FilterListManager;
 use crate::config::manager::ConfigManager;
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn toggle_adblock(
     app_id: String,
     config_manager: State<'_, ConfigManager>,
@@ -26,7 +26,7 @@ pub fn toggle_adblock(
     Ok(new_state)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn get_blocked_count(app_id: String, adblock_state: State<'_, AdblockState>) -> u32 {
     adblock_state.get_blocked_count(&app_id)
 }
