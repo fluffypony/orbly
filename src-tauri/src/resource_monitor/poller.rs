@@ -29,6 +29,7 @@ fn get_process_tree_resources(monitor: &super::ResourceMonitor) -> (f64, f64) {
     let mut sys = monitor.sys.lock().expect("sysinfo lock");
     let current_pid = Pid::from_u32(std::process::id());
 
+    sys.refresh_cpu_all();
     sys.refresh_processes(ProcessesToUpdate::All, true);
 
     let tree_pids = collect_tree_pids(&sys, current_pid);
