@@ -91,5 +91,9 @@ export const setLaunchAtLogin = (enabled: boolean) =>
   invoke<void>("set_launch_at_login", { enabled });
 export const getLaunchAtLogin = () => invoke<boolean>("get_launch_at_login");
 
+// Resource monitor commands
+export const getResourceUsage = () => invoke<any[]>("get_resource_usage");
+export const killApp = (appId: string) => invoke<void>("kill_app", { app_id: appId });
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

@@ -5,6 +5,7 @@ import {
   setDndEnabled,
   activeDownloadCount,
   setDownloadsVisible,
+  setAppsManagerVisible,
 } from "../../stores/uiStore";
 
 interface IconButtonProps {
@@ -64,7 +65,7 @@ const SidebarFooter: Component = () => {
         <IconButton
           label="Resource Monitor"
           icon="📊"
-          onClick={() => console.log("Open resource monitor")}
+          onClick={() => setAppsManagerVisible((v) => !v)}
         />
       </div>
     </div>

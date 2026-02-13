@@ -5,6 +5,7 @@ mod config;
 mod darkmode;
 mod downloads;
 mod notifications;
+mod resource_monitor;
 mod tray;
 
 use std::sync::Mutex;
@@ -18,6 +19,7 @@ use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
 use darkmode::DarkModeManager;
 use downloads::DownloadManager;
+use resource_monitor::ResourceMonitor;
 
 /// Tracks the last time we persisted window state, for debouncing.
 struct WindowStateSaveTimer {
@@ -91,6 +93,7 @@ pub fn run() {
             app.manage(dark_mode_manager);
             app.manage(adblock_state);
             app.manage(DownloadManager::new());
+            app.manage(ResourceMonitor::new());
             app.manage(WindowStateSaveTimer::new());
 
             // Load adblock filter lists in the background
@@ -123,6 +126,7 @@ pub fn run() {
             });
 
             app_manager::start_auto_hibernate_task(app.handle().clone());
+            resource_monitor::poller::start_resource_polling(app.handle().clone());
 
             // Restore window state from config
             let ws = app.state::<ConfigManager>().get_config().general.window_state;
@@ -199,6 +203,8 @@ pub fn run() {
             commands::find_commands::clear_find_in_page,
             commands::tray_commands::set_launch_at_login,
             commands::tray_commands::get_launch_at_login,
+            commands::resource_commands::get_resource_usage,
+            commands::resource_commands::kill_app,
         ])
         .on_window_event(|window, event| {
             match event {

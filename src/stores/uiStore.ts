@@ -33,3 +33,6 @@ export const [activeDownloadCount, setActiveDownloadCount] = createSignal(0);
 
 // Downloads panel visibility
 export const [downloadsVisible, setDownloadsVisible] = createSignal(false);
+
+// Apps Manager panel visibility
+export const [appsManagerVisible, setAppsManagerVisible] = createSignal(false);

@@ -1,10 +1,12 @@
 import { Component, createSignal, onMount, onCleanup } from "solid-js";
+import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Toolbar from "./components/Toolbar/Toolbar";
 import ContentArea from "./components/ContentArea/ContentArea";
 import QuickSwitcher from "./components/QuickSwitcher/QuickSwitcher";
 import ToastContainer from "./components/Toast/ToastContainer";
 import DownloadManagerPanel from "./components/Downloads/DownloadManager";
+import AppsManager from "./components/AppsManager/AppsManager";
 import { initializeState } from "./lib/stateSync";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
 import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
@@ -16,6 +18,8 @@ import {
   setDndEnabled,
   downloadsVisible,
   setDownloadsVisible,
+  appsManagerVisible,
+  setAppsManagerVisible,
 } from "./stores/uiStore";
 import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset } from "./lib/ipc";
 import { showToast } from "./components/Toast/ToastContainer";
@@ -23,10 +27,23 @@ import { showToast } from "./components/Toast/ToastContainer";
 const App: Component = () => {
   const [quickSwitcherVisible, setQuickSwitcherVisible] = createSignal(false);
   const [findBarVisible, setFindBarVisible] = createSignal(false);
+  let cleanupHighUsage: (() => void) | undefined;
 
   onMount(async () => {
     await setupEventListeners();
     await initializeState();
+
+    const unlistenHighUsage = await listen<{ appId: string; appName: string; cpu: number }>(
+      "high-usage-alert",
+      (event) => {
+        showToast(
+          `${event.payload.appName} is using ${event.payload.cpu.toFixed(0)}% CPU`,
+          "warning",
+          5000,
+        );
+      },
+    );
+    cleanupHighUsage = unlistenHighUsage;
 
     const bindings = createDefaultBindings({
       quickSwitcher: () => setQuickSwitcherVisible((v) => !v),
@@ -54,9 +71,7 @@ const App: Component = () => {
         const id = activeAppId();
         if (id) reloadApp(id);
       },
-      appsManager: () => {
-        // Apps Manager modal will be wired in a later phase
-      },
+      appsManager: () => setAppsManagerVisible((v) => !v),
       downloads: () => {
         setDownloadsVisible((v) => !v);
       },
@@ -111,6 +126,7 @@ const App: Component = () => {
   onCleanup(() => {
     teardownEventListeners();
     unregisterAllShortcuts();
+    cleanupHighUsage?.();
   });
 
   return (
@@ -134,6 +150,10 @@ const App: Component = () => {
         onClose={() => setQuickSwitcherVisible(false)}
       />
       <ToastContainer />
+      <AppsManager
+        visible={appsManagerVisible()}
+        onClose={() => setAppsManagerVisible(false)}
+      />
     </div>
   );
 };
