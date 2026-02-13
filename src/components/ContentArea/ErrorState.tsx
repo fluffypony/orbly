@@ -1,6 +1,6 @@
-import { Component } from "solid-js";
+import { Component, createSignal } from "solid-js";
 import { activeAppId, appStates } from "../../stores/uiStore";
-import { reloadApp, hibernateApp } from "../../lib/ipc";
+import { reloadApp, hibernateApp, openInExternalBrowser } from "../../lib/ipc";
 
 interface ErrorStateProps {
   appName: string;
@@ -8,13 +8,18 @@ interface ErrorStateProps {
 }
 
 const ErrorState: Component<ErrorStateProps> = (props) => {
+  const [retrying, setRetrying] = createSignal(false);
+
   const handleRetry = async () => {
     const id = activeAppId();
     if (id) {
+      setRetrying(true);
       try {
         await reloadApp(id);
       } catch (err) {
         console.error("Failed to retry:", err);
+      } finally {
+        setRetrying(false);
       }
     }
   };
@@ -23,8 +28,11 @@ const ErrorState: Component<ErrorStateProps> = (props) => {
     const id = activeAppId();
     const state = appStates.find((s) => s.id === id);
     if (state?.current_url) {
-      const { open } = await import("@tauri-apps/plugin-shell");
-      await open(state.current_url);
+      try {
+        await openInExternalBrowser(state.current_url);
+      } catch (err) {
+        console.error("Failed to open in external browser:", err);
+      }
     }
   };
 
@@ -52,10 +60,11 @@ const ErrorState: Component<ErrorStateProps> = (props) => {
       </p>
       <div class="flex gap-2 mt-2">
         <button
-          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm disabled:opacity-50"
           onClick={handleRetry}
+          disabled={retrying()}
         >
-          Retry
+          {retrying() ? "Retrying..." : "Retry"}
         </button>
         <button
           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"

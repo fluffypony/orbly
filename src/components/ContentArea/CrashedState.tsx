@@ -1,4 +1,4 @@
-import { Component } from "solid-js";
+import { Component, createSignal } from "solid-js";
 
 interface CrashedStateProps {
   appName: string;
@@ -6,6 +6,13 @@ interface CrashedStateProps {
 }
 
 const CrashedState: Component<CrashedStateProps> = (props) => {
+  const [reloading, setReloading] = createSignal(false);
+
+  const handleReload = () => {
+    setReloading(true);
+    props.onReload?.();
+  };
+
   return (
     <div class="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
       <div class="w-16 h-16 rounded-2xl bg-gray-500 flex items-center justify-center text-white text-2xl font-bold">
@@ -18,10 +25,11 @@ const CrashedState: Component<CrashedStateProps> = (props) => {
         The app has stopped responding. Reload to try again.
       </p>
       <button
-        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm mt-2"
-        onClick={props.onReload}
+        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm mt-2 disabled:opacity-50"
+        onClick={handleReload}
+        disabled={reloading()}
       >
-        Reload
+        {reloading() ? "Reloading..." : "Reload"}
       </button>
     </div>
   );

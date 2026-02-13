@@ -15,6 +15,8 @@ use tauri::Manager;
 
 use adblock::engine::AdblockState;
 use adblock::filter_lists::FilterListManager;
+use app_manager::certificate::CertificateExceptions;
+use app_manager::session_state::SessionState;
 use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
 use darkmode::DarkModeManager;
@@ -87,6 +89,8 @@ pub fn run() {
 
             let adblock_state = AdblockState::new();
 
+            let session_state = SessionState::new(app_data_dir.clone());
+
             app.manage(config_manager);
             app.manage(app_mgr);
             app.manage(ContentBounds::new());
@@ -95,6 +99,8 @@ pub fn run() {
             app.manage(DownloadManager::new());
             app.manage(ResourceMonitor::new());
             app.manage(WindowStateSaveTimer::new());
+            app.manage(CertificateExceptions::new());
+            app.manage(session_state);
 
             // Load adblock filter lists in the background
             let adblock_handle = app.handle().clone();
@@ -205,6 +211,11 @@ pub fn run() {
             commands::tray_commands::get_launch_at_login,
             commands::resource_commands::get_resource_usage,
             commands::resource_commands::kill_app,
+            commands::useragent_commands::get_ua_presets,
+            commands::useragent_commands::set_user_agent,
+            commands::app_lifecycle_commands::open_in_external_browser,
+            commands::app_lifecycle_commands::accept_certificate_exception,
+            commands::app_lifecycle_commands::get_certificate_exceptions,
         ])
         .on_window_event(|window, event| {
             match event {

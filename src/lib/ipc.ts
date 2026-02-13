@@ -95,5 +95,18 @@ export const getLaunchAtLogin = () => invoke<boolean>("get_launch_at_login");
 export const getResourceUsage = () => invoke<any[]>("get_resource_usage");
 export const killApp = (appId: string) => invoke<void>("kill_app", { app_id: appId });
 
+// User agent commands
+export const getUaPresets = () => invoke<[string, string][]>("get_ua_presets");
+export const setUserAgent = (appId: string, userAgent: string) =>
+  invoke<void>("set_user_agent", { app_id: appId, user_agent: userAgent });
+
+// External browser & certificate commands
+export const openInExternalBrowser = (url: string) =>
+  invoke<void>("open_in_external_browser", { url });
+export const acceptCertificateException = (host: string, days?: number) =>
+  invoke<void>("accept_certificate_exception", { host, days });
+export const getCertificateExceptions = () =>
+  invoke<[string, string][]>("get_certificate_exceptions");
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

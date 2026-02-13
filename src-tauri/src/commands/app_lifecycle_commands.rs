@@ -1,5 +1,6 @@
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::app_manager::certificate::CertificateExceptions;
 use crate::app_manager::lifecycle;
 use crate::app_manager::state::{AppManager, AppRuntimeState, ContentBounds};
 use crate::config::manager::ConfigManager;
@@ -405,4 +406,26 @@ pub fn frontend_ready(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn open_in_external_browser(url: String) -> Result<(), String> {
+    open::that(&url).map_err(|e| format!("Failed to open URL: {e}"))
+}
+
+#[tauri::command]
+pub fn accept_certificate_exception(
+    host: String,
+    days: Option<i64>,
+    cert_exceptions: State<'_, CertificateExceptions>,
+) -> Result<(), String> {
+    cert_exceptions.add_exception(&host, days.unwrap_or(30));
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_certificate_exceptions(
+    cert_exceptions: State<'_, CertificateExceptions>,
+) -> Vec<(String, String)> {
+    cert_exceptions.get_all()
 }

@@ -1,4 +1,6 @@
+pub mod certificate;
 pub mod lifecycle;
+pub mod session_state;
 pub mod state;
 
 use tauri::{Emitter, Manager};
