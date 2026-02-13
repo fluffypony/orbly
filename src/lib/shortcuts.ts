@@ -62,12 +62,14 @@ export async function unregisterAllShortcuts() {
   }
 }
 
+const isMac = navigator.platform.toUpperCase().includes("MAC");
+
 function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {
   const parts = shortcutStr
     .split("+")
     .map((p) => p.trim().toLowerCase());
 
-  let needMeta = false;
+  let needCmdOrCtrl = false;
   let needShift = false;
   let needAlt = false;
   let targetKey = "";
@@ -75,9 +77,13 @@ function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {
   for (const part of parts) {
     switch (part) {
       case "cmdorctrl":
+        needCmdOrCtrl = true;
+        break;
       case "cmd":
+        needCmdOrCtrl = true;
+        break;
       case "ctrl":
-        needMeta = true;
+        needCmdOrCtrl = true;
         break;
       case "shift":
         needShift = true;
@@ -92,17 +98,25 @@ function matchesShortcut(e: KeyboardEvent, shortcutStr: string): boolean {
     }
   }
 
-  const metaPressed = e.metaKey || e.ctrlKey;
-  if (needMeta !== metaPressed) return false;
-  if (needShift !== e.shiftKey) return false;
+  const cmdOrCtrlPressed = isMac ? e.metaKey : e.ctrlKey;
+  if (needCmdOrCtrl !== cmdOrCtrlPressed) return false;
+  // On Mac, reject if Ctrl is also pressed (unless we need it)
+  if (isMac && !needCmdOrCtrl && e.metaKey) return false;
   if (needAlt !== e.altKey) return false;
 
   const eventKey = e.key.toLowerCase();
+  const eventCode = e.code.toLowerCase();
+
+  // For zoom keys, match by physical key code and ignore Shift
+  // (Shift+= produces "+" on most keyboards)
+  if (targetKey === "=") return eventCode === "equal";
+  if (targetKey === "-") return eventCode === "minus";
+
+  // For all other shortcuts, Shift must match exactly
+  if (needShift !== e.shiftKey) return false;
 
   if (targetKey === "\\") return eventKey === "\\";
   if (targetKey === ",") return eventKey === ",";
-  if (targetKey === "=") return eventKey === "=" || eventKey === "+";
-  if (targetKey === "-") return eventKey === "-" || eventKey === "_";
   if (targetKey === "[") return eventKey === "[";
   if (targetKey === "]") return eventKey === "]";
   if (targetKey === "tab") return eventKey === "tab";

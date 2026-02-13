@@ -31,17 +31,19 @@ const App: Component = () => {
         const apps = [...appConfigs]
           .filter((a) => a.enabled)
           .sort((a, b) => a.position - b.position);
+        if (apps.length === 0) return;
         const currentIdx = apps.findIndex((a) => a.id === activeAppId());
-        const nextIdx = (currentIdx + 1) % apps.length;
-        if (apps[nextIdx]) activateApp(apps[nextIdx].id);
+        const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % apps.length;
+        activateApp(apps[nextIdx].id);
       },
       prevApp: () => {
         const apps = [...appConfigs]
           .filter((a) => a.enabled)
           .sort((a, b) => a.position - b.position);
+        if (apps.length === 0) return;
         const currentIdx = apps.findIndex((a) => a.id === activeAppId());
-        const prevIdx = (currentIdx - 1 + apps.length) % apps.length;
-        if (apps[prevIdx]) activateApp(apps[prevIdx].id);
+        const prevIdx = currentIdx === -1 ? apps.length - 1 : (currentIdx - 1 + apps.length) % apps.length;
+        activateApp(apps[prevIdx].id);
       },
       reloadCurrentApp: () => {
         const id = activeAppId();

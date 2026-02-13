@@ -39,11 +39,13 @@ const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, results().length - 1));
+        if (results().length > 0)
+          setSelectedIndex((i) => Math.min(i + 1, results().length - 1));
         break;
       case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex((i) => Math.max(i - 1, 0));
+        if (results().length > 0)
+          setSelectedIndex((i) => Math.max(i - 1, 0));
         break;
       case "Enter": {
         e.preventDefault();
