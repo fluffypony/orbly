@@ -38,6 +38,16 @@ impl ConfigManager {
         Ok(())
     }
 
+    pub fn update_with<F>(&self, updater: F) -> Result<(), Box<dyn std::error::Error>>
+    where
+        F: FnOnce(&mut OrblyConfig),
+    {
+        let mut guard = self.config.lock().unwrap();
+        updater(&mut guard);
+        Self::write_to_disk(&self.config_path, &guard)?;
+        Ok(())
+    }
+
     pub fn get_app(&self, app_id: &str) -> Option<AppConfig> {
         self.config
             .lock()
@@ -108,17 +118,29 @@ impl ConfigManager {
         let toml_str = toml::to_string_pretty(config)?;
 
         let tmp_path = path.with_extension("toml.tmp");
+        let backup_path = path.with_extension("toml.bak");
+
         fs::write(&tmp_path, &toml_str)?;
 
-        // On Windows, rename fails if the destination exists; remove first.
-        #[cfg(target_os = "windows")]
-        {
-            if path.exists() {
-                fs::remove_file(path)?;
+        // Rotate: current -> backup, then tmp -> current
+        if path.exists() {
+            // On Windows, rename fails if destination exists, so remove backup first
+            if backup_path.exists() {
+                let _ = fs::remove_file(&backup_path);
             }
+            let _ = fs::rename(path, &backup_path);
         }
 
-        fs::rename(&tmp_path, path)?;
+        if let Err(e) = fs::rename(&tmp_path, path) {
+            // Attempt to restore from backup
+            if backup_path.exists() {
+                let _ = fs::rename(&backup_path, path);
+            }
+            return Err(Box::new(e));
+        }
+
+        // Clean up backup on success
+        let _ = fs::remove_file(&backup_path);
 
         Ok(())
     }

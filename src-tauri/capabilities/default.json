@@ -1,7 +1,7 @@
 {
   "identifier": "default",
-  "description": "Default capability for the main window",
-  "windows": ["main"],
+  "description": "Full capability for the main UI webview only",
+  "webviews": ["main"],
   "permissions": [
     "core:default",
     "core:event:default",

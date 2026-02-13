@@ -31,27 +31,44 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
                         if let Some(last) = runtime.last_interaction {
                             let elapsed_minutes = last.elapsed().as_secs() / 60;
                             if elapsed_minutes >= app_config.hibernation_timeout_minutes as u64 {
-                                // Hibernate this app
-                                if let Ok(last_url) =
-                                    lifecycle::destroy_app_webview(&app_handle, app_id)
-                                {
-                                    let url = last_url.unwrap_or_else(|| app_config.url.clone());
-                                    let mut apps_lock = app_manager.apps.lock().unwrap();
-                                    if let Some(rt) = apps_lock.get_mut(app_id) {
-                                        rt.state =
-                                            state::AppRuntimeState::Hibernated { last_url: url };
+                                // Re-check current state under lock before destroying
+                                let should_hibernate = {
+                                    let apps_lock = app_manager.apps.lock().unwrap();
+                                    if let Some(current_runtime) = apps_lock.get(app_id) {
+                                        if let state::AppRuntimeState::Active { .. } = &current_runtime.state {
+                                            current_runtime.last_interaction
+                                                .map(|last| last.elapsed().as_secs() / 60 >= app_config.hibernation_timeout_minutes as u64)
+                                                .unwrap_or(false)
+                                        } else {
+                                            false
+                                        }
+                                    } else {
+                                        false
                                     }
-                                }
-                                // Update persisted config
-                                let mut cfg = config_manager.get_config();
-                                if let Some(a) =
-                                    cfg.apps.iter_mut().find(|a| a.id == *app_id)
-                                {
-                                    a.hibernated = true;
-                                }
-                                let _ = config_manager.save_config(cfg);
+                                };
 
-                                let _ = app_handle.emit("app-auto-hibernated", app_id.clone());
+                                if should_hibernate {
+                                    if let Ok(last_url) =
+                                        lifecycle::destroy_app_webview(&app_handle, app_id)
+                                    {
+                                        let url = last_url.unwrap_or_else(|| app_config.url.clone());
+                                        let mut apps_lock = app_manager.apps.lock().unwrap();
+                                        if let Some(rt) = apps_lock.get_mut(app_id) {
+                                            rt.state =
+                                                state::AppRuntimeState::Hibernated { last_url: url };
+                                        }
+                                    }
+                                    // Update persisted config
+                                    let mut cfg = config_manager.get_config();
+                                    if let Some(a) =
+                                        cfg.apps.iter_mut().find(|a| a.id == *app_id)
+                                    {
+                                        a.hibernated = true;
+                                    }
+                                    let _ = config_manager.save_config(cfg);
+
+                                    let _ = app_handle.emit("app-auto-hibernated", app_id.clone());
+                                }
                             }
                         }
                     }

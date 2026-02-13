@@ -86,14 +86,22 @@ impl RecipeManager {
         let mut verified_services = HashMap::new();
 
         for (service_id, recipe) in &manifest.services {
+            // Validate service_id to prevent path traversal
+            if service_id.contains("..") || service_id.contains('/') || service_id.contains('\\') {
+                log::warn!("Invalid service ID '{}', skipping", service_id);
+                continue;
+            }
+
             // Verify SHA-256 hash
             let mut hasher = sha2::Sha256::new();
             if let Some(ref s) = recipe.badge_script {
                 hasher.update(s.as_bytes());
             }
+            hasher.update(b"\0");
             if let Some(ref s) = recipe.injection_css {
                 hasher.update(s.as_bytes());
             }
+            hasher.update(b"\0");
             if let Some(ref s) = recipe.injection_js {
                 hasher.update(s.as_bytes());
             }
