@@ -1,4 +1,4 @@
-import { Component, createSignal, Show, Switch, Match, onMount, onCleanup } from "solid-js";
+import { Component, Show, Switch, Match, onMount, onCleanup } from "solid-js";
 import { activeAppId, appConfigs, appStates } from "../../stores/uiStore";
 import { setContentAreaBounds, frontendReady, enableApp, reloadApp } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
@@ -7,23 +7,18 @@ import ErrorState from "./ErrorState";
 import CrashedState from "./CrashedState";
 import FindBar from "./FindBar";
 
-const ContentArea: Component = () => {
+interface ContentAreaProps {
+  findBarVisible: boolean;
+  onCloseFindBar: () => void;
+}
+
+const ContentArea: Component<ContentAreaProps> = (props) => {
   const activeApp = () => appConfigs.find((a) => a.id === activeAppId());
   const activeState = () => appStates.find((a) => a.id === activeAppId());
-  const [findBarVisible, setFindBarVisible] = createSignal(false);
   let containerRef: HTMLDivElement | undefined;
   let frontendReadySent = false;
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "f") {
-      e.preventDefault();
-      setFindBarVisible(true);
-    }
-  };
-
   onMount(() => {
-    document.addEventListener("keydown", handleKeyDown);
-
     if (containerRef) {
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
@@ -41,10 +36,6 @@ const ContentArea: Component = () => {
       observer.observe(containerRef);
       onCleanup(() => observer.disconnect());
     }
-  });
-
-  onCleanup(() => {
-    document.removeEventListener("keydown", handleKeyDown);
   });
 
   const handleEnable = async () => {
@@ -72,8 +63,8 @@ const ContentArea: Component = () => {
   return (
     <div ref={containerRef} class="flex-1 relative bg-white dark:bg-[#121212] overflow-hidden">
       <FindBar
-        visible={findBarVisible()}
-        onClose={() => setFindBarVisible(false)}
+        visible={props.findBarVisible}
+        onClose={props.onCloseFindBar}
       />
 
       <Show when={activeApp()} fallback={<EmptyState hasApps={appConfigs.length > 0} />}>

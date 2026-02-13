@@ -1,18 +1,85 @@
-import { Component, onMount, onCleanup } from "solid-js";
+import { Component, createSignal, onMount, onCleanup } from "solid-js";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Toolbar from "./components/Toolbar/Toolbar";
 import ContentArea from "./components/ContentArea/ContentArea";
+import QuickSwitcher from "./components/QuickSwitcher/QuickSwitcher";
 import { initializeState } from "./lib/stateSync";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
+import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
+import { createDefaultBindings } from "./lib/defaultShortcuts";
+import {
+  activeAppId,
+  appConfigs,
+  setSidebarExpanded,
+  setDndEnabled,
+} from "./stores/uiStore";
+import { activateApp, reloadApp } from "./lib/ipc";
 
 const App: Component = () => {
+  const [quickSwitcherVisible, setQuickSwitcherVisible] = createSignal(false);
+  const [findBarVisible, setFindBarVisible] = createSignal(false);
+
   onMount(async () => {
     await setupEventListeners();
     await initializeState();
+
+    const bindings = createDefaultBindings({
+      quickSwitcher: () => setQuickSwitcherVisible((v) => !v),
+      toggleSidebar: () => setSidebarExpanded((v) => !v),
+      toggleDnd: () => setDndEnabled((v) => !v),
+      nextApp: () => {
+        const apps = [...appConfigs]
+          .filter((a) => a.enabled)
+          .sort((a, b) => a.position - b.position);
+        const currentIdx = apps.findIndex((a) => a.id === activeAppId());
+        const nextIdx = (currentIdx + 1) % apps.length;
+        if (apps[nextIdx]) activateApp(apps[nextIdx].id);
+      },
+      prevApp: () => {
+        const apps = [...appConfigs]
+          .filter((a) => a.enabled)
+          .sort((a, b) => a.position - b.position);
+        const currentIdx = apps.findIndex((a) => a.id === activeAppId());
+        const prevIdx = (currentIdx - 1 + apps.length) % apps.length;
+        if (apps[prevIdx]) activateApp(apps[prevIdx].id);
+      },
+      reloadCurrentApp: () => {
+        const id = activeAppId();
+        if (id) reloadApp(id);
+      },
+      appsManager: () => {
+        // Apps Manager modal will be wired in a later phase
+      },
+      downloads: () => {
+        // Download manager panel will be wired in a later phase
+      },
+      settings: () => {
+        // Settings panel will be wired in a later phase
+      },
+      zoomIn: () => {
+        // Zoom controls will be wired in a later phase
+      },
+      zoomOut: () => {
+        // Zoom controls will be wired in a later phase
+      },
+      zoomReset: () => {
+        // Zoom controls will be wired in a later phase
+      },
+      findInPage: () => setFindBarVisible((v) => !v),
+      switchToApp: (index) => {
+        const apps = [...appConfigs]
+          .filter((a) => a.enabled)
+          .sort((a, b) => a.position - b.position);
+        if (apps[index]) activateApp(apps[index].id);
+      },
+    });
+
+    await registerShortcuts(bindings);
   });
 
   onCleanup(() => {
     teardownEventListeners();
+    unregisterAllShortcuts();
   });
 
   return (
@@ -20,8 +87,15 @@ const App: Component = () => {
       <Sidebar />
       <div class="flex-1 flex flex-col min-w-0">
         <Toolbar />
-        <ContentArea />
+        <ContentArea
+          findBarVisible={findBarVisible()}
+          onCloseFindBar={() => setFindBarVisible(false)}
+        />
       </div>
+      <QuickSwitcher
+        visible={quickSwitcherVisible()}
+        onClose={() => setQuickSwitcherVisible(false)}
+      />
     </div>
   );
 };
