@@ -68,5 +68,23 @@ export const updateWorkspace = (workspace: Workspace) =>
 export const deleteWorkspace = (workspaceId: string) =>
   invoke<void>("delete_workspace", { workspace_id: workspaceId });
 
+// Audio commands
+export const setAudioMuted = (appId: string, muted: boolean) =>
+  invoke<void>("set_audio_muted", { app_id: appId, muted });
+export const toggleGlobalMute = () => invoke<boolean>("toggle_global_mute");
+
+// Zoom commands
+export const setZoomLevel = (appId: string, zoom: number) =>
+  invoke<void>("set_zoom_level", { app_id: appId, zoom });
+export const zoomIn = (appId: string) => invoke<number>("zoom_in", { app_id: appId });
+export const zoomOut = (appId: string) => invoke<number>("zoom_out", { app_id: appId });
+export const zoomReset = (appId: string) => invoke<void>("zoom_reset", { app_id: appId });
+
+// Find commands
+export const findInPage = (appId: string, query: string, forward: boolean) =>
+  invoke<void>("find_in_page", { app_id: appId, query, forward });
+export const clearFindInPage = (appId: string) =>
+  invoke<void>("clear_find_in_page", { app_id: appId });
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

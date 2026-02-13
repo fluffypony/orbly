@@ -17,7 +17,8 @@ import {
   downloadsVisible,
   setDownloadsVisible,
 } from "./stores/uiStore";
-import { activateApp, reloadApp } from "./lib/ipc";
+import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset } from "./lib/ipc";
+import { showToast } from "./components/Toast/ToastContainer";
 
 const App: Component = () => {
   const [quickSwitcherVisible, setQuickSwitcherVisible] = createSignal(false);
@@ -62,14 +63,38 @@ const App: Component = () => {
       settings: () => {
         // Settings panel will be wired in a later phase
       },
-      zoomIn: () => {
-        // Zoom controls will be wired in a later phase
+      zoomIn: async () => {
+        const id = activeAppId();
+        if (id) {
+          try {
+            const newZoom = await zoomIn(id);
+            showToast(`Zoom: ${newZoom}%`, "info", 1500);
+          } catch (err) {
+            console.error("Zoom in failed:", err);
+          }
+        }
       },
-      zoomOut: () => {
-        // Zoom controls will be wired in a later phase
+      zoomOut: async () => {
+        const id = activeAppId();
+        if (id) {
+          try {
+            const newZoom = await zoomOut(id);
+            showToast(`Zoom: ${newZoom}%`, "info", 1500);
+          } catch (err) {
+            console.error("Zoom out failed:", err);
+          }
+        }
       },
-      zoomReset: () => {
-        // Zoom controls will be wired in a later phase
+      zoomReset: async () => {
+        const id = activeAppId();
+        if (id) {
+          try {
+            await zoomReset(id);
+            showToast("Zoom: 100%", "info", 1500);
+          } catch (err) {
+            console.error("Zoom reset failed:", err);
+          }
+        }
       },
       findInPage: () => setFindBarVisible((v) => !v),
       switchToApp: (index) => {

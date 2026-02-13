@@ -173,6 +173,18 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         }
     }
 
+    // Audio mute initialization
+    let audio_init = crate::commands::audio_commands::get_audio_mute_init_script(app_config.audio_muted);
+    if !audio_init.is_empty() {
+        scripts.push(audio_init);
+    }
+
+    // Zoom level initialization
+    if app_config.zoom_level != 100 {
+        let scale = app_config.zoom_level as f64 / 100.0;
+        scripts.push(format!("document.body.style.zoom = '{scale}'"));
+    }
+
     // Custom CSS injection
     if !app_config.custom_css.is_empty() {
         scripts.push(format!(

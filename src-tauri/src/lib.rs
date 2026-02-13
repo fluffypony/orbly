@@ -130,6 +130,14 @@ pub fn run() {
             commands::workspace_commands::create_workspace,
             commands::workspace_commands::update_workspace,
             commands::workspace_commands::delete_workspace,
+            commands::audio_commands::set_audio_muted,
+            commands::audio_commands::toggle_global_mute,
+            commands::zoom_commands::set_zoom_level,
+            commands::zoom_commands::zoom_in,
+            commands::zoom_commands::zoom_out,
+            commands::zoom_commands::zoom_reset,
+            commands::find_commands::find_in_page,
+            commands::find_commands::clear_find_in_page,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");
