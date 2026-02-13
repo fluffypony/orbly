@@ -16,23 +16,32 @@ pub fn badge_scrape_script(app_id: &str) -> String {
         }}
 
         if (count === null) {{
-            var selectors = [
-                '[data-unread-count]',
-                '.unread-count',
-                '.badge-count',
-                '.notification-badge'
-            ];
-            for (var i = 0; i < selectors.length; i++) {{
-                var el = document.querySelector(selectors[i]);
-                if (el) {{
-                    var text = el.textContent.trim();
-                    var num = parseInt(text, 10);
-                    if (!isNaN(num)) {{
-                        count = num;
-                        break;
-                    }} else if (el.offsetParent !== null) {{
-                        count = -1;
-                        break;
+            var el = document.querySelector('[data-unread-count]');
+            if (el) {{
+                var attrVal = parseInt(el.getAttribute('data-unread-count'), 10);
+                if (!isNaN(attrVal)) {{
+                    count = attrVal;
+                }}
+            }}
+
+            if (count === null) {{
+                var selectors = [
+                    '.unread-count',
+                    '.badge-count',
+                    '.notification-badge'
+                ];
+                for (var i = 0; i < selectors.length; i++) {{
+                    var badgeEl = document.querySelector(selectors[i]);
+                    if (badgeEl) {{
+                        var text = badgeEl.textContent.trim();
+                        var num = parseInt(text, 10);
+                        if (!isNaN(num)) {{
+                            count = num;
+                            break;
+                        }} else if (badgeEl.getClientRects().length > 0) {{
+                            count = -1;
+                            break;
+                        }}
                     }}
                 }}
             }}

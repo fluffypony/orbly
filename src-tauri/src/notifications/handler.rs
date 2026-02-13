@@ -1,5 +1,6 @@
 use chrono::Timelike;
 use tauri::{AppHandle, Emitter, State};
+use tauri_plugin_notification::NotificationExt;
 
 use crate::app_manager::state::AppManager;
 use crate::config::manager::ConfigManager;
@@ -24,6 +25,7 @@ pub struct BadgeUpdate {
 #[tauri::command]
 pub fn on_web_notification(
     notification: WebNotification,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     let config = config_manager.get_config();
@@ -40,7 +42,7 @@ pub fn on_web_notification(
     match app_config.notification_style {
         NotificationStyle::Off => {}
         NotificationStyle::Private => {
-            send_native_notification(&app_config.name, "New notification")?;
+            send_native_notification(&app_handle, &app_config.name, "New notification")?;
         }
         NotificationStyle::Full => {
             let title = if notification.title.is_empty() {
@@ -48,7 +50,7 @@ pub fn on_web_notification(
             } else {
                 format!("{}: {}", app_config.name, notification.title)
             };
-            send_native_notification(&title, &notification.body)?;
+            send_native_notification(&app_handle, &title, &notification.body)?;
         }
     }
 
@@ -83,9 +85,11 @@ pub fn on_badge_update(
     Ok(())
 }
 
-fn send_native_notification(title: &str, body: &str) -> Result<(), String> {
-    notify_rust::Notification::new()
-        .summary(title)
+fn send_native_notification(app_handle: &AppHandle, title: &str, body: &str) -> Result<(), String> {
+    app_handle
+        .notification()
+        .builder()
+        .title(title)
         .body(body)
         .show()
         .map_err(|e| e.to_string())?;

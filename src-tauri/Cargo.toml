@@ -29,7 +29,6 @@ url = "2.5"
 glob = "0.3"
 uuid = { version = "1", features = ["v4", "serde"] }
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
-notify-rust = "4"
 log = "0.4"
 env_logger = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
