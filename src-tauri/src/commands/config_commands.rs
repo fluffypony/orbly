@@ -101,9 +101,14 @@ pub fn test_link_route(
     config_manager: State<'_, ConfigManager>,
 ) -> String {
     let config = config_manager.get_config();
+    let opts = glob::MatchOptions {
+        case_sensitive: false,
+        require_literal_separator: false,
+        require_literal_leading_dot: false,
+    };
     for rule in &config.link_routing.rules {
         if glob::Pattern::new(&rule.pattern)
-            .map(|p| p.matches(&url))
+            .map(|p| p.matches_with(&url, opts))
             .unwrap_or(false)
         {
             return rule.target.clone();

@@ -36,10 +36,10 @@ export interface AppConfig {
 }
 
 export interface WindowState {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
+  x?: number | null;
+  y?: number | null;
+  width?: number | null;
+  height?: number | null;
   maximized: boolean;
 }
 

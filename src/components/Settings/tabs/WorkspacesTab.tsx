@@ -1,13 +1,42 @@
-import { Component, For, Show, createSignal } from "solid-js";
+import { Component, For, Show, createSignal, onMount } from "solid-js";
 import { SettingSection, TextInput, Button } from "../SettingsControls";
-import { createWorkspace, updateWorkspace, deleteWorkspace } from "../../../lib/ipc";
+import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace } from "../../../lib/ipc";
 import { appConfigs, workspaces, setWorkspaces } from "../../../stores/uiStore";
 import type { Workspace } from "../../../types/config";
 
 const WorkspacesTab: Component = () => {
   const [editingId, setEditingId] = createSignal<string | null>(null);
+  const [editName, setEditName] = createSignal("");
   const [newName, setNewName] = createSignal("");
   const [creating, setCreating] = createSignal(false);
+
+  onMount(async () => {
+    try {
+      const ws = await getWorkspaces();
+      setWorkspaces(ws);
+    } catch (err) {
+      console.error("Failed to load workspaces:", err);
+    }
+  });
+
+  const startEditing = (ws: Workspace) => {
+    setEditingId(ws.id);
+    setEditName(ws.name);
+  };
+
+  const finishEditing = async (ws: Workspace) => {
+    const name = editName().trim();
+    if (name && name !== ws.name) {
+      const updated = { ...ws, name };
+      try {
+        await updateWorkspace(updated);
+        setWorkspaces(workspaces.map(w => w.id === ws.id ? updated : w));
+      } catch (err) {
+        console.error("Failed to update workspace name:", err);
+      }
+    }
+    setEditingId(null);
+  };
 
   const handleCreate = async () => {
     const name = newName().trim();
@@ -45,16 +74,6 @@ const WorkspacesTab: Component = () => {
     }
   };
 
-  const updateName = async (ws: Workspace, name: string) => {
-    const updated = { ...ws, name };
-    try {
-      await updateWorkspace(updated);
-      setWorkspaces(workspaces.map(w => w.id === ws.id ? updated : w));
-    } catch (err) {
-      console.error("Failed to update workspace name:", err);
-    }
-  };
-
   return (
     <div>
       <SettingSection title="Workspaces" description="Organize your apps into separate workspaces" />
@@ -67,12 +86,14 @@ const WorkspacesTab: Component = () => {
                 <Show when={editingId() === ws.id} fallback={
                   <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">{ws.name}</h4>
                 }>
-                  <TextInput value={ws.name} onChange={(v) => updateName(ws, v)} class="w-48" />
+                  <TextInput value={editName()} onChange={setEditName} class="w-48" />
                 </Show>
                 <div class="flex gap-2">
-                  <Button onClick={() => setEditingId(editingId() === ws.id ? null : ws.id)}>
-                    {editingId() === ws.id ? "Done" : "Edit"}
-                  </Button>
+                  <Show when={editingId() === ws.id} fallback={
+                    <Button onClick={() => startEditing(ws)}>Edit</Button>
+                  }>
+                    <Button onClick={() => finishEditing(ws)}>Done</Button>
+                  </Show>
                   <Show when={ws.id !== "default"}>
                     <Button variant="danger" onClick={() => handleDelete(ws.id)}>Delete</Button>
                   </Show>

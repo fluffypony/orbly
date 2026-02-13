@@ -36,7 +36,8 @@ const GeneralTab: Component = () => {
     setConfig(updates);
     if (!initialized) return;
     try {
-      await updateGeneralConfig({ ...config });
+      const latest = await getConfig();
+      await updateGeneralConfig({ ...config, window_state: latest.general.window_state });
     } catch (err) {
       console.error("Failed to save general config:", err);
     }
