@@ -57,7 +57,7 @@ pub fn get_app_states(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn activate_app(
+pub async fn activate_app(
     app_id: String,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
@@ -204,7 +204,7 @@ pub fn disable_app(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn enable_app(
+pub async fn enable_app(
     app_id: String,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
@@ -336,7 +336,7 @@ pub fn get_current_url(app_id: String, app_handle: AppHandle) -> Result<String, 
 }
 
 #[tauri::command]
-pub fn frontend_ready(
+pub async fn frontend_ready(
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
     app_manager: State<'_, AppManager>,
