@@ -17,16 +17,22 @@ pub fn kill_app(
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
 ) -> Result<(), String> {
-    let _last_url = lifecycle::destroy_app_webview(&app_handle, &app_id)?;
+    let destroyed_url = lifecycle::destroy_app_webview(&app_handle, &app_id)?;
 
     let mut apps = app_manager.apps.lock().unwrap();
     if let Some(runtime) = apps.get_mut(&app_id) {
-        let url = match &runtime.state {
-            AppRuntimeState::Active { current_url } => current_url.clone(),
-            AppRuntimeState::Hibernated { last_url } => last_url.clone(),
-            _ => String::new(),
-        };
-        runtime.state = AppRuntimeState::Hibernated { last_url: url };
+        match &runtime.state {
+            AppRuntimeState::Active { current_url } => {
+                let url = destroyed_url.unwrap_or_else(|| current_url.clone());
+                runtime.state = AppRuntimeState::Hibernated { last_url: url };
+            }
+            AppRuntimeState::Hibernated { .. } => {
+                // Already hibernated, no state change needed
+            }
+            AppRuntimeState::Disabled => {
+                // Disabled apps should stay disabled
+            }
+        }
     }
     drop(apps);
 
