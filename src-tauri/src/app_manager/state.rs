@@ -84,3 +84,40 @@ impl AppManager {
         self.apps.lock().unwrap().remove(app_id);
     }
 }
+
+pub struct ContentBounds {
+    inner: Mutex<ContentBoundsInner>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ContentBoundsInner {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+impl ContentBounds {
+    pub fn new() -> Self {
+        Self {
+            inner: Mutex::new(ContentBoundsInner {
+                x: 56.0,
+                y: 40.0,
+                width: 1024.0,
+                height: 680.0,
+            }),
+        }
+    }
+
+    pub fn set(&self, x: f64, y: f64, width: f64, height: f64) {
+        let mut bounds = self.inner.lock().unwrap();
+        bounds.x = x;
+        bounds.y = y;
+        bounds.width = width;
+        bounds.height = height;
+    }
+
+    pub fn get(&self) -> ContentBoundsInner {
+        *self.inner.lock().unwrap()
+    }
+}

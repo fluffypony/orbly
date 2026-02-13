@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::app_manager::lifecycle;
-use crate::app_manager::state::{AppManager, AppRuntimeState};
+use crate::app_manager::state::{AppManager, AppRuntimeState, ContentBounds};
 use crate::config::manager::ConfigManager;
 
 #[derive(serde::Serialize, Clone)]
@@ -61,6 +61,7 @@ pub fn activate_app(
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
+    content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
     let mut config = config_manager.get_config();
     let app_config = config
@@ -74,9 +75,9 @@ pub fn activate_app(
         return Err(format!("App '{}' is disabled; enable it first", app_id));
     }
 
-    // Default content area position/size — will be refined by frontend in later phases
-    let position = tauri::LogicalPosition::new(56.0, 40.0);
-    let size = tauri::LogicalSize::new(1024.0, 680.0);
+    let bounds = content_bounds.get();
+    let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
+    let size = tauri::LogicalSize::new(bounds.width, bounds.height);
 
     // Determine the URL to load: use last_url from hibernated state if available
     let load_url = {
@@ -207,6 +208,7 @@ pub fn enable_app(
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
+    content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
     // Update persisted config
     let mut config = config_manager.get_config();
@@ -227,8 +229,9 @@ pub fn enable_app(
 
     // Only create webview if it doesn't already exist
     if app_handle.get_webview(&app_id).is_none() {
-        let position = tauri::LogicalPosition::new(56.0, 40.0);
-        let size = tauri::LogicalSize::new(1024.0, 680.0);
+        let bounds = content_bounds.get();
+        let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
+        let size = tauri::LogicalSize::new(bounds.width, bounds.height);
         lifecycle::create_app_webview(&app_handle, &app_config, position, size)?;
     }
 
@@ -263,5 +266,140 @@ pub fn notify_app_interaction(
     app_manager: State<'_, AppManager>,
 ) -> Result<(), String> {
     app_manager.touch_interaction(&app_id);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_content_area_bounds(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    app_handle: AppHandle,
+    content_bounds: State<'_, ContentBounds>,
+    app_manager: State<'_, AppManager>,
+) -> Result<(), String> {
+    content_bounds.set(x, y, width, height);
+
+    // Reposition all visible (active) webviews to fit the new bounds
+    let position = tauri::LogicalPosition::new(x, y);
+    let size = tauri::LogicalSize::new(width, height);
+
+    let apps_lock = app_manager.apps.lock().unwrap();
+    for (app_id, runtime) in apps_lock.iter() {
+        if let AppRuntimeState::Active { .. } = &runtime.state {
+            let _ = lifecycle::set_webview_visible(&app_handle, app_id, true, Some(position), Some(size));
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn navigate_back(app_id: String, app_handle: AppHandle) -> Result<(), String> {
+    if let Some(webview) = app_handle.get_webview(&app_id) {
+        webview
+            .eval("history.back()")
+            .map_err(|e| format!("Failed to navigate back: {e}"))?;
+        Ok(())
+    } else {
+        Err(format!("Webview '{}' not found", app_id))
+    }
+}
+
+#[tauri::command]
+pub fn navigate_forward(app_id: String, app_handle: AppHandle) -> Result<(), String> {
+    if let Some(webview) = app_handle.get_webview(&app_id) {
+        webview
+            .eval("history.forward()")
+            .map_err(|e| format!("Failed to navigate forward: {e}"))?;
+        Ok(())
+    } else {
+        Err(format!("Webview '{}' not found", app_id))
+    }
+}
+
+#[tauri::command]
+pub fn get_current_url(app_id: String, app_handle: AppHandle) -> Result<String, String> {
+    if let Some(webview) = app_handle.get_webview(&app_id) {
+        webview
+            .url()
+            .map(|u| u.to_string())
+            .map_err(|e| format!("Failed to get URL: {e}"))
+    } else {
+        Err(format!("Webview '{}' not found", app_id))
+    }
+}
+
+#[tauri::command]
+pub fn frontend_ready(
+    app_handle: AppHandle,
+    config_manager: State<'_, ConfigManager>,
+    app_manager: State<'_, AppManager>,
+    content_bounds: State<'_, ContentBounds>,
+) -> Result<(), String> {
+    let config = config_manager.get_config();
+    let bounds = content_bounds.get();
+
+    let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
+    let size = tauri::LogicalSize::new(bounds.width, bounds.height);
+
+    let mut first_active_id: Option<String> = None;
+    let mut created_ids: Vec<String> = Vec::new();
+
+    // Create webviews for all enabled, non-hibernated apps
+    for app_config in &config.apps {
+        if app_config.enabled && !app_config.hibernated {
+            if app_handle.get_webview(&app_config.id).is_none() {
+                if let Err(e) = lifecycle::create_app_webview(&app_handle, app_config, position, size) {
+                    log::error!("Failed to create webview for {}: {}", app_config.id, e);
+                    continue;
+                }
+            }
+            created_ids.push(app_config.id.clone());
+
+            if first_active_id.is_none() {
+                first_active_id = Some(app_config.id.clone());
+            }
+        }
+    }
+
+    // Hide all webviews initially
+    for id in &created_ids {
+        let _ = lifecycle::set_webview_visible(&app_handle, id, false, None, None);
+    }
+
+    // Show only the first active app
+    if let Some(ref first_id) = first_active_id {
+        let _ = lifecycle::set_webview_visible(&app_handle, first_id, true, Some(position), Some(size));
+
+        // Update runtime state
+        if let Some(app_config) = config.apps.iter().find(|a| a.id == *first_id) {
+            app_manager.set_state(
+                first_id,
+                AppRuntimeState::Active {
+                    current_url: app_config.url.clone(),
+                },
+            );
+            app_manager.touch_interaction(first_id);
+        }
+
+        let _ = app_handle.emit("app-activated", first_id.as_str());
+    }
+
+    // Update state for other created apps
+    for id in &created_ids {
+        if Some(id) != first_active_id.as_ref() {
+            if let Some(app_config) = config.apps.iter().find(|a| a.id == *id) {
+                app_manager.set_state(
+                    id,
+                    AppRuntimeState::Active {
+                        current_url: app_config.url.clone(),
+                    },
+                );
+            }
+        }
+    }
+
     Ok(())
 }

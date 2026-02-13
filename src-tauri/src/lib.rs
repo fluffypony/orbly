@@ -4,7 +4,7 @@ mod config;
 
 use tauri::Manager;
 
-use app_manager::state::AppManager;
+use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -33,6 +33,7 @@ pub fn run() {
 
             app.manage(config_manager);
             app.manage(app_mgr);
+            app.manage(ContentBounds::new());
 
             app_manager::start_auto_hibernate_task(app.handle().clone());
 
@@ -54,6 +55,11 @@ pub fn run() {
             commands::app_lifecycle_commands::enable_app,
             commands::app_lifecycle_commands::reload_app,
             commands::app_lifecycle_commands::notify_app_interaction,
+            commands::app_lifecycle_commands::set_content_area_bounds,
+            commands::app_lifecycle_commands::navigate_back,
+            commands::app_lifecycle_commands::navigate_forward,
+            commands::app_lifecycle_commands::get_current_url,
+            commands::app_lifecycle_commands::frontend_ready,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");
