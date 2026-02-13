@@ -281,14 +281,17 @@ pub fn set_content_area_bounds(
 ) -> Result<(), String> {
     content_bounds.set(x, y, width, height);
 
-    // Reposition all visible (active) webviews to fit the new bounds
+    // Reposition all existing webviews (active ones) without changing visibility
     let position = tauri::LogicalPosition::new(x, y);
     let size = tauri::LogicalSize::new(width, height);
 
     let apps_lock = app_manager.apps.lock().unwrap();
     for (app_id, runtime) in apps_lock.iter() {
         if let AppRuntimeState::Active { .. } = &runtime.state {
-            let _ = lifecycle::set_webview_visible(&app_handle, app_id, true, Some(position), Some(size));
+            if let Some(webview) = app_handle.get_webview(app_id) {
+                let _ = webview.set_position(tauri::LogicalPosition::from(position));
+                let _ = webview.set_size(tauri::LogicalSize::from(size));
+            }
         }
     }
 

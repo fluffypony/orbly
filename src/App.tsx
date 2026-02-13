@@ -7,8 +7,8 @@ import { setupEventListeners, teardownEventListeners } from "./lib/events";
 
 const App: Component = () => {
   onMount(async () => {
-    await initializeState();
     await setupEventListeners();
+    await initializeState();
   });
 
   onCleanup(() => {
