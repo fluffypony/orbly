@@ -41,8 +41,10 @@ pub fn remove_download(
 #[tauri::command(rename_all = "snake_case")]
 pub fn open_download_file(
     download_id: String,
+    webview: tauri::Webview,
     download_manager: State<'_, DownloadManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let downloads = download_manager.get_all();
     let entry = downloads.iter().find(|d| d.id == download_id)
         .ok_or_else(|| "Download not found".to_string())?;
@@ -57,8 +59,10 @@ pub fn open_download_file(
 #[tauri::command(rename_all = "snake_case")]
 pub fn open_download_folder(
     download_id: String,
+    webview: tauri::Webview,
     download_manager: State<'_, DownloadManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let downloads = download_manager.get_all();
     let entry = downloads.iter().find(|d| d.id == download_id)
         .ok_or_else(|| "Download not found".to_string())?;

@@ -6,9 +6,11 @@ use crate::config::manager::ConfigManager;
 #[tauri::command]
 pub fn set_launch_at_login(
     enabled: bool,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let autostart = app_handle.autolaunch();
     if enabled {
         autostart.enable().map_err(|e| e.to_string())?;

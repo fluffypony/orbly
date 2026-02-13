@@ -119,8 +119,10 @@ pub fn test_link_route(
 
 #[tauri::command]
 pub fn export_config_json(
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<String, String> {
+    crate::commands::require_main_webview(&webview)?;
     let config = config_manager.get_config();
     serde_json::to_string_pretty(&config).map_err(|e| e.to_string())
 }
@@ -128,8 +130,10 @@ pub fn export_config_json(
 #[tauri::command]
 pub fn import_config_json(
     json: String,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let config: OrblyConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
     config_manager.save_config(config).map_err(|e| e.to_string())
 }
