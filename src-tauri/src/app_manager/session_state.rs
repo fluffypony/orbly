@@ -62,8 +62,18 @@ impl SessionState {
     }
 
     fn persist(&self, data: &SessionData) {
-        if let Ok(json) = serde_json::to_string_pretty(data) {
-            let _ = std::fs::write(&self.path, json);
+        if let Some(parent) = self.path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        match serde_json::to_string_pretty(data) {
+            Ok(json) => {
+                if let Err(e) = std::fs::write(&self.path, json) {
+                    log::warn!("Failed to persist session state: {}", e);
+                }
+            }
+            Err(e) => {
+                log::warn!("Failed to serialize session state: {}", e);
+            }
         }
     }
 }

@@ -9,8 +9,8 @@ interface InjectionEditorProps {
 }
 
 const InjectionEditor: Component<InjectionEditorProps> = (props) => {
-  const [css, setCss] = createSignal(props.app.custom_css);
-  const [js, setJs] = createSignal(props.app.custom_js);
+  const [css, setCss] = createSignal(props.app.custom_css ?? "");
+  const [js, setJs] = createSignal(props.app.custom_js ?? "");
   const [activeTab, setActiveTab] = createSignal<'css' | 'js'>('css');
   const [saving, setSaving] = createSignal(false);
 

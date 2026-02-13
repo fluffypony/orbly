@@ -8,9 +8,14 @@ interface CrashedStateProps {
 const CrashedState: Component<CrashedStateProps> = (props) => {
   const [reloading, setReloading] = createSignal(false);
 
-  const handleReload = () => {
+  const handleReload = async () => {
+    if (!props.onReload) return;
     setReloading(true);
-    props.onReload?.();
+    try {
+      await props.onReload();
+    } finally {
+      setReloading(false);
+    }
   };
 
   return (
