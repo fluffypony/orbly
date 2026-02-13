@@ -58,3 +58,73 @@ pub fn update_general_config(
         .save_config(config)
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn update_adblock_config(
+    adblock: crate::config::models::AdblockConfig,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    let mut config = config_manager.get_config();
+    config.adblock = adblock;
+    config_manager
+        .save_config(config)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_downloads_config(
+    downloads: crate::config::models::DownloadGlobalConfig,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    let mut config = config_manager.get_config();
+    config.downloads = downloads;
+    config_manager
+        .save_config(config)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_link_routing_config(
+    link_routing: crate::config::models::LinkRoutingConfig,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    let mut config = config_manager.get_config();
+    config.link_routing = link_routing;
+    config_manager
+        .save_config(config)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn test_link_route(
+    url: String,
+    config_manager: State<'_, ConfigManager>,
+) -> String {
+    let config = config_manager.get_config();
+    for rule in &config.link_routing.rules {
+        if glob::Pattern::new(&rule.pattern)
+            .map(|p| p.matches(&url))
+            .unwrap_or(false)
+        {
+            return rule.target.clone();
+        }
+    }
+    "external".to_string()
+}
+
+#[tauri::command]
+pub fn export_config_json(
+    config_manager: State<'_, ConfigManager>,
+) -> Result<String, String> {
+    let config = config_manager.get_config();
+    serde_json::to_string_pretty(&config).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn import_config_json(
+    json: String,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    let config: OrblyConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
+    config_manager.save_config(config).map_err(|e| e.to_string())
+}

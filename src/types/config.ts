@@ -35,6 +35,14 @@ export interface AppConfig {
   zoom_level: number;
 }
 
+export interface WindowState {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  maximized: boolean;
+}
+
 export interface GeneralConfig {
   config_version: number;
   theme: ThemeMode;
@@ -47,6 +55,7 @@ export interface GeneralConfig {
   show_badge_in_tray: boolean;
   launch_at_login: boolean;
   check_for_updates: boolean;
+  window_state: WindowState;
 }
 
 export interface AdblockConfig {

@@ -7,6 +7,7 @@ import QuickSwitcher from "./components/QuickSwitcher/QuickSwitcher";
 import ToastContainer from "./components/Toast/ToastContainer";
 import DownloadManagerPanel from "./components/Downloads/DownloadManager";
 import AppsManager from "./components/AppsManager/AppsManager";
+import Settings from "./components/Settings/Settings";
 import { initializeState } from "./lib/stateSync";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
 import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
@@ -20,6 +21,8 @@ import {
   setDownloadsVisible,
   appsManagerVisible,
   setAppsManagerVisible,
+  settingsVisible,
+  setSettingsVisible,
 } from "./stores/uiStore";
 import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset } from "./lib/ipc";
 import { showToast } from "./components/Toast/ToastContainer";
@@ -76,7 +79,7 @@ const App: Component = () => {
         setDownloadsVisible((v) => !v);
       },
       settings: () => {
-        // Settings panel will be wired in a later phase
+        setSettingsVisible((v) => !v);
       },
       zoomIn: async () => {
         const id = activeAppId();
@@ -153,6 +156,10 @@ const App: Component = () => {
       <AppsManager
         visible={appsManagerVisible()}
         onClose={() => setAppsManagerVisible(false)}
+      />
+      <Settings
+        visible={settingsVisible()}
+        onClose={() => setSettingsVisible(false)}
       />
     </div>
   );

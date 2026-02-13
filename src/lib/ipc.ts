@@ -46,6 +46,8 @@ export const toggleAdblock = (appId: string) => invoke<boolean>("toggle_adblock"
 export const getBlockedCount = (appId: string) => invoke<number>("get_blocked_count", { app_id: appId });
 export const updateFilterLists = () => invoke<void>("update_filter_lists");
 export const addCustomAdblockRule = (rule: string) => invoke<void>("add_custom_adblock_rule", { rule });
+export const updateAdblockConfig = (adblock: import("../types/config").AdblockConfig) => invoke<void>("update_adblock_config", { adblock });
+export const updateDownloadsConfig = (downloads: import("../types/config").DownloadGlobalConfig) => invoke<void>("update_downloads_config", { downloads });
 
 // Download commands
 export const getDownloads = () => invoke<import("../types/downloads").DownloadEntry[]>("get_downloads");

@@ -36,3 +36,6 @@ export const [downloadsVisible, setDownloadsVisible] = createSignal(false);
 
 // Apps Manager panel visibility
 export const [appsManagerVisible, setAppsManagerVisible] = createSignal(false);
+
+// Settings panel visibility
+export const [settingsVisible, setSettingsVisible] = createSignal(false);

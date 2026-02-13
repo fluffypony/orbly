@@ -6,6 +6,7 @@ import {
   activeDownloadCount,
   setDownloadsVisible,
   setAppsManagerVisible,
+  setSettingsVisible,
 } from "../../stores/uiStore";
 
 interface IconButtonProps {
@@ -60,7 +61,7 @@ const SidebarFooter: Component = () => {
         <IconButton
           label="Settings"
           icon="⚙️"
-          onClick={() => console.log("Open settings")}
+          onClick={() => setSettingsVisible((v) => !v)}
         />
         <IconButton
           label="Resource Monitor"
