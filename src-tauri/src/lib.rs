@@ -3,6 +3,7 @@ mod app_manager;
 mod commands;
 mod config;
 mod darkmode;
+mod downloads;
 mod notifications;
 
 use tauri::Manager;
@@ -12,6 +13,7 @@ use adblock::filter_lists::FilterListManager;
 use app_manager::state::{AppManager, ContentBounds};
 use config::manager::ConfigManager;
 use darkmode::DarkModeManager;
+use downloads::DownloadManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -51,6 +53,7 @@ pub fn run() {
             app.manage(ContentBounds::new());
             app.manage(dark_mode_manager);
             app.manage(adblock_state);
+            app.manage(DownloadManager::new());
 
             // Load adblock filter lists in the background
             let adblock_handle = app.handle().clone();
@@ -114,6 +117,13 @@ pub fn run() {
             commands::adblock_commands::get_blocked_count,
             commands::adblock_commands::update_filter_lists,
             commands::adblock_commands::add_custom_adblock_rule,
+            commands::download_commands::get_downloads,
+            commands::download_commands::get_active_download_count,
+            commands::download_commands::cancel_download,
+            commands::download_commands::clear_completed_downloads,
+            commands::download_commands::remove_download,
+            commands::download_commands::open_download_file,
+            commands::download_commands::open_download_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Orbly");

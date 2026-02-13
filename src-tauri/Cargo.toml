@@ -37,3 +37,5 @@ sha2 = "0.10"
 hex = "0.4"
 dirs = "6"
 adblock = { version = "0.12", default-features = false, features = ["content-blocking", "css-validation", "embedded-domain-resolver"] }
+open = "5"
+shellexpand = "3"

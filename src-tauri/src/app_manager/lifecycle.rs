@@ -1,8 +1,11 @@
-use tauri::{AppHandle, Manager, WebviewUrl};
+use std::path::PathBuf;
+
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl};
 
 use crate::adblock::engine::AdblockState;
 use crate::config::models::{AppConfig, DarkModeType};
 use crate::darkmode::DarkModeManager;
+use crate::downloads::{self, DownloadEntry, DownloadManager, DownloadStatus};
 
 /// Create a new webview for an app with isolated data store
 pub fn create_app_webview(
@@ -35,6 +38,69 @@ pub fn create_app_webview(
     if !init_js.is_empty() {
         builder = builder.initialization_script(&init_js);
     }
+
+    // Download handler
+    let download_dir = if app_config.download_directory.is_empty() {
+        dirs::download_dir().unwrap_or_else(|| PathBuf::from("Downloads"))
+    } else {
+        PathBuf::from(
+            shellexpand::tilde(&app_config.download_directory).to_string(),
+        )
+    };
+    let app_id_clone = app_config.id.clone();
+    let app_name_clone = app_config.name.clone();
+    let handle_clone = app_handle.clone();
+
+    builder = builder.on_download(move |_webview, event| {
+        match event {
+            tauri::webview::DownloadEvent::Requested { url, destination } => {
+                let filename = std::path::Path::new(url.path())
+                    .file_name()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "download".to_string());
+
+                let filename = if filename.is_empty() {
+                    "download".to_string()
+                } else {
+                    filename
+                };
+
+                let save_path = downloads::resolve_filename_conflict(&download_dir.join(&filename));
+                *destination = save_path.clone();
+
+                if let Some(dm) = handle_clone.try_state::<DownloadManager>() {
+                    let entry = DownloadEntry {
+                        id: uuid::Uuid::new_v4().to_string(),
+                        filename: filename.clone(),
+                        source_app_id: app_id_clone.clone(),
+                        source_app_name: app_name_clone.clone(),
+                        url: url.to_string(),
+                        save_path: save_path.to_string_lossy().to_string(),
+                        size_bytes: None,
+                        status: DownloadStatus::Downloading { progress: 0.0 },
+                        created_at: chrono::Utc::now().to_rfc3339(),
+                    };
+                    dm.add_download(entry);
+                }
+
+                let _ = handle_clone.emit("download-started", &filename);
+            }
+            tauri::webview::DownloadEvent::Finished { url, path: _, success } => {
+                if let Some(dm) = handle_clone.try_state::<DownloadManager>() {
+                    if let Some(id) = dm.find_by_url(&url.to_string()) {
+                        if success {
+                            dm.complete_download(&id);
+                        } else {
+                            dm.fail_download(&id, "Download failed".to_string());
+                        }
+                    }
+                }
+                let _ = handle_clone.emit("download-finished", url.to_string());
+            }
+            _ => {}
+        }
+        true
+    });
 
     main_window
         .add_child(
