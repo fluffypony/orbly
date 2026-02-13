@@ -100,15 +100,39 @@ impl ConfigManager {
     }
 
     fn read_from_disk(path: &PathBuf) -> Result<OrblyConfig, Box<dyn std::error::Error>> {
+        let backup_path = path.with_extension("toml.bak");
+
         if !path.exists() {
+            // Try to recover from backup
+            if backup_path.exists() {
+                log::info!("Config missing but backup found, restoring from backup");
+                let _ = fs::rename(&backup_path, path);
+                if path.exists() {
+                    let contents = fs::read_to_string(path)?;
+                    return Ok(toml::from_str(&contents)?);
+                }
+            }
             let config = OrblyConfig::default();
             Self::write_to_disk(path, &config)?;
             return Ok(config);
         }
 
         let contents = fs::read_to_string(path)?;
-        let config: OrblyConfig = toml::from_str(&contents)?;
-        Ok(config)
+        match toml::from_str(&contents) {
+            Ok(config) => Ok(config),
+            Err(e) => {
+                log::warn!("Config file is corrupt: {}. Attempting backup recovery.", e);
+                if backup_path.exists() {
+                    let backup_contents = fs::read_to_string(&backup_path)?;
+                    let config: OrblyConfig = toml::from_str(&backup_contents)?;
+                    // Restore the good backup as the main config
+                    Self::write_to_disk(path, &config)?;
+                    Ok(config)
+                } else {
+                    Err(Box::new(e))
+                }
+            }
+        }
     }
 
     fn write_to_disk(
@@ -138,9 +162,6 @@ impl ConfigManager {
             }
             return Err(Box::new(e));
         }
-
-        // Clean up backup on success
-        let _ = fs::remove_file(&backup_path);
 
         Ok(())
     }

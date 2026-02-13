@@ -64,7 +64,12 @@ pub fn create_app_webview(
                     .map(|f| f.to_string_lossy().to_string())
                     .unwrap_or_else(|| "download".to_string());
 
-                let filename = if filename.is_empty() {
+                let filename = if filename.is_empty()
+                    || filename == "."
+                    || filename == ".."
+                    || filename.contains('/')
+                    || filename.contains('\\')
+                {
                     "download".to_string()
                 } else {
                     filename

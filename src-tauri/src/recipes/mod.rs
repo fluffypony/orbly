@@ -152,6 +152,10 @@ impl RecipeManager {
 
     /// Get recipe for a service by its service_type. Falls back to cached files if not in memory.
     pub fn get_recipe(&self, service_id: &str) -> Option<ServiceRecipe> {
+        if service_id.contains("..") || service_id.contains('/') || service_id.contains('\\') {
+            return None;
+        }
+
         // 1. Check in-memory manifest
         if let Some(ref manifest) = *self.manifest.lock().unwrap() {
             if let Some(recipe) = manifest.services.get(service_id) {
