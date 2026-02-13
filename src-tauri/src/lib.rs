@@ -12,6 +12,7 @@ pub fn run() {
             Some(vec!["--flag1"]),
         ))
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|_app| {
             log::info!("Orbly v{} starting up", env!("CARGO_PKG_VERSION"));
             Ok(())
