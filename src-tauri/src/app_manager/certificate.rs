@@ -8,6 +8,7 @@ pub struct CertificateExceptions {
     exceptions: Mutex<HashMap<String, chrono::DateTime<chrono::Utc>>>,
 }
 
+#[allow(dead_code)]
 impl CertificateExceptions {
     pub fn new() -> Self {
         Self {

@@ -8,6 +8,7 @@ use std::sync::Mutex;
 ///
 /// With `default-features = false` (which disables `single-thread`), Engine is
 /// Send + Sync, so we can safely store it in a Mutex and share across threads.
+#[allow(dead_code)]
 pub struct AdblockState {
     /// The cached adblock engine, rebuilt when rules change.
     engine: Mutex<Option<Engine>>,
@@ -22,6 +23,7 @@ pub struct AdblockState {
     content_blocking_json: Mutex<Option<String>>,
 }
 
+#[allow(dead_code)]
 impl AdblockState {
     pub fn new() -> Self {
         Self {

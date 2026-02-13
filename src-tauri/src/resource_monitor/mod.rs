@@ -19,6 +19,7 @@ pub struct ResourceMonitor {
     alerted: Mutex<HashMap<String, std::time::Instant>>,
 }
 
+#[allow(dead_code)]
 impl ResourceMonitor {
     pub fn new() -> Self {
         Self {

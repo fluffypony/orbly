@@ -24,6 +24,7 @@ pub struct AppManager {
     pub apps: Mutex<HashMap<String, AppRuntime>>,
 }
 
+#[allow(dead_code)]
 impl AppManager {
     pub fn new() -> Self {
         Self {

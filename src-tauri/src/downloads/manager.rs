@@ -27,6 +27,7 @@ pub struct DownloadManager {
     downloads: Mutex<Vec<DownloadEntry>>,
 }
 
+#[allow(dead_code)]
 impl DownloadManager {
     pub fn new() -> Self {
         Self {

@@ -7,6 +7,7 @@ use crate::config::manager::ConfigManager;
 use crate::config::models::{NotificationStyle, OrblyConfig};
 
 #[derive(serde::Deserialize)]
+#[allow(dead_code)]
 pub struct WebNotification {
     pub app_id: String,
     pub title: String,

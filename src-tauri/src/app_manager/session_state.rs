@@ -6,6 +6,7 @@ use std::sync::Mutex;
 /// Tracks active app URLs for crash recovery.
 /// Written to a JSON file separate from the main config to avoid data loss
 /// if the config write fails during a crash.
+#[allow(dead_code)]
 pub struct SessionState {
     path: PathBuf,
     inner: Mutex<SessionData>,
@@ -17,6 +18,7 @@ pub struct SessionData {
     pub active_apps: HashMap<String, String>,
 }
 
+#[allow(dead_code)]
 impl SessionState {
     pub fn new(app_data_dir: PathBuf) -> Self {
         let path = app_data_dir.join("session_state.json");

@@ -13,10 +13,12 @@
 /// Maximum number of rules Apple allows in a single WKContentRuleList.
 /// If we exceed this, rules must be split across multiple lists.
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 pub const APPLE_CONTENT_RULE_LIMIT: usize = 50_000;
 
 /// Split content-blocking JSON into chunks that fit Apple's rule limit.
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 pub fn split_content_blocking_json(json: &str) -> Result<Vec<String>, String> {
     let rules: Vec<serde_json::Value> =
         serde_json::from_str(json).map_err(|e| format!("Invalid JSON: {}", e))?;

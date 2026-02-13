@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 const DEFAULT_FILTER_LISTS: &[&str] = &[
     "https://easylist.to/easylist/easylist.txt",
     "https://easylist.to/easylist/easyprivacy.txt",
@@ -16,6 +17,7 @@ impl FilterListManager {
         Self { cache_dir }
     }
 
+    #[allow(dead_code)]
     pub fn default_list_urls() -> Vec<String> {
         DEFAULT_FILTER_LISTS
             .iter()

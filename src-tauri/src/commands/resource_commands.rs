@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 
 use crate::app_manager::lifecycle;
 use crate::app_manager::state::{AppManager, AppRuntimeState};
