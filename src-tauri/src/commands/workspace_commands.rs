@@ -90,17 +90,22 @@ pub fn update_workspace(
 pub fn delete_workspace(
     workspace_id: String,
     config_manager: State<'_, ConfigManager>,
+    app_handle: AppHandle,
 ) -> Result<(), String> {
     if workspace_id == "default" {
         return Err("Cannot delete the default workspace".into());
     }
     let mut config = config_manager.get_config();
     config.workspaces.items.retain(|w| w.id != workspace_id);
-    if config.workspaces.active == workspace_id {
+    let was_active = config.workspaces.active == workspace_id;
+    if was_active {
         config.workspaces.active = "default".to_string();
     }
     config_manager
         .save_config(config)
         .map_err(|e| e.to_string())?;
+    if was_active {
+        let _ = app_handle.emit("workspace-switched", "default");
+    }
     Ok(())
 }

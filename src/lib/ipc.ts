@@ -60,13 +60,13 @@ export const openDownloadFolder = (path: string) => invoke<void>("open_download_
 export const getWorkspaces = () => invoke<Workspace[]>("get_workspaces");
 export const getActiveWorkspace = () => invoke<string>("get_active_workspace");
 export const switchWorkspace = (workspaceId: string) =>
-  invoke<void>("switch_workspace", { workspaceId });
+  invoke<void>("switch_workspace", { workspace_id: workspaceId });
 export const createWorkspace = (name: string, appIds: string[]) =>
-  invoke<Workspace>("create_workspace", { name, appIds });
+  invoke<Workspace>("create_workspace", { name, app_ids: appIds });
 export const updateWorkspace = (workspace: Workspace) =>
   invoke<void>("update_workspace", { workspace });
 export const deleteWorkspace = (workspaceId: string) =>
-  invoke<void>("delete_workspace", { workspaceId });
+  invoke<void>("delete_workspace", { workspace_id: workspaceId });
 
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");
