@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+
+  --color-sidebar-light: #F5F5F7;
+  --color-sidebar-dark: #1E1E1E;
+  --color-sidebar-selected-light: #E8E8ED;
+  --color-sidebar-selected-dark: #2D2D2D;
+  --color-content-light: #FFFFFF;
+  --color-content-dark: #121212;
+  --color-accent: #4A90D9;
+  --color-badge: #FF3B30;
+  --color-badge-dark: #FF453A;
+  --color-dnd-active: #FF9500;
+  --color-dnd-active-dark: #FF9F0A;
+}
