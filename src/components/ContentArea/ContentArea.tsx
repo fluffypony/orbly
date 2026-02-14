@@ -1,6 +1,7 @@
-import { Component, Show, Switch, Match, onMount, onCleanup, createSignal, createEffect, on } from "solid-js";
-import { activeAppId, appConfigs, appStates } from "../../stores/uiStore";
-import { setContentAreaBounds, enableApp, reloadApp } from "../../lib/ipc";
+import { Component, Show, Switch, Match, For, onMount, onCleanup, createSignal, createEffect, on } from "solid-js";
+import { activeAppId, appConfigs, appStates, layoutMode, tileAssignments, setTileAssignments, setActiveTileId, activeTileId, visibleApps } from "../../stores/uiStore";
+import { setContentAreaBounds, enableApp, reloadApp, applyLayout } from "../../lib/ipc";
+import type { AppLayoutInfo } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
@@ -44,6 +45,7 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
           setContentAreaBounds(rect.x, rect.y, rect.width, rect.height).catch(
             (err) => console.error("Failed to set content area bounds:", err)
           );
+          setContainerSize({ width: rect.width, height: rect.height });
         }
       });
       observer.observe(containerRef);
@@ -73,6 +75,72 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
     }
   };
 
+  // Compute tile rectangles based on layout mode and container size
+  const [containerSize, setContainerSize] = createSignal({ width: 0, height: 0 });
+
+  const tileRects = () => {
+    const { width, height } = containerSize();
+    if (width === 0 || height === 0) return [];
+    const mode = layoutMode();
+    switch (mode) {
+      case "split-vertical":
+        return [
+          { x: 0, y: 0, width: width / 2, height },
+          { x: width / 2, y: 0, width: width / 2, height },
+        ];
+      case "split-horizontal":
+        return [
+          { x: 0, y: 0, width, height: height / 2 },
+          { x: 0, y: height / 2, width, height: height / 2 },
+        ];
+      case "grid":
+        return [
+          { x: 0, y: 0, width: width / 2, height: height / 2 },
+          { x: width / 2, y: 0, width: width / 2, height: height / 2 },
+          { x: 0, y: height / 2, width: width / 2, height: height / 2 },
+          { x: width / 2, y: height / 2, width: width / 2, height: height / 2 },
+        ];
+      default:
+        return [{ x: 0, y: 0, width, height }];
+    }
+  };
+
+  // Apply tiling layout when layout mode or assignments change
+  createEffect(on(
+    () => [layoutMode(), JSON.stringify(tileAssignments), containerSize()],
+    () => {
+      if (layoutMode() === "single") return;
+      const rects = tileRects();
+      const rect = containerRef?.getBoundingClientRect();
+      if (!rect) return;
+
+      const layoutInfos: AppLayoutInfo[] = [];
+      for (let i = 0; i < rects.length; i++) {
+        const appId = tileAssignments[i];
+        if (appId) {
+          layoutInfos.push({
+            app_id: appId,
+            x: rect.x + rects[i].x,
+            y: rect.y + rects[i].y,
+            width: rects[i].width,
+            height: rects[i].height,
+          });
+        }
+      }
+      if (layoutInfos.length > 0) {
+        applyLayout(layoutInfos).catch(console.error);
+      }
+    },
+    { defer: true },
+  ));
+
+  const enabledApps = () => visibleApps().filter(a => a.enabled);
+
+  const handleAssignApp = (tileIndex: number, appId: string) => {
+    setTileAssignments(tileIndex, appId);
+    setActiveTileId(tileIndex);
+  };
+
   return (
     <div ref={containerRef} role="main" aria-label="Content area" class="flex-1 relative bg-white dark:bg-[#121212] overflow-hidden">
       <FindBar
@@ -80,53 +148,103 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
         onClose={props.onCloseFindBar}
       />
 
-      {/* Hibernate fade-out overlay: briefly covers the content area after
-          the native webview is destroyed, then fades out over 300ms */}
+      {/* Hibernate fade-out overlay */}
       <Show when={fadingOut()}>
         <div
           class="absolute inset-0 z-50 bg-white dark:bg-[#121212] pointer-events-none animate-[fadeOut_300ms_ease-out_forwards]"
         />
       </Show>
 
-      <Show when={activeApp()} fallback={<EmptyState hasApps={appConfigs.length > 0} />}>
-        {(app) => (
-          <Switch fallback={<LoadingState appName={app().name} />}>
-            <Match when={activeState()?.state === "active"}>
-              <div id="webview-container" class="absolute inset-0" />
-            </Match>
-            <Match when={activeState()?.state === "loading"}>
-              <LoadingState appName={app().name} message="Loading..." />
-            </Match>
-            <Match when={activeState()?.state === "hibernated"}>
-              <LoadingState appName={app().name} message="Waking up..." />
-            </Match>
-            <Match when={activeState()?.state === "disabled"}>
-              <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
-                <div class="text-4xl">⏸️</div>
-                <p class="text-lg">This app is disabled</p>
-                <button
-                  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-                  onClick={handleEnable}
-                >
-                  Enable App
-                </button>
+      <Show when={layoutMode() !== "single"}>
+        {/* Tiling overlay: slot selectors and dividers */}
+        <div class="absolute inset-0 z-30 pointer-events-none">
+          <For each={tileRects()}>
+            {(rect, index) => (
+              <div
+                class="absolute border border-gray-300/30 dark:border-gray-600/30"
+                style={{
+                  left: `${rect.x}px`,
+                  top: `${rect.y}px`,
+                  width: `${rect.width}px`,
+                  height: `${rect.height}px`,
+                }}
+              >
+                <Show when={!tileAssignments[index()]}>
+                  <div class="absolute inset-0 flex items-center justify-center pointer-events-auto bg-gray-50/80 dark:bg-gray-900/80">
+                    <select
+                      class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer"
+                      onChange={(e) => {
+                        if (e.currentTarget.value) handleAssignApp(index(), e.currentTarget.value);
+                      }}
+                    >
+                      <option value="">Select app...</option>
+                      <For each={enabledApps()}>
+                        {(app) => (
+                          <option value={app.id}>{app.name}</option>
+                        )}
+                      </For>
+                    </select>
+                  </div>
+                </Show>
+                <Show when={tileAssignments[index()]}>
+                  <div
+                    class={`absolute top-1 left-1 px-1.5 py-0.5 text-[10px] rounded pointer-events-auto cursor-pointer ${
+                      activeTileId() === index()
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200/80 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300"
+                    }`}
+                    onClick={() => setActiveTileId(index())}
+                  >
+                    {appConfigs.find(a => a.id === tileAssignments[index()])?.name ?? "App"}
+                  </div>
+                </Show>
               </div>
-            </Match>
-            <Match when={activeState()?.state === "error"}>
-              <ErrorState appName={app().name} message={activeState()?.error_message} />
-            </Match>
-            <Match when={activeState()?.state === "crashed"}>
-              <CrashedState appName={app().name} onReload={handleReload} />
-            </Match>
-            <Match when={activeState()?.state === "certificate_error"}>
-              <CertificateWarning
-                appId={app().id}
-                appName={app().name}
-                message={activeState()?.error_message}
-              />
-            </Match>
-          </Switch>
-        )}
+            )}
+          </For>
+        </div>
+      </Show>
+
+      <Show when={layoutMode() === "single"}>
+        <Show when={activeApp()} fallback={<EmptyState hasApps={appConfigs.length > 0} />}>
+          {(app) => (
+            <Switch fallback={<LoadingState appName={app().name} />}>
+              <Match when={activeState()?.state === "active"}>
+                <div id="webview-container" class="absolute inset-0" />
+              </Match>
+              <Match when={activeState()?.state === "loading"}>
+                <LoadingState appName={app().name} message="Loading..." />
+              </Match>
+              <Match when={activeState()?.state === "hibernated"}>
+                <LoadingState appName={app().name} message="Waking up..." />
+              </Match>
+              <Match when={activeState()?.state === "disabled"}>
+                <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                  <div class="text-4xl">⏸️</div>
+                  <p class="text-lg">This app is disabled</p>
+                  <button
+                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                    onClick={handleEnable}
+                  >
+                    Enable App
+                  </button>
+                </div>
+              </Match>
+              <Match when={activeState()?.state === "error"}>
+                <ErrorState appName={app().name} message={activeState()?.error_message} />
+              </Match>
+              <Match when={activeState()?.state === "crashed"}>
+                <CrashedState appName={app().name} onReload={handleReload} />
+              </Match>
+              <Match when={activeState()?.state === "certificate_error"}>
+                <CertificateWarning
+                  appId={app().id}
+                  appName={app().name}
+                  message={activeState()?.error_message}
+                />
+              </Match>
+            </Switch>
+          )}
+        </Show>
       </Show>
     </div>
   );

@@ -98,6 +98,8 @@ pub fn create_workspace(
         id,
         name,
         app_ids,
+        tiling_layout: String::new(),
+        tile_assignments: vec![],
     };
 
     config.workspaces.items.push(workspace.clone());

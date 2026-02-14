@@ -346,6 +346,7 @@ pub fn run() {
             commands::app_lifecycle_commands::on_url_changed,
             commands::app_lifecycle_commands::on_page_load_error,
             commands::app_lifecycle_commands::eval_in_app,
+            commands::app_lifecycle_commands::apply_layout,
             commands::app_lifecycle_commands::check_unsaved_work,
             commands::app_lifecycle_commands::set_has_unsaved_work,
             commands::app_lifecycle_commands::heartbeat,

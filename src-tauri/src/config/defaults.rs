@@ -113,6 +113,8 @@ pub fn default_workspace_items() -> Vec<Workspace> {
         id: "default".to_string(),
         name: "All Apps".to_string(),
         app_ids: vec![],
+        tiling_layout: String::new(),
+        tile_assignments: vec![],
     }]
 }
 

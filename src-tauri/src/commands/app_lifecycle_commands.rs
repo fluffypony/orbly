@@ -673,6 +673,56 @@ pub fn remove_certificate_exception(
     Ok(())
 }
 
+#[derive(serde::Deserialize)]
+pub struct AppLayoutInfo {
+    pub app_id: String,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[tauri::command]
+pub fn apply_layout(
+    layout: Vec<AppLayoutInfo>,
+    webview: tauri::Webview,
+    app_handle: AppHandle,
+    app_manager: State<'_, AppManager>,
+) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
+
+    let layout_ids: std::collections::HashSet<String> = layout.iter().map(|l| l.app_id.clone()).collect();
+
+    // Hide apps not in the layout
+    let apps_lock = app_manager.apps.lock().expect("apps lock");
+    let all_ids: Vec<String> = apps_lock.keys().cloned().collect();
+    drop(apps_lock);
+
+    for id in &all_ids {
+        if !layout_ids.contains(id) {
+            let _ = lifecycle::set_webview_visible(&app_handle, id, false, None, None);
+            app_manager.set_visible(id, false);
+        }
+    }
+
+    // Position and show each app in the layout
+    for info in &layout {
+        let position = tauri::LogicalPosition::new(info.x, info.y);
+        let size = tauri::LogicalSize::new(info.width, info.height);
+
+        let _ = lifecycle::set_webview_visible(
+            &app_handle,
+            &info.app_id,
+            true,
+            Some(position),
+            Some(size),
+        );
+        app_manager.set_visible(&info.app_id, true);
+    }
+
+    Ok(())
+}
+
 #[tauri::command(rename_all = "snake_case")]
 pub fn on_page_load_error(
     app_id: String,

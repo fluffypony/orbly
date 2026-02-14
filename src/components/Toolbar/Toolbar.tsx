@@ -1,5 +1,6 @@
-import { Component, Show } from "solid-js";
-import { activeAppId, appConfigs, appStates } from "../../stores/uiStore";
+import { Component, Show, createSignal } from "solid-js";
+import { activeAppId, appConfigs, appStates, layoutMode } from "../../stores/uiStore";
+import LayoutPicker from "../Tiling/LayoutPicker";
 import NavButtons from "./NavButtons";
 import UrlDisplay from "./UrlDisplay";
 import AudioToggle from "./AudioToggle";
@@ -14,6 +15,7 @@ interface ToolbarProps {
 const Toolbar: Component<ToolbarProps> = (props) => {
   const activeApp = () => appConfigs.find((a) => a.id === activeAppId());
   const activeState = () => appStates.find((a) => a.id === activeAppId());
+  const [showLayoutPicker, setShowLayoutPicker] = createSignal(false);
 
   return (
     <div role="toolbar" aria-label="App toolbar" class="h-10 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
@@ -55,19 +57,37 @@ const Toolbar: Component<ToolbarProps> = (props) => {
               />
             </div>
 
-            <button
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 cursor-not-allowed"
-              title="Tiling layout — Available in a future update"
-              aria-label="Tiling layout (available in a future update)"
-              disabled
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-              </svg>
-            </button>
+            {(() => {
+              let tilingBtnRef: HTMLButtonElement | undefined;
+              return (
+                <>
+                  <button
+                    ref={tilingBtnRef}
+                    class={`w-7 h-7 flex items-center justify-center rounded cursor-pointer ${
+                      layoutMode() !== "single"
+                        ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                        : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                    title="Tiling layout"
+                    aria-label="Tiling layout"
+                    onClick={() => setShowLayoutPicker((v) => !v)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                      <rect x="14" y="14" width="7" height="7" />
+                    </svg>
+                  </button>
+                  <Show when={showLayoutPicker()}>
+                    <LayoutPicker
+                      onClose={() => setShowLayoutPicker(false)}
+                      anchorRect={tilingBtnRef!.getBoundingClientRect()}
+                    />
+                  </Show>
+                </>
+              );
+            })()}
             <Show when={props.onToggleFindBar && activeState()?.state === "active"}>
               <button
                 class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer"

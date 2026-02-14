@@ -97,6 +97,8 @@ export interface Workspace {
   id: string;
   name: string;
   app_ids: string[];
+  tiling_layout: string;
+  tile_assignments: string[];
 }
 
 export interface WorkspacesConfig {

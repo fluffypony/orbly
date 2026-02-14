@@ -49,3 +49,9 @@ export const [settingsVisible, setSettingsVisible] = createSignal(false);
 
 // Theme state
 export const [theme, setTheme] = createSignal<'system' | 'light' | 'dark'>('system');
+
+// Tiling state
+export type LayoutMode = 'single' | 'split-vertical' | 'split-horizontal' | 'grid';
+export const [layoutMode, setLayoutMode] = createSignal<LayoutMode>('single');
+export const [tileAssignments, setTileAssignments] = createStore<Record<number, string>>({});
+export const [activeTileId, setActiveTileId] = createSignal<number>(0);

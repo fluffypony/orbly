@@ -211,6 +211,10 @@ pub struct Workspace {
     pub name: String,
     #[serde(default)]
     pub app_ids: Vec<String>,
+    #[serde(default)]
+    pub tiling_layout: String,
+    #[serde(default)]
+    pub tile_assignments: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

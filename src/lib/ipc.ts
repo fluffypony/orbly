@@ -28,6 +28,15 @@ export const evalInApp = (appId: string, script: string) =>
   invoke<void>("eval_in_app", { app_id: appId, script });
 export const checkUnsavedWork = (appId: string) => invoke<boolean>("check_unsaved_work", { app_id: appId });
 
+export interface AppLayoutInfo {
+  app_id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export const applyLayout = (layout: AppLayoutInfo[]) => invoke<void>("apply_layout", { layout });
+
 // Content area bounds
 export const setContentAreaBounds = (x: number, y: number, width: number, height: number) =>
   invoke<void>("set_content_area_bounds", { x, y, width, height });
