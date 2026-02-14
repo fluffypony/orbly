@@ -1,7 +1,8 @@
 import { Component, For, Show, createSignal, createEffect, onCleanup } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
-import { getResourceUsage, reloadApp, hibernateApp, disableApp, enableApp, killApp, getConfig } from "../../lib/ipc";
+import { getResourceUsage, reloadApp, hibernateApp, disableApp, enableApp, killApp, getConfig, checkUnsavedWork } from "../../lib/ipc";
 import { appConfigs } from "../../stores/uiStore";
+import { showToast } from "../Toast/ToastContainer";
 
 interface AppsManagerProps {
   visible: boolean;
@@ -120,7 +121,18 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
           await reloadApp(appId);
           break;
         case "hibernate":
-          await hibernateApp(appId);
+          {
+            const config = await getConfig();
+            const appConfig = config.apps.find((a) => a.id === appId);
+            if (!appConfig?.suppress_hibernate_confirm) {
+              const hasUnsaved = await checkUnsavedWork(appId);
+              if (hasUnsaved) {
+                showToast("Unsaved work detected; hibernate cancelled", "warning");
+                break;
+              }
+            }
+            await hibernateApp(appId);
+          }
           break;
         case "disable":
           await disableApp(appId);

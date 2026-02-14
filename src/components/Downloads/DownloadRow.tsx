@@ -104,13 +104,22 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
       </td>
       <td class="px-3 py-1.5 w-[120px]">
         <Show when={statusType() === "Downloading"}>
-          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-            <div
-              class="bg-blue-500 h-1.5 rounded-full transition-[width] duration-300"
-              style={{ width: `${progressPct()}%` }}
-            />
-          </div>
-          <span class="text-[10px] text-gray-400">{progressPct()}%</span>
+          <Show
+            when={progressPct() > 0}
+            fallback={
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-blue-500 h-1.5 rounded-full w-1/3 animate-[indeterminate_1.5s_infinite_ease-in-out]" />
+              </div>
+            }
+          >
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+              <div
+                class="bg-blue-500 h-1.5 rounded-full transition-[width] duration-300"
+                style={{ width: `${progressPct()}%` }}
+              />
+            </div>
+          </Show>
+          <span class="text-[10px] text-gray-400">{progressPct() > 0 ? `${progressPct()}%` : "…"}</span>
         </Show>
       </td>
       <td class="px-3 py-1.5">

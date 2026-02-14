@@ -14,6 +14,7 @@ export const updateGeneralConfig = (general: GeneralConfig) => invoke<void>("upd
 // App lifecycle commands
 export const getAppStates = () => invoke<AppStateInfo[]>("get_app_states");
 export const activateApp = (appId: string) => invoke<void>("activate_app", { app_id: appId });
+export const ensureWebviewExists = (appId: string) => invoke<void>("ensure_webview_exists", { app_id: appId });
 export const hibernateApp = (appId: string) => invoke<void>("hibernate_app", { app_id: appId });
 export const disableApp = (appId: string) => invoke<void>("disable_app", { app_id: appId });
 export const enableApp = (appId: string) => invoke<void>("enable_app", { app_id: appId });
@@ -89,6 +90,15 @@ export const createWorkspace = (name: string, appIds: string[]) =>
   invoke<Workspace>("create_workspace", { name, app_ids: appIds });
 export const updateWorkspace = (workspace: Workspace) =>
   invoke<void>("update_workspace", { workspace });
+export const updateWorkspaceTiling = (
+  workspaceId: string,
+  tilingLayout: string,
+  tileAssignments: string[],
+) => invoke<void>("update_workspace_tiling", {
+  workspace_id: workspaceId,
+  tiling_layout: tilingLayout,
+  tile_assignments: tileAssignments,
+});
 export const deleteWorkspace = (workspaceId: string) =>
   invoke<void>("delete_workspace", { workspace_id: workspaceId });
 

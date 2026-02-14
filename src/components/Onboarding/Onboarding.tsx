@@ -39,9 +39,10 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         dark_mode_sepia: 10,
         dark_mode_bg_color: "",
         dark_mode_text_color: "",
+        dark_mode_custom_css: "",
         hibernation_timeout_minutes: 15,
         download_directory: "~/Downloads",
-        skip_download_dialog: false,
+        skip_download_dialog: null,
         workspace: "default",
         sidebar_section: s.template.category,
         position: i,
@@ -49,6 +50,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         adblock_enabled: true,
         zoom_level: 100,
         suppress_high_usage_alert: false,
+        suppress_hibernate_confirm: false,
       };
       try {
         await addApp(app);

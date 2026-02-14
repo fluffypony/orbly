@@ -1,10 +1,12 @@
-import { createSignal, createMemo } from "solid-js";
+import { createSignal, createMemo, createEffect } from "solid-js";
 import { createStore } from "solid-js/store";
 import type { AppConfig, Workspace } from "../types/config";
 import type { AppStateInfo } from "../types/appState";
+import { updateWorkspaceTiling } from "../lib/ipc";
 
 // Sidebar state
 export const [sidebarExpanded, setSidebarExpanded] = createSignal(false);
+export const [sidebarManuallyExpanded, setSidebarManuallyExpanded] = createSignal(false);
 export const [activeAppId, setActiveAppId] = createSignal<string | null>(null);
 export const [recentAppIds, setRecentAppIds] = createSignal<string[]>([]);
 
@@ -47,7 +49,27 @@ export const [editingAppIdFromContextMenu, setEditingAppIdFromContextMenu] = cre
 export const [theme, setTheme] = createSignal<'system' | 'light' | 'dark'>('system');
 
 // Tiling state
-export type LayoutMode = 'single' | 'split-vertical' | 'split-horizontal' | 'grid';
+export type LayoutMode = 'single' | 'split-vertical' | 'split-horizontal' | 'three-column' | 'two-thirds-left' | 'two-thirds-right' | 'grid';
 export const [layoutMode, setLayoutMode] = createSignal<LayoutMode>('single');
 export const [tileAssignments, setTileAssignments] = createStore<Record<number, string>>({});
 export const [activeTileId, setActiveTileId] = createSignal<number>(0);
+export const [splitRatio, setSplitRatio] = createSignal<number>(0.5);
+
+let persistTilingTimer: ReturnType<typeof setTimeout> | undefined;
+
+createEffect(() => {
+  const workspaceId = activeWorkspaceId();
+  const mode = layoutMode();
+  const assignmentsSnapshot = JSON.stringify(tileAssignments);
+
+  clearTimeout(persistTilingTimer);
+  persistTilingTimer = setTimeout(() => {
+    const parsed = JSON.parse(assignmentsSnapshot) as Record<string, string>;
+    const tileList = Object.entries(parsed)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([, appId]) => appId);
+    updateWorkspaceTiling(workspaceId, mode, tileList).catch((err) => {
+      console.error("Failed to persist workspace tiling:", err);
+    });
+  }, 500);
+});

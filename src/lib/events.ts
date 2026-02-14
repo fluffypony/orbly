@@ -4,15 +4,22 @@ import {
   activeAppId,
   setActiveDownloadCount,
   setActiveWorkspaceId,
+  activeWorkspaceId,
   setDndEnabled,
   recentAppIds,
   setRecentAppIds,
   appConfigs,
   visibleApps,
+  layoutMode,
+  tileAssignments,
+  setLayoutMode,
+  setTileAssignments,
+  workspaces,
+  setWorkspaces,
 } from "../stores/uiStore";
-import { refreshAppStates, persistRecentAppIds } from "./stateSync";
+import { refreshAppStates, persistRecentAppIds, refreshAppConfigs } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
-import { activateApp, getActiveDownloadCount, getConfig } from "./ipc";
+import { activateApp, getActiveDownloadCount, getConfig, updateWorkspaceTiling } from "./ipc";
 
 let unlisteners: UnlistenFn[] = [];
 let downloadCountInterval: ReturnType<typeof setInterval> | undefined;
@@ -69,9 +76,31 @@ export async function setupEventListeners() {
       refreshDownloadCount();
       showToast("Download complete", "info");
     }),
-    await listen<string>("workspace-switched", (event) => {
+    await listen<string>("workspace-switched", async (event) => {
+      const outgoingWorkspaceId = activeWorkspaceId();
+      const outgoingTileList = Object.entries(tileAssignments)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([, appId]) => appId);
+      await updateWorkspaceTiling(outgoingWorkspaceId, layoutMode(), outgoingTileList).catch(() => {});
+
       setActiveWorkspaceId(event.payload);
-      refreshAppStates();
+      const latestConfig = await getConfig().catch(() => null);
+      if (latestConfig) {
+        setWorkspaces(latestConfig.workspaces.items);
+      }
+      const sourceWorkspaces = latestConfig?.workspaces.items ?? workspaces;
+      const incomingWorkspace = sourceWorkspaces.find((w) => w.id === event.payload);
+      setLayoutMode((incomingWorkspace?.tiling_layout as import("../stores/uiStore").LayoutMode) || "single");
+      setTileAssignments(() => {
+        const assignments: Record<number, string> = {};
+        (incomingWorkspace?.tile_assignments ?? []).forEach((appId, idx) => {
+          assignments[idx] = appId;
+        });
+        return assignments;
+      });
+
+      await refreshAppConfigs();
+      await refreshAppStates();
       // If the currently active app is no longer visible in the new workspace, switch to first visible or clear
       const currentActive = activeAppId();
       const visible = visibleApps();
@@ -106,6 +135,17 @@ export async function setupEventListeners() {
         "info",
         10000,
       );
+    }),
+    await listen<string>("deep-link-received", (event) => {
+      const url = event.payload;
+      if (!url || !url.startsWith("orbly://")) return;
+      const oauthTarget = appConfigs.find((a) => {
+        const service = a.service_type.toLowerCase();
+        return url.includes(service) || url.includes(a.id);
+      });
+      if (oauthTarget) {
+        activateApp(oauthTarget.id).catch(() => {});
+      }
     }),
   );
 }

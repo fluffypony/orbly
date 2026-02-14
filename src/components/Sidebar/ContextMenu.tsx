@@ -125,13 +125,14 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
 
   const handleHibernateConfirm = async () => {
     try {
-      if (suppressForApp()) {
-        const config = appConfigs.find((a) => a.id === props.appId);
-        if (config) {
-          await updateApp({ ...config, suppress_hibernate_confirm: true });
-          await refreshAppConfigs();
+        if (suppressForApp()) {
+          const config = appConfigs.find((a) => a.id === props.appId);
+          if (config) {
+            const safeConfig = structuredClone(config);
+            await updateApp({ ...safeConfig, suppress_hibernate_confirm: true });
+            await refreshAppConfigs();
+          }
         }
-      }
       await hibernateApp(props.appId);
     } catch (err) {
       console.error("Failed to hibernate app:", err);

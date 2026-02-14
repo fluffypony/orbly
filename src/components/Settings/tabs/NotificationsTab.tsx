@@ -34,7 +34,9 @@ const NotificationsTab: Component = () => {
     selection_color: null,
     local_scripts_only: false,
     cpu_alert_threshold: 30,
+    sidebar_hover_expand: true,
     recipe_cache_ttl_hours: 24,
+    recipe_manifest_url: null,
     window_state: { maximized: false },
   });
 

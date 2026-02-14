@@ -1,4 +1,4 @@
-import { Component, For, Show, createSignal, createEffect } from "solid-js";
+import { Component, For, Show, createSignal, createEffect, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 import { appConfigs, appStates, editingAppIdFromContextMenu, setEditingAppIdFromContextMenu } from "../../../stores/uiStore";
 import { updateApp, hibernateApp, disableApp, enableApp, getUaPresets, fetchFavicon, removeApp } from "../../../lib/ipc";
@@ -16,6 +16,7 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
   const [saving, setSaving] = createSignal(false);
   const [showInjection, setShowInjection] = createSignal(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = createSignal(false);
+  const [deleteData, setDeleteData] = createSignal(false);
   const [uaPresets, setUaPresets] = createSignal<[string, string][]>([]);
   const [uaMode, setUaMode] = createSignal<string>(props.app.user_agent ? "custom" : "default");
   const [fetchingIcon, setFetchingIcon] = createSignal(false);
@@ -278,17 +279,31 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
           variant="danger"
           onConfirm={async () => {
             try {
-              await removeApp(props.app.id);
+              await removeApp(props.app.id, deleteData());
               await refreshAppConfigs();
               await refreshAppStates();
               props.onClose();
             } catch (err) {
               console.error("Failed to remove app:", err);
             }
+            setDeleteData(false);
             setShowRemoveConfirm(false);
           }}
-          onCancel={() => setShowRemoveConfirm(false)}
-        />
+          onCancel={() => {
+            setDeleteData(false);
+            setShowRemoveConfirm(false);
+          }}
+        >
+          <label class="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={deleteData()}
+              onChange={(e) => setDeleteData(e.currentTarget.checked)}
+              class="rounded"
+            />
+            Also delete all app data (cookies, cache, sessions)
+          </label>
+        </ConfirmDialog>
       </Show>
       <Show when={showInjection()}>
         <InjectionEditor

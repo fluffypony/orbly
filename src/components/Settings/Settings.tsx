@@ -61,6 +61,7 @@ const Settings: Component<SettingsProps> = (props) => {
             {TABS.map(tab => (
               <button
                 role="tab"
+                id={`settings-tab-${tab.id}`}
                 aria-selected={activeTab() === tab.id}
                 class={`w-full text-left px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors
                   ${activeTab() === tab.id
@@ -76,7 +77,11 @@ const Settings: Component<SettingsProps> = (props) => {
 
         {/* Tab content */}
         <div class="flex-1 overflow-y-auto p-8">
-          <div class="max-w-3xl">
+          <div
+            role="tabpanel"
+            aria-labelledby={`settings-tab-${activeTab()}`}
+            class="max-w-3xl"
+          >
             <Switch>
               <Match when={activeTab() === 'general'}><GeneralTab /></Match>
               <Match when={activeTab() === 'apps'}><AppsTab /></Match>

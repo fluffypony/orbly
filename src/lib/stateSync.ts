@@ -7,6 +7,8 @@ import {
   setActiveWorkspaceId,
   setTheme,
   setRecentAppIds,
+  setLayoutMode,
+  setTileAssignments,
 } from "../stores/uiStore";
 import { load } from "@tauri-apps/plugin-store";
 
@@ -14,7 +16,7 @@ let storeInstance: Awaited<ReturnType<typeof load>> | null = null;
 
 async function getStore() {
   if (!storeInstance) {
-    storeInstance = await load("ui-state.json", { autoSave: true });
+    storeInstance = await load("ui-state.json", { autoSave: true, defaults: {} });
   }
   return storeInstance;
 }
@@ -27,6 +29,15 @@ export async function initializeState() {
     setTheme(config.general.theme);
     setWorkspaces(config.workspaces.items);
     setActiveWorkspaceId(config.workspaces.active);
+    const activeWorkspace = config.workspaces.items.find((w) => w.id === config.workspaces.active);
+    setLayoutMode((activeWorkspace?.tiling_layout as import("../stores/uiStore").LayoutMode) || "single");
+    setTileAssignments(() => {
+      const assignments: Record<number, string> = {};
+      (activeWorkspace?.tile_assignments ?? []).forEach((appId, idx) => {
+        assignments[idx] = appId;
+      });
+      return assignments;
+    });
 
     const states = await getAppStates();
     setAppStates(states);

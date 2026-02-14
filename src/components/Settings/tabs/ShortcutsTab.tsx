@@ -212,6 +212,9 @@ const ShortcutsTab: Component = () => {
       <Show when={conflict()}>
         <p class="text-xs text-red-500 mt-2">{conflict()}</p>
       </Show>
+      <div class="sr-only" aria-live="polite">
+        {recording() ? "Recording shortcut, press desired key combination" : ""}
+      </div>
 
       <div class="flex justify-end mt-4">
         <Button onClick={resetToDefaults}>Reset to Defaults</Button>

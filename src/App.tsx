@@ -19,6 +19,8 @@ import {
   appConfigs,
   dndEnabled,
   setSidebarExpanded,
+  sidebarExpanded,
+  setSidebarManuallyExpanded,
   setDndEnabled,
   downloadsVisible,
   setDownloadsVisible,
@@ -29,6 +31,106 @@ import {
 } from "./stores/uiStore";
 import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset, getConfig, frontendReady, updateGeneralConfig, toggleGlobalMute } from "./lib/ipc";
 import { showToast } from "./components/Toast/ToastContainer";
+
+function createShortcutHandlers(args: {
+  setQuickSwitcherVisible: (value: boolean | ((v: boolean) => boolean)) => void;
+  setFindBarVisible: (value: boolean | ((v: boolean) => boolean)) => void;
+}) {
+  return {
+    quickSwitcher: () => args.setQuickSwitcherVisible((v) => !v),
+    toggleSidebar: () => {
+      const nextExpanded = !sidebarExpanded();
+      setSidebarExpanded(nextExpanded);
+      setSidebarManuallyExpanded(nextExpanded);
+    },
+    toggleDnd: () => {
+      const newVal = !dndEnabled();
+      setDndEnabled(newVal);
+      getConfig().then(config => {
+        updateGeneralConfig({ ...config.general, dnd_enabled: newVal }).catch(err => {
+          console.error("Failed to persist DND state:", err);
+        });
+      }).catch(() => {});
+    },
+    nextApp: () => {
+      const apps = [...appConfigs]
+        .filter((a) => a.enabled)
+        .sort((a, b) => a.position - b.position);
+      if (apps.length === 0) return;
+      const currentIdx = apps.findIndex((a) => a.id === activeAppId());
+      const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % apps.length;
+      activateApp(apps[nextIdx].id);
+    },
+    prevApp: () => {
+      const apps = [...appConfigs]
+        .filter((a) => a.enabled)
+        .sort((a, b) => a.position - b.position);
+      if (apps.length === 0) return;
+      const currentIdx = apps.findIndex((a) => a.id === activeAppId());
+      const prevIdx = currentIdx === -1 ? apps.length - 1 : (currentIdx - 1 + apps.length) % apps.length;
+      activateApp(apps[prevIdx].id);
+    },
+    reloadCurrentApp: () => {
+      const id = activeAppId();
+      if (id) reloadApp(id);
+    },
+    appsManager: () => setAppsManagerVisible((v) => !v),
+    downloads: () => {
+      setDownloadsVisible((v) => !v);
+    },
+    settings: () => {
+      setSettingsVisible((v) => !v);
+    },
+    zoomIn: async () => {
+      const id = activeAppId();
+      if (id) {
+        try {
+          const newZoom = await zoomIn(id);
+          showToast(`Zoom: ${newZoom}%`, "info", 1500);
+        } catch (err) {
+          console.error("Zoom in failed:", err);
+        }
+      }
+    },
+    zoomOut: async () => {
+      const id = activeAppId();
+      if (id) {
+        try {
+          const newZoom = await zoomOut(id);
+          showToast(`Zoom: ${newZoom}%`, "info", 1500);
+        } catch (err) {
+          console.error("Zoom out failed:", err);
+        }
+      }
+    },
+    zoomReset: async () => {
+      const id = activeAppId();
+      if (id) {
+        try {
+          await zoomReset(id);
+          showToast("Zoom: 100%", "info", 1500);
+        } catch (err) {
+          console.error("Zoom reset failed:", err);
+        }
+      }
+    },
+    findInPage: () => args.setFindBarVisible((v) => !v),
+    globalMute: async () => {
+      try {
+        const muted = await toggleGlobalMute();
+        showToast(muted ? "All apps muted" : "All apps unmuted", "info", 1500);
+      } catch (err) {
+        console.error("Global mute failed:", err);
+      }
+    },
+    switchToApp: (index: number) => {
+      const apps = [...appConfigs]
+        .filter((a) => a.enabled)
+        .sort((a, b) => a.position - b.position);
+      if (apps[index]) activateApp(apps[index].id);
+    },
+  };
+}
 
 const App: Component = () => {
   const [quickSwitcherVisible, setQuickSwitcherVisible] = createSignal(false);
@@ -69,96 +171,12 @@ const App: Component = () => {
     );
     cleanupSessionRecovered = unlistenSessionRecovered;
 
-    const bindings = createDefaultBindings({
-      quickSwitcher: () => setQuickSwitcherVisible((v) => !v),
-      toggleSidebar: () => setSidebarExpanded((v) => !v),
-      toggleDnd: () => {
-        const newVal = !dndEnabled();
-        setDndEnabled(newVal);
-        getConfig().then(config => {
-          updateGeneralConfig({ ...config.general, dnd_enabled: newVal }).catch(err => {
-            console.error("Failed to persist DND state:", err);
-          });
-        }).catch(() => {});
-      },
-      nextApp: () => {
-        const apps = [...appConfigs]
-          .filter((a) => a.enabled)
-          .sort((a, b) => a.position - b.position);
-        if (apps.length === 0) return;
-        const currentIdx = apps.findIndex((a) => a.id === activeAppId());
-        const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % apps.length;
-        activateApp(apps[nextIdx].id);
-      },
-      prevApp: () => {
-        const apps = [...appConfigs]
-          .filter((a) => a.enabled)
-          .sort((a, b) => a.position - b.position);
-        if (apps.length === 0) return;
-        const currentIdx = apps.findIndex((a) => a.id === activeAppId());
-        const prevIdx = currentIdx === -1 ? apps.length - 1 : (currentIdx - 1 + apps.length) % apps.length;
-        activateApp(apps[prevIdx].id);
-      },
-      reloadCurrentApp: () => {
-        const id = activeAppId();
-        if (id) reloadApp(id);
-      },
-      appsManager: () => setAppsManagerVisible((v) => !v),
-      downloads: () => {
-        setDownloadsVisible((v) => !v);
-      },
-      settings: () => {
-        setSettingsVisible((v) => !v);
-      },
-      zoomIn: async () => {
-        const id = activeAppId();
-        if (id) {
-          try {
-            const newZoom = await zoomIn(id);
-            showToast(`Zoom: ${newZoom}%`, "info", 1500);
-          } catch (err) {
-            console.error("Zoom in failed:", err);
-          }
-        }
-      },
-      zoomOut: async () => {
-        const id = activeAppId();
-        if (id) {
-          try {
-            const newZoom = await zoomOut(id);
-            showToast(`Zoom: ${newZoom}%`, "info", 1500);
-          } catch (err) {
-            console.error("Zoom out failed:", err);
-          }
-        }
-      },
-      zoomReset: async () => {
-        const id = activeAppId();
-        if (id) {
-          try {
-            await zoomReset(id);
-            showToast("Zoom: 100%", "info", 1500);
-          } catch (err) {
-            console.error("Zoom reset failed:", err);
-          }
-        }
-      },
-      findInPage: () => setFindBarVisible((v) => !v),
-      globalMute: async () => {
-        try {
-          const muted = await toggleGlobalMute();
-          showToast(muted ? "All apps muted" : "All apps unmuted", "info", 1500);
-        } catch (err) {
-          console.error("Global mute failed:", err);
-        }
-      },
-      switchToApp: (index) => {
-        const apps = [...appConfigs]
-          .filter((a) => a.enabled)
-          .sort((a, b) => a.position - b.position);
-        if (apps[index]) activateApp(apps[index].id);
-      },
-    }, config.shortcuts);
+    const handlers = createShortcutHandlers({
+      setQuickSwitcherVisible,
+      setFindBarVisible,
+    });
+
+    const bindings = createDefaultBindings(handlers, config.shortcuts);
 
     await registerShortcuts(bindings);
 
@@ -166,96 +184,13 @@ const App: Component = () => {
     const unlistenShortcuts = await listen("shortcuts-updated", async () => {
       try {
         const latestConfig = await getConfig();
-        const newBindings = createDefaultBindings({
-          quickSwitcher: () => setQuickSwitcherVisible((v) => !v),
-          toggleSidebar: () => setSidebarExpanded((v) => !v),
-          toggleDnd: () => {
-            const newVal = !dndEnabled();
-            setDndEnabled(newVal);
-            getConfig().then(config => {
-              updateGeneralConfig({ ...config.general, dnd_enabled: newVal }).catch(err => {
-                console.error("Failed to persist DND state:", err);
-              });
-            }).catch(() => {});
-          },
-          nextApp: () => {
-            const apps = [...appConfigs]
-              .filter((a) => a.enabled)
-              .sort((a, b) => a.position - b.position);
-            if (apps.length === 0) return;
-            const currentIdx = apps.findIndex((a) => a.id === activeAppId());
-            const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % apps.length;
-            activateApp(apps[nextIdx].id);
-          },
-          prevApp: () => {
-            const apps = [...appConfigs]
-              .filter((a) => a.enabled)
-              .sort((a, b) => a.position - b.position);
-            if (apps.length === 0) return;
-            const currentIdx = apps.findIndex((a) => a.id === activeAppId());
-            const prevIdx = currentIdx === -1 ? apps.length - 1 : (currentIdx - 1 + apps.length) % apps.length;
-            activateApp(apps[prevIdx].id);
-          },
-          reloadCurrentApp: () => {
-            const id = activeAppId();
-            if (id) reloadApp(id);
-          },
-          appsManager: () => setAppsManagerVisible((v) => !v),
-          downloads: () => {
-            setDownloadsVisible((v) => !v);
-          },
-          settings: () => {
-            setSettingsVisible((v) => !v);
-          },
-          zoomIn: async () => {
-            const id = activeAppId();
-            if (id) {
-              try {
-                const newZoom = await zoomIn(id);
-                showToast(`Zoom: ${newZoom}%`, "info", 1500);
-              } catch (err) {
-                console.error("Zoom in failed:", err);
-              }
-            }
-          },
-          zoomOut: async () => {
-            const id = activeAppId();
-            if (id) {
-              try {
-                const newZoom = await zoomOut(id);
-                showToast(`Zoom: ${newZoom}%`, "info", 1500);
-              } catch (err) {
-                console.error("Zoom out failed:", err);
-              }
-            }
-          },
-          zoomReset: async () => {
-            const id = activeAppId();
-            if (id) {
-              try {
-                await zoomReset(id);
-                showToast("Zoom: 100%", "info", 1500);
-              } catch (err) {
-                console.error("Zoom reset failed:", err);
-              }
-            }
-          },
-          findInPage: () => setFindBarVisible((v) => !v),
-          globalMute: async () => {
-            try {
-              const muted = await toggleGlobalMute();
-              showToast(muted ? "All apps muted" : "All apps unmuted", "info", 1500);
-            } catch (err) {
-              console.error("Global mute failed:", err);
-            }
-          },
-          switchToApp: (index) => {
-            const apps = [...appConfigs]
-              .filter((a) => a.enabled)
-              .sort((a, b) => a.position - b.position);
-            if (apps[index]) activateApp(apps[index].id);
-          },
-        }, latestConfig.shortcuts);
+        const newBindings = createDefaultBindings(
+          createShortcutHandlers({
+            setQuickSwitcherVisible,
+            setFindBarVisible,
+          }),
+          latestConfig.shortcuts,
+        );
         await registerShortcuts(newBindings);
       } catch (err) {
         console.error("Failed to re-register shortcuts:", err);

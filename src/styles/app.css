@@ -11,6 +11,7 @@
   --color-content-light: #FFFFFF;
   --color-content-dark: #121212;
   --color-accent: #4A90D9;
+  --color-accent: light-dark(AccentColor, AccentColor);
   --color-badge: #FF3B30;
   --color-badge-dark: #FF453A;
   --color-dnd-active: #FF9500;
@@ -30,6 +31,20 @@
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+[class*="cursor-row-resize"],
+[class*="cursor-col-resize"] {
+  transition: all 200ms ease-out;
+}
+
+[class*="text-\[10px\]"] {
+  transition: all 200ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

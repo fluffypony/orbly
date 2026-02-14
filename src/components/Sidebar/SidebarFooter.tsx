@@ -31,7 +31,7 @@ const IconButton: Component<IconButtonProps> = (props) => {
       title={props.label}
       aria-label={props.label}
     >
-      <span class="text-base">{props.icon}</span>
+      <span aria-hidden="true" class="text-base">{props.icon}</span>
       <Show when={props.badge && props.badge > 0}>
         <span class="absolute -top-0.5 -right-0.5 bg-[#FF3B30] dark:bg-[#FF453A] text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 flex items-center justify-center px-0.5">
           {props.badge! > 99 ? "99+" : props.badge}

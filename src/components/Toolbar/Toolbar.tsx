@@ -1,5 +1,5 @@
 import { Component, Show, createSignal } from "solid-js";
-import { activeAppId, appConfigs, appStates, layoutMode } from "../../stores/uiStore";
+import { activeAppId, appConfigs, appStates, layoutMode, tileAssignments } from "../../stores/uiStore";
 import LayoutPicker from "../Tiling/LayoutPicker";
 import NavButtons from "./NavButtons";
 import UrlDisplay from "./UrlDisplay";
@@ -15,10 +15,17 @@ interface ToolbarProps {
 const Toolbar: Component<ToolbarProps> = (props) => {
   const activeApp = () => appConfigs.find((a) => a.id === activeAppId());
   const activeState = () => appStates.find((a) => a.id === activeAppId());
+  const tiledAppNames = () => {
+    const appIds = Array.from(new Set(Object.values(tileAssignments).filter(Boolean)));
+    const names = appIds
+      .map((id) => appConfigs.find((a) => a.id === id)?.name)
+      .filter((name): name is string => Boolean(name));
+    return names.length > 0 ? `Tiled: ${names.join(" + ")}` : "Tiled";
+  };
   const [showLayoutPicker, setShowLayoutPicker] = createSignal(false);
 
   return (
-    <div role="toolbar" aria-label="App toolbar" class="h-11 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
+    <div role="toolbar" aria-label="App toolbar" class="h-10 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
       <Show
         when={activeApp()}
         fallback={
@@ -38,7 +45,7 @@ const Toolbar: Component<ToolbarProps> = (props) => {
                 )}
               </div>
               <span class="text-[13px] font-medium text-gray-800 dark:text-gray-200 truncate">
-                {app().name}
+                {layoutMode() !== "single" ? tiledAppNames() : app().name}
               </span>
             </div>
 

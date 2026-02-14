@@ -1,5 +1,6 @@
 import { Component, onMount, onCleanup, createSignal } from "solid-js";
-import { sidebarExpanded, setSidebarExpanded } from "../../stores/uiStore";
+import { listen } from "@tauri-apps/api/event";
+import { sidebarExpanded, setSidebarExpanded, sidebarManuallyExpanded, setSidebarManuallyExpanded } from "../../stores/uiStore";
 import { getConfig } from "../../lib/ipc";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import AppIconList from "./AppIconList";
@@ -18,13 +19,15 @@ const Sidebar: Component = () => {
   });
 
   const handleMouseEnter = () => {
-    if (forceCollapsed() || !hoverEnabled()) return;
+    if (forceCollapsed() || !hoverEnabled() || sidebarManuallyExpanded()) return;
     hoverTimeout = setTimeout(() => setSidebarExpanded(true), 300);
   };
 
   const handleMouseLeave = () => {
     clearTimeout(hoverTimeout);
-    setSidebarExpanded(false);
+    if (!sidebarManuallyExpanded()) {
+      setSidebarExpanded(false);
+    }
   };
 
   onMount(() => {
@@ -32,6 +35,7 @@ const Sidebar: Component = () => {
       if (window.innerWidth < 900) {
         setForceCollapsed(true);
         setSidebarExpanded(false);
+        setSidebarManuallyExpanded(false);
       } else {
         setForceCollapsed(false);
       }
@@ -39,6 +43,18 @@ const Sidebar: Component = () => {
     checkWidth();
     window.addEventListener("resize", checkWidth);
     onCleanup(() => window.removeEventListener("resize", checkWidth));
+  });
+
+  onMount(async () => {
+    const unlisten = await listen("config-updated", async () => {
+      try {
+        const config = await getConfig();
+        setHoverEnabled(config.general.sidebar_hover_expand);
+      } catch {}
+    });
+    onCleanup(() => {
+      unlisten();
+    });
   });
 
   return (

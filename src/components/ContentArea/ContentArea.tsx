@@ -1,6 +1,6 @@
 import { Component, Show, Switch, Match, For, onMount, onCleanup, createSignal, createEffect, on } from "solid-js";
-import { activeAppId, appConfigs, appStates, layoutMode, tileAssignments, setTileAssignments, setActiveTileId, activeTileId, visibleApps } from "../../stores/uiStore";
-import { setContentAreaBounds, enableApp, reloadApp, applyLayout, activateApp } from "../../lib/ipc";
+import { activeAppId, appConfigs, appStates, layoutMode, tileAssignments, setTileAssignments, setActiveTileId, activeTileId, visibleApps, splitRatio, setSplitRatio, setLayoutMode } from "../../stores/uiStore";
+import { setContentAreaBounds, enableApp, reloadApp, applyLayout, ensureWebviewExists } from "../../lib/ipc";
 import type { AppLayoutInfo } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
 import LoadingState from "./LoadingState";
@@ -8,6 +8,7 @@ import ErrorState from "./ErrorState";
 import CrashedState from "./CrashedState";
 import CertificateWarning from "./CertificateWarning";
 import FindBar from "./FindBar";
+import { showToast } from "../Toast/ToastContainer";
 
 interface ContentAreaProps {
   findBarVisible: boolean;
@@ -82,16 +83,33 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
     const { width, height } = containerSize();
     if (width === 0 || height === 0) return [];
     const mode = layoutMode();
+    const ratio = Math.max(0.1, Math.min(0.9, splitRatio()));
     switch (mode) {
       case "split-vertical":
         return [
-          { x: 0, y: 0, width: width / 2, height },
-          { x: width / 2, y: 0, width: width / 2, height },
+          { x: 0, y: 0, width: width * ratio, height },
+          { x: width * ratio, y: 0, width: width * (1 - ratio), height },
         ];
       case "split-horizontal":
         return [
-          { x: 0, y: 0, width, height: height / 2 },
-          { x: 0, y: height / 2, width, height: height / 2 },
+          { x: 0, y: 0, width, height: height * ratio },
+          { x: 0, y: height * ratio, width, height: height * (1 - ratio) },
+        ];
+      case "three-column":
+        return [
+          { x: 0, y: 0, width: width / 3, height },
+          { x: width / 3, y: 0, width: width / 3, height },
+          { x: (width * 2) / 3, y: 0, width: width / 3, height },
+        ];
+      case "two-thirds-left":
+        return [
+          { x: 0, y: 0, width: width * ratio, height },
+          { x: width * ratio, y: 0, width: width * (1 - ratio), height },
+        ];
+      case "two-thirds-right":
+        return [
+          { x: 0, y: 0, width: width * (1 - ratio), height },
+          { x: width * (1 - ratio), y: 0, width: width * ratio, height },
         ];
       case "grid":
         return [
@@ -107,9 +125,18 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
 
   // Apply tiling layout when layout mode or assignments change
   createEffect(on(
-    () => [layoutMode(), JSON.stringify(tileAssignments), containerSize()],
+    () => [layoutMode(), JSON.stringify(tileAssignments), containerSize(), splitRatio()],
     () => {
       if (layoutMode() === "single") return;
+      const currentMode = layoutMode();
+      const minPerTile = currentMode === "three-column" ? 600 : 500;
+      if (containerSize().width < minPerTile) {
+        if (layoutMode() !== "single") {
+          showToast("Window too narrow for tiling layout", "warning");
+        }
+        setLayoutMode("single");
+        return;
+      }
       const rects = tileRects();
       const rect = containerRef?.getBoundingClientRect();
       if (!rect) return;
@@ -136,16 +163,29 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
 
   const enabledApps = () => visibleApps().filter(a => a.enabled);
 
+  const handleDrag = (e: MouseEvent) => {
+    const rect = containerRef?.getBoundingClientRect();
+    if (!rect) return;
+    if (layoutMode() === "split-vertical" || layoutMode() === "two-thirds-left" || layoutMode() === "two-thirds-right") {
+      const newRatio = (e.clientX - rect.left) / rect.width;
+      setSplitRatio(Math.max(0.1, Math.min(0.9, newRatio)));
+    } else if (layoutMode() === "split-horizontal") {
+      const newRatio = (e.clientY - rect.top) / rect.height;
+      setSplitRatio(Math.max(0.1, Math.min(0.9, newRatio)));
+    }
+  };
+
   const handleAssignApp = async (tileIndex: number, appId: string) => {
     setTileAssignments(tileIndex, appId);
     setActiveTileId(tileIndex);
-    // Ensure webview exists by activating the app
+    // Ensure the app webview exists without changing visibility.
     try {
-      await activateApp(appId);
+      await ensureWebviewExists(appId);
     } catch (err) {
-      console.error("Failed to activate app for tile:", err);
+      console.error("Failed to prepare app webview for tile:", err);
     }
-    // Re-apply tiling layout since activateApp hides other webviews
+
+    // Re-apply tiling layout after ensuring the webview exists.
     const rects = tileRects();
     const rect = containerRef?.getBoundingClientRect();
     if (rect && rects.length > 0) {
@@ -193,7 +233,9 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
           <For each={tileRects()}>
             {(rect, index) => (
               <div
-                class="absolute border border-gray-300/30 dark:border-gray-600/30"
+                class={`absolute ${activeTileId() === index()
+                  ? 'border-2 border-blue-500'
+                  : 'border border-gray-300/30 dark:border-gray-600/30'} group`}
                 style={{
                   left: `${rect.x}px`,
                   top: `${rect.y}px`,
@@ -204,6 +246,7 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
                 <Show when={!tileAssignments[index()]}>
                   <div class="absolute inset-0 flex items-center justify-center pointer-events-auto bg-gray-50/80 dark:bg-gray-900/80">
                     <select
+                      aria-label={`Assign app to tile ${index() + 1}`}
                       class="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer"
                       onChange={(e) => {
                         if (e.currentTarget.value) handleAssignApp(index(), e.currentTarget.value);
@@ -224,7 +267,7 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
                       activeTileId() === index()
                         ? "bg-blue-500 text-white"
                         : "bg-gray-200/80 dark:bg-gray-700/80 text-gray-600 dark:text-gray-300"
-                    }`}
+                    } transition-opacity opacity-70 group-hover:opacity-0`}
                     onClick={() => setActiveTileId(index())}
                   >
                     {appConfigs.find(a => a.id === tileAssignments[index()])?.name ?? "App"}
@@ -233,21 +276,46 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
               </div>
             )}
           </For>
+          <Show when={layoutMode() !== "single" && layoutMode() !== "grid" && layoutMode() !== "three-column"}>
+            <div
+              class={`absolute z-40 bg-gray-300 dark:bg-gray-600 hover:bg-blue-500 transition-all duration-200 ease-out ${
+                layoutMode() === "split-horizontal"
+                  ? "h-1 w-full cursor-row-resize -mt-0.5"
+                  : "w-1 h-full cursor-col-resize -ml-0.5"
+              }`}
+              style={{
+                left: layoutMode() !== "split-horizontal"
+                  ? `${containerSize().width * splitRatio()}px` : "0",
+                top: layoutMode() === "split-horizontal"
+                  ? `${containerSize().height * splitRatio()}px` : "0",
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const stop = () => {
+                  window.removeEventListener("mousemove", handleDrag);
+                  window.removeEventListener("mouseup", stop);
+                };
+                window.addEventListener("mousemove", handleDrag);
+                window.addEventListener("mouseup", stop);
+              }}
+              onDblClick={() => setSplitRatio(0.5)}
+            />
+          </Show>
         </div>
       </Show>
 
       <Show when={layoutMode() === "single"}>
         <Show when={activeApp()} fallback={<EmptyState hasApps={appConfigs.length > 0} />}>
           {(app) => (
-            <Switch fallback={<LoadingState appName={app().name} />}>
+            <Switch fallback={<LoadingState appName={app().name} icon={app().icon} />}>
               <Match when={activeState()?.state === "active"}>
                 <div id="webview-container" class="absolute inset-0" />
               </Match>
               <Match when={activeState()?.state === "loading"}>
-                <LoadingState appName={app().name} message="Loading..." />
+                <LoadingState appName={app().name} icon={app().icon} message="Loading..." />
               </Match>
               <Match when={activeState()?.state === "hibernated"}>
-                <LoadingState appName={app().name} message="Waking up..." />
+                <LoadingState appName={app().name} icon={app().icon} message="Waking up..." />
               </Match>
               <Match when={activeState()?.state === "disabled"}>
                 <div class="flex flex-col items-center justify-center h-full text-gray-400 gap-4">

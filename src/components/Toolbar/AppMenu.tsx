@@ -1,7 +1,8 @@
 import { Component, createSignal, onMount, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { reloadApp, hibernateApp, disableApp, getConfig, evalInApp } from "../../lib/ipc";
+import { reloadApp, hibernateApp, disableApp, getConfig, evalInApp, checkUnsavedWork } from "../../lib/ipc";
 import { appStates, setSettingsVisible } from "../../stores/uiStore";
+import { showToast } from "../Toast/ToastContainer";
 
 interface AppMenuProps {
   appId: string;
@@ -47,7 +48,18 @@ const AppMenu: Component<AppMenuProps> = (props) => {
           await reloadApp(props.appId);
           break;
         case "hibernate":
-          await hibernateApp(props.appId);
+          {
+            const config = await getConfig();
+            const appConfig = config.apps.find((a) => a.id === props.appId);
+            if (!appConfig?.suppress_hibernate_confirm) {
+              const hasUnsaved = await checkUnsavedWork(props.appId);
+              if (hasUnsaved) {
+                showToast("Unsaved work detected; hibernate cancelled", "warning");
+                break;
+              }
+            }
+            await hibernateApp(props.appId);
+          }
           break;
         case "disable":
           await disableApp(props.appId);

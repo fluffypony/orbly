@@ -39,6 +39,10 @@ const FindBar: Component<FindBarProps> = (props) => {
     }
   };
 
+  // Note: backend currently uses `window.find()` in webview JS for matching.
+  // This is non-standard and may not behave consistently on WebView2 (Windows).
+  // If Tauri/Wry exposes a stable native find API across platforms, migrate to it.
+
   const findNext = () => doFind(true);
   const findPrev = () => doFind(false);
 
