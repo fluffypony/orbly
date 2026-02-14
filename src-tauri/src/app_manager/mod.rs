@@ -22,7 +22,7 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
             let apps = app_manager.apps.lock().expect("apps lock").clone();
 
             for (app_id, runtime) in &apps {
-                if let state::AppRuntimeState::Active { .. } = &runtime.state {
+                if let state::AppRuntimeState::Active { .. } | state::AppRuntimeState::Loading { .. } = &runtime.state {
                     if let Some(app_config) = config.apps.iter().find(|a| a.id == *app_id) {
                         if app_config.hibernation_timeout_minutes == 0 {
                             continue;

@@ -1,4 +1,4 @@
-import { Component, Show, Switch, Match, onMount, onCleanup } from "solid-js";
+import { Component, Show, Switch, Match, onMount, onCleanup, createSignal, createEffect, on } from "solid-js";
 import { activeAppId, appConfigs, appStates } from "../../stores/uiStore";
 import { setContentAreaBounds, enableApp, reloadApp } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
@@ -15,7 +15,22 @@ interface ContentAreaProps {
 const ContentArea: Component<ContentAreaProps> = (props) => {
   const activeApp = () => appConfigs.find((a) => a.id === activeAppId());
   const activeState = () => appStates.find((a) => a.id === activeAppId());
+  const [fadingOut, setFadingOut] = createSignal(false);
   let containerRef: HTMLDivElement | undefined;
+  let prevState: string | undefined;
+
+  // Track state transitions for hibernate fade-out
+  createEffect(on(
+    () => activeState()?.state,
+    (currentState) => {
+      if (prevState === "active" && currentState === "hibernated") {
+        setFadingOut(true);
+        setTimeout(() => setFadingOut(false), 300);
+      }
+      prevState = currentState;
+    },
+    { defer: true }
+  ));
 
   onMount(() => {
     if (containerRef) {
@@ -61,11 +76,19 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
         onClose={props.onCloseFindBar}
       />
 
+      {/* Hibernate fade-out overlay */}
+      <Show when={fadingOut()}>
+        <div class="absolute inset-0 z-20 bg-white dark:bg-[#121212] transition-opacity duration-300 opacity-100 pointer-events-none" />
+      </Show>
+
       <Show when={activeApp()} fallback={<EmptyState hasApps={appConfigs.length > 0} />}>
         {(app) => (
           <Switch fallback={<LoadingState appName={app().name} />}>
             <Match when={activeState()?.state === "active"}>
               <div id="webview-container" class="absolute inset-0" />
+            </Match>
+            <Match when={activeState()?.state === "loading"}>
+              <LoadingState appName={app().name} message="Loading..." />
             </Match>
             <Match when={activeState()?.state === "hibernated"}>
               <LoadingState appName={app().name} message="Waking up..." />

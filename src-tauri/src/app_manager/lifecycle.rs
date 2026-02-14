@@ -535,7 +535,7 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         }
     }
 
-    // URL tracking during in-page navigation
+    // URL tracking during in-page navigation + initial page load report
     scripts.push(format!(
         r#"
 (function() {{
@@ -554,6 +554,21 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
                 }}).catch(function() {{}});
             }}
         }}
+    }}
+
+    // Report initial URL on page load to transition Loading → Active
+    function reportInitialUrl() {{
+        if (window.__TAURI_INTERNALS__) {{
+            window.__TAURI_INTERNALS__.invoke('on_url_changed', {{
+                app_id: ORBLY_APP_ID,
+                url: location.href
+            }}).catch(function() {{}});
+        }}
+    }}
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {{
+        reportInitialUrl();
+    }} else {{
+        window.addEventListener('DOMContentLoaded', reportInitialUrl);
     }}
 
     window.addEventListener('popstate', reportUrlChange);

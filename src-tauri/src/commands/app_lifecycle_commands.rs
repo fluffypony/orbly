@@ -31,6 +31,9 @@ pub fn get_app_states(
             let (state_str, current_url, error_message) =
                 if let Some(runtime) = apps_lock.get(&app_config.id) {
                     match &runtime.state {
+                        AppRuntimeState::Loading { target_url } => {
+                            ("loading".to_string(), Some(target_url.clone()), None)
+                        }
                         AppRuntimeState::Active { current_url } => {
                             ("active".to_string(), Some(current_url.clone()), None)
                         }
@@ -102,7 +105,17 @@ pub async fn activate_app(
     };
 
     // If webview doesn't exist, create it with the appropriate URL
-    if app_handle.get_webview(&app_id).is_none() {
+    let is_new_webview = app_handle.get_webview(&app_id).is_none();
+    if is_new_webview {
+        // Set Loading state before creating webview so UI shows spinner
+        app_manager.set_state(
+            &app_id,
+            AppRuntimeState::Loading {
+                target_url: load_url.clone(),
+            },
+        );
+        let _ = app_handle.emit("app-state-changed", &app_id);
+
         let mut wake_config = app_config.clone();
         wake_config.url = load_url.clone();
         lifecycle::create_app_webview(&app_handle, &wake_config, position, size)?;
@@ -124,13 +137,16 @@ pub async fn activate_app(
     // Show this webview
     lifecycle::set_webview_visible(&app_handle, &app_id, true, Some(position), Some(size))?;
 
-    // Update runtime state to Active
-    app_manager.set_state(
-        &app_id,
-        AppRuntimeState::Active {
-            current_url: load_url.clone(),
-        },
-    );
+    // For new webviews, keep Loading state until on_url_changed fires.
+    // For existing webviews, set Active immediately.
+    if !is_new_webview {
+        app_manager.set_state(
+            &app_id,
+            AppRuntimeState::Active {
+                current_url: load_url.clone(),
+            },
+        );
+    }
     app_manager.touch_interaction(&app_id);
 
     // Track active app for crash recovery

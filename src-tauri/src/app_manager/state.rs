@@ -4,6 +4,8 @@ use std::time::Instant;
 
 #[derive(Debug, Clone)]
 pub enum AppRuntimeState {
+    /// Webview is being created, waiting for first navigation
+    Loading { target_url: String },
     /// Webview is alive and loaded
     Active { current_url: String },
     /// Webview destroyed, state preserved for quick wake

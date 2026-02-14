@@ -47,6 +47,9 @@ export async function setupEventListeners() {
       refreshAppStates();
       showToast("App was auto-hibernated due to inactivity", "info");
     }),
+    await listen<string>("app-state-changed", () => {
+      refreshAppStates();
+    }),
     await listen<{ appId: string; count: number | null }>("badge-updated", () => {
       refreshAppStates();
     }),
