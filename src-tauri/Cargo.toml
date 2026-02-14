@@ -40,6 +40,7 @@ dirs = "6"
 adblock = { version = "0.12", default-features = false, features = ["content-blocking", "css-validation", "embedded-domain-resolver"] }
 open = "5"
 shellexpand = "3"
+urlencoding = "2"
 sysinfo = "0.33"
 tauri-plugin-dialog = "2"
 tauri-plugin-deep-link = "2"

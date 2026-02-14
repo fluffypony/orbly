@@ -139,7 +139,10 @@ pub fn create_app_webview(
         log::warn!("Failed to create download directory {:?}: {}", download_dir, e);
     }
 
-    let skip_dialog = app_config.skip_download_dialog;
+    let skip_dialog = app_config.skip_download_dialog || app_handle
+        .try_state::<crate::config::manager::ConfigManager>()
+        .map(|cm| cm.get_config().downloads.skip_download_dialog_default)
+        .unwrap_or(false);
     let app_id_clone = app_config.id.clone();
     let app_name_clone = app_config.name.clone();
     let handle_clone = app_handle.clone();
@@ -151,6 +154,10 @@ pub fn create_app_webview(
                     .file_name()
                     .map(|f| f.to_string_lossy().to_string())
                     .unwrap_or_else(|| "download".to_string());
+
+                let filename = urlencoding::decode(&filename)
+                    .unwrap_or(std::borrow::Cow::Borrowed(&filename))
+                    .into_owned();
 
                 let filename = if filename.is_empty()
                     || filename == "."

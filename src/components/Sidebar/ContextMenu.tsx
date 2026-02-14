@@ -1,7 +1,7 @@
 import { Component, For, Show, onMount, onCleanup, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
 import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp, checkUnsavedWork } from "../../lib/ipc";
-import { appConfigs, appStates, setSettingsVisible, workspaces } from "../../stores/uiStore";
+import { appConfigs, appStates, setSettingsVisible, setEditingAppIdFromContextMenu, workspaces } from "../../stores/uiStore";
 import { refreshAppConfigs, refreshAppStates } from "../../lib/stateSync";
 import ConfirmDialog from "../Dialogs/ConfirmDialog";
 
@@ -86,6 +86,7 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           setShowRemoveConfirm(true);
           return; // Don't close the menu yet
         case "edit":
+          setEditingAppIdFromContextMenu(props.appId);
           setSettingsVisible(true);
           break;
         case "move-section":

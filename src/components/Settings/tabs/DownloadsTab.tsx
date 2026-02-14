@@ -11,6 +11,7 @@ const DownloadsTab: Component = () => {
   const [downloads, setDownloads] = createStore<DownloadGlobalConfig>({
     unified_manager_enabled: true,
     default_directory: "~/Downloads",
+    skip_download_dialog_default: false,
   });
   let initialized = false;
 
@@ -68,6 +69,10 @@ const DownloadsTab: Component = () => {
 
       <SettingRow label="Unified download manager" description="Show all downloads in a single panel">
         <ToggleSwitch checked={downloads.unified_manager_enabled} onChange={(v) => save({ unified_manager_enabled: v })} />
+      </SettingRow>
+
+      <SettingRow label="Skip download dialog by default" description="New apps will skip the download dialog when this is on">
+        <ToggleSwitch checked={downloads.skip_download_dialog_default} onChange={(v) => save({ skip_download_dialog_default: v })} />
       </SettingRow>
 
       <div class="mt-6">

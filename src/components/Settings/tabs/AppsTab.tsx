@@ -1,12 +1,13 @@
 import { Component, For, Show, createSignal, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
-import { appConfigs } from "../../../stores/uiStore";
-import { updateApp, hibernateApp, disableApp, enableApp, getUaPresets } from "../../../lib/ipc";
-import { refreshAppConfigs } from "../../../lib/stateSync";
+import { appConfigs, appStates, editingAppIdFromContextMenu, setEditingAppIdFromContextMenu } from "../../../stores/uiStore";
+import { updateApp, hibernateApp, disableApp, enableApp, getUaPresets, fetchFavicon, removeApp } from "../../../lib/ipc";
+import { refreshAppConfigs, refreshAppStates } from "../../../lib/stateSync";
 import type { AppConfig, NotificationStyle, DarkModeType } from "../../../types/config";
 import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput, Button } from "../SettingsControls";
 import AddAppDialog from "../AddAppDialog";
 import InjectionEditor from "../../AppSettings/InjectionEditor";
+import ConfirmDialog from "../../Dialogs/ConfirmDialog";
 
 const isMac = navigator.platform.includes("Mac");
 
@@ -14,8 +15,10 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
   const [app, setApp] = createStore<AppConfig>({ ...props.app });
   const [saving, setSaving] = createSignal(false);
   const [showInjection, setShowInjection] = createSignal(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = createSignal(false);
   const [uaPresets, setUaPresets] = createSignal<[string, string][]>([]);
   const [uaMode, setUaMode] = createSignal<string>(props.app.user_agent ? "custom" : "default");
+  const [fetchingIcon, setFetchingIcon] = createSignal(false);
 
   onMount(async () => {
     try {
@@ -71,6 +74,23 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
               )}
             </div>
             <TextInput value={app.icon} onChange={(v) => setApp("icon", v)} class="w-24" placeholder="🌐" />
+            <Button
+              onClick={async () => {
+                if (!app.url) return;
+                setFetchingIcon(true);
+                try {
+                  const result = await fetchFavicon(app.url);
+                  if (result) setApp("icon", result);
+                } catch (err) {
+                  console.error("Failed to fetch favicon:", err);
+                } finally {
+                  setFetchingIcon(false);
+                }
+              }}
+              disabled={fetchingIcon() || !app.url}
+            >
+              {fetchingIcon() ? "Fetching..." : "Fetch Icon"}
+            </Button>
           </div>
         </SettingRow>
         <SettingRow label="Sidebar section">
@@ -211,12 +231,35 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         </SettingRow>
       </div>
 
-      <div class="flex justify-end gap-2 mt-4">
-        <Button onClick={props.onClose}>Cancel</Button>
-        <Button variant="primary" onClick={save} disabled={saving()}>
-          {saving() ? "Saving..." : "Save"}
-        </Button>
+      <div class="flex justify-between mt-4">
+        <Button variant="danger" onClick={() => setShowRemoveConfirm(true)}>Remove App</Button>
+        <div class="flex gap-2">
+          <Button onClick={props.onClose}>Cancel</Button>
+          <Button variant="primary" onClick={save} disabled={saving()}>
+            {saving() ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </div>
+      <Show when={showRemoveConfirm()}>
+        <ConfirmDialog
+          title="Remove App"
+          message={`Are you sure you want to remove "${app.name}"? This cannot be undone.`}
+          confirmLabel="Remove"
+          variant="danger"
+          onConfirm={async () => {
+            try {
+              await removeApp(props.app.id);
+              await refreshAppConfigs();
+              await refreshAppStates();
+              props.onClose();
+            } catch (err) {
+              console.error("Failed to remove app:", err);
+            }
+            setShowRemoveConfirm(false);
+          }}
+          onCancel={() => setShowRemoveConfirm(false)}
+        />
+      </Show>
       <Show when={showInjection()}>
         <InjectionEditor
           app={{ ...app }}
@@ -235,6 +278,14 @@ const AppsTab: Component = () => {
   const [editingAppId, setEditingAppId] = createSignal<string | null>(null);
   const [showAddApp, setShowAddApp] = createSignal(false);
 
+  onMount(() => {
+    const pendingId = editingAppIdFromContextMenu();
+    if (pendingId) {
+      setEditingAppId(pendingId);
+      setEditingAppIdFromContextMenu(null);
+    }
+  });
+
   const handleBulkAction = async (action: "hibernate" | "disable" | "enable") => {
     try {
       for (const app of appConfigs) {
@@ -251,15 +302,23 @@ const AppsTab: Component = () => {
   };
 
   const statusLabel = (app: AppConfig) => {
-    if (!app.enabled) return "Disabled";
-    if (app.hibernated) return "Hibernated";
-    return "Active";
+    const state = appStates.find(s => s.id === app.id);
+    return state?.state ?? "disabled";
   };
 
   const statusColor = (app: AppConfig) => {
-    if (!app.enabled) return "text-red-500";
-    if (app.hibernated) return "text-yellow-500";
-    return "text-green-500";
+    const state = appStates.find(s => s.id === app.id)?.state ?? "disabled";
+    switch (state) {
+      case "active": return "text-green-500";
+      case "loading": return "text-blue-500";
+      case "hibernated": return "text-yellow-500";
+      case "crashed":
+      case "error":
+        return "text-red-500";
+      case "disabled":
+      default:
+        return "text-gray-400";
+    }
   };
 
   return (

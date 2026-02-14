@@ -48,6 +48,7 @@ const SortableAppIcon: Component<SortableAppIconProps> = (props) => {
   return (
     <div
       use:sortable
+      role="option"
       classList={{
         "opacity-25": sortable.isActiveDraggable,
         "transition-transform": !!state.active.draggable,
@@ -203,7 +204,7 @@ const AppIconList: Component = () => {
   };
 
   return (
-    <div class="flex-1 overflow-y-auto px-1.5 py-2 space-y-0.5">
+    <div class="flex-1 overflow-y-auto px-1.5 py-2 space-y-0.5" role="listbox" aria-label="Applications">
       <DragDropProvider
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}

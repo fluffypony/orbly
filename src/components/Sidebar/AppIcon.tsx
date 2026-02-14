@@ -32,6 +32,17 @@ const AppIcon: Component<AppIconProps> = (props) => {
         e.preventDefault();
         props.onContextMenu(e, props.id);
       }}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = (e.currentTarget as HTMLElement).closest("[role='option']")?.nextElementSibling?.querySelector("button");
+          if (next instanceof HTMLElement) next.focus();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = (e.currentTarget as HTMLElement).closest("[role='option']")?.previousElementSibling?.querySelector("button");
+          if (prev instanceof HTMLElement) prev.focus();
+        }
+      }}
       title={props.name}
       aria-label={`${props.name}, ${props.state}${props.badgeCount && props.badgeCount > 0 ? `, ${props.badgeCount} unread` : props.badgeCount && props.badgeCount < 0 ? ', unread' : ''}`}
       style={{ "min-height": "44px" }}
