@@ -1,7 +1,7 @@
 import { Component, For, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 import { open } from "@tauri-apps/plugin-dialog";
-import { SettingSection, SettingRow, ToggleSwitch, TextInput } from "../SettingsControls";
+import { SettingSection, SettingRow, ToggleSwitch, TextInput, SelectDropdown } from "../SettingsControls";
 import { getConfig, updateApp, updateDownloadsConfig } from "../../../lib/ipc";
 import { refreshAppConfigs } from "../../../lib/stateSync";
 import { appConfigs } from "../../../stores/uiStore";
@@ -91,9 +91,14 @@ const DownloadsTab: Component = () => {
                   />
                   <div class="flex items-center gap-1.5">
                     <span class="text-xs text-gray-400">Skip dialog</span>
-                    <ToggleSwitch
-                      checked={app.skip_download_dialog}
-                      onChange={(v) => updateAppDownload(app.id, "skip_download_dialog", v)}
+                    <SelectDropdown
+                      value={app.skip_download_dialog === null ? "default" : app.skip_download_dialog ? "yes" : "no"}
+                      options={[
+                        { value: "default", label: "Default" },
+                        { value: "yes", label: "Always skip" },
+                        { value: "no", label: "Always show" },
+                      ]}
+                      onChange={(v) => updateAppDownload(app.id, "skip_download_dialog", v === "default" ? null : v === "yes")}
                     />
                   </div>
                 </div>

@@ -32,6 +32,8 @@ pub struct AppRuntime {
 pub struct AppManager {
     /// Map of app_id -> runtime state
     pub apps: Mutex<HashMap<String, AppRuntime>>,
+    /// URLs queued for navigation after an app is activated (e.g., from link routing to hibernated apps)
+    pub pending_navigations: Mutex<HashMap<String, String>>,
 }
 
 #[allow(dead_code)]
@@ -39,6 +41,7 @@ impl AppManager {
     pub fn new() -> Self {
         Self {
             apps: Mutex::new(HashMap::new()),
+            pending_navigations: Mutex::new(HashMap::new()),
         }
     }
 
@@ -109,6 +112,20 @@ impl AppManager {
 
     pub fn remove(&self, app_id: &str) {
         self.apps.lock().expect("apps lock").remove(app_id);
+    }
+
+    pub fn set_pending_navigation(&self, app_id: &str, url: String) {
+        self.pending_navigations
+            .lock()
+            .expect("pending_navigations lock")
+            .insert(app_id.to_string(), url);
+    }
+
+    pub fn take_pending_navigation(&self, app_id: &str) -> Option<String> {
+        self.pending_navigations
+            .lock()
+            .expect("pending_navigations lock")
+            .remove(app_id)
     }
 }
 

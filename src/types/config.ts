@@ -27,7 +27,7 @@ export interface AppConfig {
   dark_mode_custom_css: string;
   hibernation_timeout_minutes: number;
   download_directory: string;
-  skip_download_dialog: boolean;
+  skip_download_dialog: boolean | null;
   workspace: string;
   sidebar_section: string;
   position: number;

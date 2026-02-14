@@ -239,8 +239,16 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         <SettingRow label="Download directory">
           <TextInput value={app.download_directory} onChange={(v) => setApp("download_directory", v)} class="w-64" />
         </SettingRow>
-        <SettingRow label="Skip download dialog">
-          <ToggleSwitch checked={app.skip_download_dialog} onChange={(v) => setApp("skip_download_dialog", v)} />
+        <SettingRow label="Skip download dialog" description="Default = use global setting">
+          <SelectDropdown
+            value={app.skip_download_dialog === null ? "default" : app.skip_download_dialog ? "yes" : "no"}
+            options={[
+              { value: "default", label: "Default" },
+              { value: "yes", label: "Always skip" },
+              { value: "no", label: "Always show" },
+            ]}
+            onChange={(v) => setApp("skip_download_dialog", v === "default" ? null : v === "yes")}
+          />
         </SettingRow>
         <SettingRow label="Ad blocking">
           <ToggleSwitch checked={app.adblock_enabled} onChange={(v) => setApp("adblock_enabled", v)} />

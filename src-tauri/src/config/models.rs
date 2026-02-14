@@ -67,7 +67,7 @@ pub struct AppConfig {
     #[serde(default = "default_download_dir")]
     pub download_directory: String,
     #[serde(default)]
-    pub skip_download_dialog: bool,
+    pub skip_download_dialog: Option<bool>,
     #[serde(default = "default_workspace")]
     pub workspace: String,
     #[serde(default)]

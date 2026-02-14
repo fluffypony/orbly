@@ -1,5 +1,6 @@
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::app_manager::state::AppManager;
 use crate::config::manager::ConfigManager;
 use crate::utils::wildcard_match;
 
@@ -36,11 +37,12 @@ pub fn route_link(
                 if rule.target != source_app_id {
                     // Check if the app has a webview; if not, it may be hibernated
                     if app_handle.get_webview(&rule.target).is_none() {
-                        // Emit switch-to-app first to wake the hibernated app
+                        // Queue the URL for navigation after the app wakes
+                        if let Some(am) = app_handle.try_state::<AppManager>() {
+                            am.set_pending_navigation(&rule.target, url.clone());
+                        }
                         let _ = app_handle.emit("switch-to-app", rule.target.clone());
-                        // The frontend will activate (and create the webview for) the app,
-                        // then we can't navigate yet. Store the URL for post-activation nav.
-                        log::info!("Target app {} is not active; switch-to-app emitted", rule.target);
+                        log::info!("Target app {} is not active; queued URL for post-activation nav", rule.target);
                         return Ok(());
                     }
                 }

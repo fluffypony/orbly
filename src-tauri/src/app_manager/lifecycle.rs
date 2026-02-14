@@ -139,10 +139,12 @@ pub fn create_app_webview(
         log::warn!("Failed to create download directory {:?}: {}", download_dir, e);
     }
 
-    let skip_dialog = app_config.skip_download_dialog || app_handle
-        .try_state::<crate::config::manager::ConfigManager>()
-        .map(|cm| cm.get_config().downloads.skip_download_dialog_default)
-        .unwrap_or(false);
+    let skip_dialog = app_config.skip_download_dialog.unwrap_or_else(|| {
+        app_handle
+            .try_state::<crate::config::manager::ConfigManager>()
+            .map(|cm| cm.get_config().downloads.skip_download_dialog_default)
+            .unwrap_or(false)
+    });
     let app_id_clone = app_config.id.clone();
     let app_name_clone = app_config.name.clone();
     let handle_clone = app_handle.clone();
@@ -204,6 +206,9 @@ pub fn create_app_webview(
                 }
                 let _ = handle_clone.emit("download-finished", url.to_string());
             }
+            // Note: Tauri 2.x DownloadEvent only has Requested and Finished variants.
+            // There is no Progress variant, so download progress stays at 0% until completion.
+            // DownloadManager.update_progress() exists but cannot be called without a progress event.
             _ => {}
         }
         true

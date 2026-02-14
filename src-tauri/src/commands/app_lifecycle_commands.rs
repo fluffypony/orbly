@@ -167,6 +167,17 @@ pub async fn activate_app(
         let _ = config_manager.save_config(config);
     }
 
+    // Check for pending navigation from link routing
+    if let Some(pending_url) = app_manager.take_pending_navigation(&app_id) {
+        if let Some(webview) = app_handle.get_webview(&app_id) {
+            let nav_js = format!(
+                "window.location.href = {};",
+                serde_json::to_string(&pending_url).unwrap_or_default()
+            );
+            let _ = webview.eval(&nav_js);
+        }
+    }
+
     let _ = app_handle.emit("app-activated", &app_id);
 
     Ok(())
