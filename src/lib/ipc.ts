@@ -92,6 +92,8 @@ export const zoomReset = (appId: string) => invoke<void>("zoom_reset", { app_id:
 // Find commands
 export const findInPage = (appId: string, query: string, forward: boolean) =>
   invoke<void>("find_in_page", { app_id: appId, query, forward });
+export const getFindCount = (appId: string, query: string) =>
+  invoke<void>("get_find_count", { app_id: appId, query });
 export const clearFindInPage = (appId: string) =>
   invoke<void>("clear_find_in_page", { app_id: appId });
 

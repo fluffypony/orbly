@@ -1,5 +1,6 @@
 import { Component, Show, createSignal, createEffect, onCleanup } from "solid-js";
-import { findInPage, clearFindInPage } from "../../lib/ipc";
+import { listen } from "@tauri-apps/api/event";
+import { findInPage, clearFindInPage, getFindCount } from "../../lib/ipc";
 import { activeAppId } from "../../stores/uiStore";
 
 interface FindBarProps {
@@ -9,8 +10,20 @@ interface FindBarProps {
 
 const FindBar: Component<FindBarProps> = (props) => {
   const [query, setQuery] = createSignal("");
+  const [matchCount, setMatchCount] = createSignal<number | null>(null);
   let inputRef: HTMLInputElement | undefined;
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let unlistenFindCount: (() => void) | undefined;
+
+  // Listen for match count updates from backend
+  (async () => {
+    unlistenFindCount = await listen<{ appId: string; count: number }>("find-count-updated", (event) => {
+      const appId = activeAppId();
+      if (appId === event.payload.appId) {
+        setMatchCount(event.payload.count);
+      }
+    });
+  })();
 
   const doFind = (forward: boolean) => {
     const appId = activeAppId();
@@ -34,7 +47,10 @@ const FindBar: Component<FindBarProps> = (props) => {
         findInPage(appId, q, true).catch((err) =>
           console.error("Find in page failed:", err)
         );
+        getFindCount(appId, q).catch(() => {});
       }, 200);
+    } else {
+      setMatchCount(null);
     }
   });
 
@@ -52,11 +68,13 @@ const FindBar: Component<FindBarProps> = (props) => {
       );
     }
     setQuery("");
+    setMatchCount(null);
     props.onClose();
   };
 
   onCleanup(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
+    unlistenFindCount?.();
     const appId = activeAppId();
     if (appId) {
       clearFindInPage(appId).catch(() => {});
@@ -82,6 +100,9 @@ const FindBar: Component<FindBarProps> = (props) => {
             }
           }}
         />
+        <Show when={matchCount() !== null}>
+          <span class="text-xs text-gray-400 whitespace-nowrap">{matchCount()} found</span>
+        </Show>
         <button
           onClick={findPrev}
           class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400"

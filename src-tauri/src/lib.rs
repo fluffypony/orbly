@@ -261,6 +261,8 @@ pub fn run() {
             commands::zoom_commands::zoom_out,
             commands::zoom_commands::zoom_reset,
             commands::find_commands::find_in_page,
+            commands::find_commands::get_find_count,
+            commands::find_commands::on_find_count,
             commands::find_commands::clear_find_in_page,
             commands::tray_commands::set_launch_at_login,
             commands::tray_commands::get_launch_at_login,

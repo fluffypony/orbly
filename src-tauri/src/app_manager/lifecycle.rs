@@ -36,8 +36,11 @@ pub fn create_app_webview(
     }
 
     // Per-app proxy support
+    // Note: On macOS, requires the "macos-proxy" feature and macOS 14+.
     if !app_config.proxy.is_empty() {
-        builder = builder.proxy_url(&app_config.proxy);
+        let proxy = url::Url::parse(&app_config.proxy)
+            .map_err(|e| format!("Invalid proxy URL: {e}"))?;
+        builder = builder.proxy_url(proxy);
     }
 
     // Network-level ad blocking via navigation handler
