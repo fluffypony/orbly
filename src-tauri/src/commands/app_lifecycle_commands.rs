@@ -83,11 +83,12 @@ pub async fn activate_app(
     let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
     let size = tauri::LogicalSize::new(bounds.width, bounds.height);
 
-    // Determine the URL to load: use last_url from hibernated state if available
+    // Determine the URL to load: preserve current URL if active, use last_url if hibernated
     let load_url = {
         let apps_lock = app_manager.apps.lock().expect("apps lock");
         if let Some(runtime) = apps_lock.get(&app_id) {
             match &runtime.state {
+                AppRuntimeState::Active { current_url } => current_url.clone(),
                 AppRuntimeState::Hibernated { last_url } => last_url.clone(),
                 _ => app_config.url.clone(),
             }

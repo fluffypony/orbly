@@ -63,6 +63,10 @@ const AppMenu: Component<AppMenuProps> = (props) => {
         case "edit-settings":
           setSettingsVisible(true);
           break;
+        case "inject-console":
+          // TODO: Requires eval_in_app command to inject console overlay
+          // Eruda or vConsole could be injected for developer debugging
+          break;
         default:
           break;
       }

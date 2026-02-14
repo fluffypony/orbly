@@ -46,14 +46,31 @@ pub fn switch_workspace(
             .collect();
         drop(apps_lock);
 
-        for app_id in active_ids {
-            if !target_ws.app_ids.contains(&app_id) {
-                let _ = crate::app_manager::lifecycle::destroy_app_webview(&app_handle, &app_id);
-                app_manager.set_state(&app_id, crate::app_manager::state::AppRuntimeState::Hibernated {
-                    last_url: config.apps.iter().find(|a| a.id == app_id).map(|a| a.url.clone()).unwrap_or_default(),
+        let mut config = config_manager.get_config();
+        for app_id in &active_ids {
+            if !target_ws.app_ids.contains(app_id) {
+                let last_url = crate::app_manager::lifecycle::destroy_app_webview(&app_handle, app_id)
+                    .unwrap_or(None);
+                let fallback_url = config.apps.iter().find(|a| a.id == *app_id)
+                    .map(|a| a.url.clone()).unwrap_or_default();
+                let url = last_url.unwrap_or(fallback_url);
+
+                app_manager.set_state(app_id, crate::app_manager::state::AppRuntimeState::Hibernated {
+                    last_url: url,
                 });
+
+                // Persist hibernated flag
+                if let Some(app) = config.apps.iter_mut().find(|a| a.id == *app_id) {
+                    app.hibernated = true;
+                }
+
+                // Remove from session state
+                if let Some(session_state) = app_handle.try_state::<crate::app_manager::session_state::SessionState>() {
+                    session_state.remove(app_id);
+                }
             }
         }
+        let _ = config_manager.save_config(config);
     }
 
     let _ = app_handle.emit("workspace-switched", &workspace_id);

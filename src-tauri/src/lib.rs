@@ -150,7 +150,7 @@ pub fn run() {
                         continue;
                     }
                     let manager = FilterListManager::new(periodic_data_dir.clone());
-                    match manager.get_filter_rules(&config.adblock.filter_lists, false).await {
+                    match manager.get_filter_rules(&config.adblock.filter_lists, true).await {
                         Ok(rules_text) => {
                             let state = periodic_handle.state::<AdblockState>();
                             state.load_rules(&rules_text, &config.adblock.custom_rules);

@@ -21,7 +21,10 @@ const FIXED_SHORTCUTS: { label: string; binding: string }[] = [
   { label: "Zoom Out", binding: "CmdOrCtrl+-" },
   { label: "Zoom Reset", binding: "CmdOrCtrl+0" },
   { label: "Find in Page", binding: "CmdOrCtrl+F" },
-  { label: "Switch to App 1–9", binding: "CmdOrCtrl+1–9" },
+  ...Array.from({ length: 9 }, (_, i) => ({
+    label: `Switch to App ${i + 1}`,
+    binding: `CmdOrCtrl+${i + 1}`,
+  })),
 ];
 
 const DEFAULT_SHORTCUTS: ShortcutConfig = {
