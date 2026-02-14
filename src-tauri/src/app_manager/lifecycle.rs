@@ -40,6 +40,28 @@ pub fn create_app_webview(
         builder = builder.proxy_url(&app_config.proxy);
     }
 
+    // Network-level ad blocking via navigation handler
+    if app_config.adblock_enabled {
+        let adblock_app_id = app_config.id.clone();
+        let adblock_source_url = app_config.url.clone();
+        let nav_handle = app_handle.clone();
+        builder = builder.on_navigation(move |url| {
+            let url_str = url.as_str();
+            if let Some(adblock_state) = nav_handle.try_state::<AdblockState>() {
+                if adblock_state.should_block(url_str, &adblock_source_url, "document") {
+                    adblock_state.increment_blocked(&adblock_app_id);
+                    return false;
+                }
+            }
+            true
+        });
+    }
+
+    // TODO: For full sub-resource ad blocking on macOS, integrate WKContentRuleList
+    // via webview.with_webview(). The content-blocking JSON is pre-computed in
+    // AdblockState::get_content_blocking_json(). On other platforms, sub-resource
+    // blocking would require Wry to expose on_web_resource_request().
+
     let init_js = build_initialization_script(app_handle, app_config);
     if !init_js.is_empty() {
         builder = builder.initialization_script(&init_js);

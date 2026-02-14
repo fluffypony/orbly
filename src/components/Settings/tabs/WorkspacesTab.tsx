@@ -1,6 +1,6 @@
 import { Component, For, Show, createSignal, onMount } from "solid-js";
-import { SettingSection, TextInput, Button } from "../SettingsControls";
-import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace } from "../../../lib/ipc";
+import { SettingSection, SettingRow, ToggleSwitch, TextInput, Button } from "../SettingsControls";
+import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, getConfig } from "../../../lib/ipc";
 import { appConfigs, workspaces, setWorkspaces } from "../../../stores/uiStore";
 import type { Workspace } from "../../../types/config";
 
@@ -9,6 +9,7 @@ const WorkspacesTab: Component = () => {
   const [editName, setEditName] = createSignal("");
   const [newName, setNewName] = createSignal("");
   const [creating, setCreating] = createSignal(false);
+  const [autoHibernate, setAutoHibernate] = createSignal(false);
 
   onMount(async () => {
     try {
@@ -17,6 +18,10 @@ const WorkspacesTab: Component = () => {
     } catch (err) {
       console.error("Failed to load workspaces:", err);
     }
+    try {
+      const config = await getConfig();
+      setAutoHibernate(config.workspaces.auto_hibernate_on_workspace_switch);
+    } catch {}
   });
 
   const startEditing = (ws: Workspace) => {
@@ -77,6 +82,23 @@ const WorkspacesTab: Component = () => {
   return (
     <div>
       <SettingSection title="Workspaces" description="Organize your apps into separate workspaces" />
+
+      <SettingRow label="Auto-hibernate on workspace switch" description="Hibernate apps not in the active workspace when switching">
+        <ToggleSwitch
+          checked={autoHibernate()}
+          onChange={async (v) => {
+            setAutoHibernate(v);
+            try {
+              const { invoke } = await import("@tauri-apps/api/core");
+              const config = await getConfig();
+              (config as any).workspaces.auto_hibernate_on_workspace_switch = v;
+              await invoke("import_config_json", { json: JSON.stringify(config) });
+            } catch (err) {
+              console.error("Failed to save auto-hibernate setting:", err);
+            }
+          }}
+        />
+      </SettingRow>
 
       <div class="space-y-4">
         <For each={workspaces}>

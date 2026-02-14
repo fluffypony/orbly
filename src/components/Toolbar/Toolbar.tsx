@@ -45,6 +45,19 @@ const Toolbar: Component = () => {
               />
             </div>
 
+            <button
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 cursor-not-allowed"
+              title="Tiling layout — Coming soon"
+              aria-label="Tiling layout (coming soon)"
+              disabled
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
             <AppMenu appId={app().id} />
           </>
         )}

@@ -121,6 +121,9 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         <SettingRow label="Ad blocking">
           <ToggleSwitch checked={app.adblock_enabled} onChange={(v) => setApp("adblock_enabled", v)} />
         </SettingRow>
+        <SettingRow label="Suppress high-usage alerts" description="Don't show CPU alerts for this app">
+          <ToggleSwitch checked={app.suppress_high_usage_alert} onChange={(v) => setApp("suppress_high_usage_alert", v)} />
+        </SettingRow>
         <SettingRow label="Custom CSS/JS" description="Inject custom styles and scripts">
           <Button onClick={() => setShowInjection(true)}>Edit</Button>
         </SettingRow>

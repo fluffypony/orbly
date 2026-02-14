@@ -19,6 +19,11 @@ const GeneralTab: Component = () => {
     launch_at_login: false,
     check_for_updates: true,
     developer_mode: false,
+    scrollbar_color: null,
+    selection_color: null,
+    local_scripts_only: false,
+    cpu_alert_threshold: 30,
+    recipe_cache_ttl_hours: 24,
     window_state: { maximized: false },
   });
 
@@ -89,6 +94,20 @@ const GeneralTab: Component = () => {
         <ToggleSwitch
           checked={config.check_for_updates}
           onChange={(v) => save({ check_for_updates: v })}
+        />
+      </SettingRow>
+
+      <SettingRow label="Developer mode" description="Show developer tools like Inject Console in the app menu">
+        <ToggleSwitch
+          checked={config.developer_mode}
+          onChange={(v) => save({ developer_mode: v })}
+        />
+      </SettingRow>
+
+      <SettingRow label="Local scripts only" description="Disable remote recipe fetching (badge scripts, CSS/JS)">
+        <ToggleSwitch
+          checked={config.local_scripts_only}
+          onChange={(v) => save({ local_scripts_only: v })}
         />
       </SettingRow>
     </div>
