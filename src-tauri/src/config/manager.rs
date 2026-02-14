@@ -41,12 +41,7 @@ impl ConfigManager {
 
     pub fn save_config(&self, config: OrblyConfig) -> Result<(), Box<dyn std::error::Error>> {
         let mut guard = self.config.lock().expect("config lock");
-        Self::write_to_disk(&self.config_path, &config)?;
-        if config.sync.enabled {
-            if let Ok(json) = serde_json::to_string(&config) {
-                crate::config::icloud::save_to_icloud("orbly_config", &json);
-            }
-        }
+        Self::persist_config(&self.config_path, &config)?;
         *guard = config;
         Ok(())
     }
@@ -56,8 +51,10 @@ impl ConfigManager {
         F: FnOnce(&mut OrblyConfig),
     {
         let mut guard = self.config.lock().expect("config lock");
-        updater(&mut guard);
-        Self::write_to_disk(&self.config_path, &guard)?;
+        let mut updated = guard.clone();
+        updater(&mut updated);
+        Self::persist_config(&self.config_path, &updated)?;
+        *guard = updated;
         Ok(())
     }
 
@@ -76,17 +73,18 @@ impl ConfigManager {
             app.data_store_uuid = Uuid::new_v4();
         }
 
-        let mut config = self.config.lock().expect("config lock");
-        config.apps.push(app);
-        Self::write_to_disk(&self.config_path, &config)?;
-        Ok(())
+        self.update_with(move |config| {
+            config.apps.push(app);
+        })
     }
 
     pub fn update_app(&self, app: AppConfig) -> Result<(), Box<dyn std::error::Error>> {
-        let mut config = self.config.lock().expect("config lock");
-        if let Some(existing) = config.apps.iter_mut().find(|a| a.id == app.id) {
+        let mut guard = self.config.lock().expect("config lock");
+        let mut updated = guard.clone();
+        if let Some(existing) = updated.apps.iter_mut().find(|a| a.id == app.id) {
             *existing = app;
-            Self::write_to_disk(&self.config_path, &config)?;
+            Self::persist_config(&self.config_path, &updated)?;
+            *guard = updated;
             Ok(())
         } else {
             Err(format!("App '{}' not found", app.id).into())
@@ -97,15 +95,30 @@ impl ConfigManager {
         &self,
         app_id: &str,
     ) -> Result<Option<AppConfig>, Box<dyn std::error::Error>> {
-        let mut config = self.config.lock().expect("config lock");
-        let pos = config.apps.iter().position(|a| a.id == app_id);
+        let mut guard = self.config.lock().expect("config lock");
+        let mut updated = guard.clone();
+        let pos = updated.apps.iter().position(|a| a.id == app_id);
         if let Some(idx) = pos {
-            let removed = config.apps.remove(idx);
-            Self::write_to_disk(&self.config_path, &config)?;
+            let removed = updated.apps.remove(idx);
+            Self::persist_config(&self.config_path, &updated)?;
+            *guard = updated;
             Ok(Some(removed))
         } else {
             Ok(None)
         }
+    }
+
+    fn persist_config(
+        config_path: &PathBuf,
+        config: &OrblyConfig,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Self::write_to_disk(config_path, config)?;
+        if config.sync.enabled {
+            if let Ok(json) = serde_json::to_string(config) {
+                crate::config::icloud::save_to_icloud("orbly_config", &json);
+            }
+        }
+        Ok(())
     }
 
     fn migrate_config(config: &mut OrblyConfig) {

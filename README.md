@@ -14,7 +14,7 @@ Built with [Tauri 2](https://tauri.app), [SolidJS](https://www.solidjs.com/), an
 
 ## Overview
 
-Orbly wraps each web app in its own isolated webview with a separate data store — cookies, cache, and sessions never leak between apps. Inactive apps are automatically hibernated so they consume zero CPU, and a built-in ad blocker strips ads and trackers before content ever renders. The result is a single window that replaces a dozen browser tabs while using a fraction of the resources.
+Orbly wraps each web app in its own isolated webview with a separate data store - cookies, cache, and sessions never leak between apps. Inactive apps are automatically hibernated so they consume zero CPU, and a built-in ad blocker strips ads and trackers before content ever renders. The result is a single window that replaces a dozen browser tabs while using a fraction of the resources.
 
 Orbly ships as a single native binary for macOS, Windows, and Linux. The frontend is a SolidJS + Tailwind CSS 4 single-page app; the backend is Rust using the Tauri 2 framework and platform-native webviews (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux).
 
@@ -24,7 +24,7 @@ Orbly ships as a single native binary for macOS, Windows, and Linux. The fronten
 
 ### App Management
 
-Orbly ships with built-in templates for over twenty popular services — WhatsApp, Slack, Telegram, Discord, Gmail, Outlook, Notion, Linear, GitHub, Figma, Spotify, YouTube, and more — as well as support for any custom URL. Each app gets its own isolated data store backed by the platform's native webview engine. Apps have a full lifecycle: they can be active, hibernated (webview destroyed but URL preserved for instant wake), or disabled entirely. An onboarding wizard walks new users through selecting services, choosing a theme, configuring quiet hours, and enabling launch-at-login.
+Orbly ships with built-in templates for over twenty popular services - WhatsApp, Slack, Telegram, Discord, Gmail, Outlook, Notion, Linear, GitHub, Figma, Spotify, YouTube, and more - as well as support for any custom URL. Each app gets its own isolated data store backed by the platform's native webview engine. Apps have a full lifecycle: they can be active, hibernated (webview destroyed but URL preserved for instant wake), or disabled entirely. An onboarding wizard walks new users through selecting services, choosing a theme, configuring quiet hours, and enabling launch-at-login.
 
 Per-app configuration includes custom user agent strings (with presets for Chrome, Firefox, Safari, and Mobile Safari), HTTP/SOCKS5 proxy support, custom CSS and JavaScript injection, download directory overrides, notification style, ad-blocking toggle, zoom level (50–200%), and dark mode settings. Apps can be reordered by drag-and-drop in the sidebar, grouped into named sidebar sections, and assigned to workspaces.
 
@@ -108,7 +108,7 @@ The tray icon provides show/hide, per-app quick switch, DND toggle, and quit. Le
 
 ### Appearance
 
-Three theme options — System, Light, and Dark — are available in Settings and during onboarding. The `color-scheme` CSS property is set on the root element so that native form controls and scrollbars match. Custom scrollbar and text selection colours can be configured globally. Per-app zoom is adjustable from 50% to 200% via shortcuts or the app editor.
+Three theme options - System, Light, and Dark - are available in Settings and during onboarding. The `color-scheme` CSS property is set on the root element so that native form controls and scrollbars match. Custom scrollbar and text selection colours can be configured globally. Per-app zoom is adjustable from 50% to 200% via shortcuts or the app editor.
 
 ### Sync and Backup
 
@@ -209,9 +209,9 @@ The output binary and installer are placed in `src-tauri/target/release/bundle/`
 
 The build pipeline has two stages:
 
-1. **`npm run build:inject`** — Vite compiles `src/injected/darkmode-inject.ts` (the DarkReader IIFE) into `src-tauri/resources/darkmode-inject.js` using the config in `vite.inject.config.ts`.
+1. **`npm run build:inject`** - Vite compiles `src/injected/darkmode-inject.ts` (the DarkReader IIFE) into `src-tauri/resources/darkmode-inject.js` using the config in `vite.inject.config.ts`.
 
-2. **`npm run build`** — Runs the inject build, then `tsc` for type checking, then Vite bundles the SolidJS frontend into `dist/`.
+2. **`npm run build`** - Runs the inject build, then `tsc` for type checking, then Vite bundles the SolidJS frontend into `dist/`.
 
 Tauri then compiles the Rust backend (which bundles `dist/` and `resources/` into the binary) and produces the platform installer.
 
@@ -269,9 +269,9 @@ Orbly stores its configuration at:
 
 | Platform | Path |
 |----------|------|
-| macOS | `~/Library/Application Support/ly.getorb.orbly/config.toml` |
-| Windows | `%APPDATA%\ly.getorb.orbly\config.toml` |
-| Linux | `~/.local/share/ly.getorb.orbly/config.toml` |
+| macOS | `~/Library/Application Support/com.getorb.ly/config.toml` |
+| Windows | `%APPDATA%\com.getorb.ly\config.toml` |
+| Linux | `~/.local/share/com.getorb.ly/config.toml` |
 
 The configuration format is TOML. Writes are atomic with automatic backup rotation. A corrupt config file is automatically restored from the `.bak` backup. The full configuration can also be exported and imported as JSON from Settings → Sync.
 

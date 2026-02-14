@@ -12,19 +12,16 @@ pub fn toggle_adblock(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<bool, String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    let app = config
-        .apps
-        .iter_mut()
-        .find(|a| a.id == app_id)
-        .ok_or_else(|| format!("App '{}' not found", app_id))?;
-
-    app.adblock_enabled = !app.adblock_enabled;
-    let new_state = app.adblock_enabled;
-
+    let mut new_state: Option<bool> = None;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.adblock_enabled = !app.adblock_enabled;
+                new_state = Some(app.adblock_enabled);
+            }
+        })
         .map_err(|e| e.to_string())?;
+    let new_state = new_state.ok_or_else(|| format!("App '{}' not found", app_id))?;
 
     // When disabling, remove cosmetic filter styles from the running webview
     if !new_state {
@@ -70,9 +67,10 @@ pub fn update_filter_lists(webview: tauri::Webview, app_handle: AppHandle) -> Re
 
                 // Update last_updated timestamp
                 let config_manager = app_handle.state::<ConfigManager>();
-                let mut config = config_manager.get_config();
-                config.adblock.last_updated = chrono::Utc::now().to_rfc3339();
-                let _ = config_manager.save_config(config);
+                let now = chrono::Utc::now().to_rfc3339();
+                let _ = config_manager.update_with(|config| {
+                    config.adblock.last_updated = now.clone();
+                });
 
                 log::info!("Filter lists updated successfully");
                 let _ = app_handle.emit("filter-lists-updated", ());
@@ -95,18 +93,22 @@ pub fn add_custom_adblock_rule(
     adblock_state: State<'_, AdblockState>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    config.adblock.custom_rules.push(rule);
+    let mut updated_rules: Option<Vec<String>> = None;
 
     config_manager
-        .save_config(config.clone())
+        .update_with(|config| {
+            config.adblock.custom_rules.push(rule.clone());
+            updated_rules = Some(config.adblock.custom_rules.clone());
+        })
         .map_err(|e| e.to_string())?;
 
     // Reload engine with updated custom rules
     let rules_text = adblock_state
         .get_filter_rules_text()
         .unwrap_or_default();
-    adblock_state.load_rules(&rules_text, &config.adblock.custom_rules);
+    if let Some(rules) = updated_rules {
+        adblock_state.load_rules(&rules_text, &rules);
+    }
 
     Ok(())
 }

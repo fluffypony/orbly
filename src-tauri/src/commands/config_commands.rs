@@ -155,11 +155,11 @@ pub fn update_general_config(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    let old_manifest_url = config.general.recipe_manifest_url.clone();
-    config.general = general;
+    let old_manifest_url = config_manager.get_config().general.recipe_manifest_url.clone();
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.general = general.clone();
+        })
         .map_err(|e| e.to_string())?;
     if old_manifest_url != config_manager.get_config().general.recipe_manifest_url {
         if let Some(recipe_manager) = app_handle.try_state::<crate::recipes::RecipeManager>() {
@@ -179,12 +179,12 @@ pub fn update_adblock_config(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    let old_enabled = config.adblock.enabled;
-    config.adblock = adblock;
-    let adblock_cfg = config.adblock.clone();
+    let old_enabled = config_manager.get_config().adblock.enabled;
+    let adblock_cfg = adblock.clone();
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.adblock = adblock.clone();
+        })
         .map_err(|e| e.to_string())?;
 
     if let Some(state) = app_handle.try_state::<crate::adblock::engine::AdblockState>() {
@@ -209,10 +209,10 @@ pub fn update_downloads_config(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    config.downloads = downloads;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.downloads = downloads.clone();
+        })
         .map_err(|e| e.to_string())
 }
 
@@ -223,10 +223,10 @@ pub fn update_link_routing_config(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    config.link_routing = link_routing;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.link_routing = link_routing.clone();
+        })
         .map_err(|e| e.to_string())
 }
 
@@ -273,9 +273,11 @@ pub fn update_shortcuts_config(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    config.shortcuts = shortcuts;
-    config_manager.save_config(config).map_err(|e| e.to_string())?;
+    config_manager
+        .update_with(|config| {
+            config.shortcuts = shortcuts.clone();
+        })
+        .map_err(|e| e.to_string())?;
     let _ = app_handle.emit("shortcuts-updated", ());
     Ok(())
 }
@@ -287,7 +289,9 @@ pub fn update_workspaces_config(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    config.workspaces = workspaces;
-    config_manager.save_config(config).map_err(|e| e.to_string())
+    config_manager
+        .update_with(|config| {
+            config.workspaces = workspaces.clone();
+        })
+        .map_err(|e| e.to_string())
 }

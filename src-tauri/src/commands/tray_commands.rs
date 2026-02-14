@@ -18,10 +18,10 @@ pub fn set_launch_at_login(
         autostart.disable().map_err(|e| e.to_string())?;
     }
 
-    let mut config = config_manager.get_config();
-    config.general.launch_at_login = enabled;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.general.launch_at_login = enabled;
+        })
         .map_err(|e| e.to_string())?;
     Ok(())
 }

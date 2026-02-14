@@ -80,7 +80,7 @@ pub async fn activate_app(
     content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
+    let config = config_manager.get_config();
     let app_config = config
         .apps
         .iter()
@@ -165,10 +165,11 @@ pub async fn activate_app(
 
     // Clear persisted hibernated flag
     if app_config.hibernated {
-        if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
-            app.hibernated = false;
-        }
-        let _ = config_manager.save_config(config);
+        let _ = config_manager.update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.hibernated = false;
+            }
+        });
     }
 
     // Check for pending navigation from link routing
@@ -255,13 +256,18 @@ pub fn hibernate_app(
     }
 
     // Update persisted config
-    let mut config = config_manager.get_config();
-    if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
-        app.hibernated = true;
-    }
+    let mut found = false;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.hibernated = true;
+                found = true;
+            }
+        })
         .map_err(|e| e.to_string())?;
+    if !found {
+        return Err(format!("App '{}' not found in config", app_id));
+    }
 
     let _ = app_handle.emit("app-hibernated", &app_id);
 
@@ -287,13 +293,18 @@ pub fn disable_app(
     }
 
     // Update persisted config
-    let mut config = config_manager.get_config();
-    if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
-        app.enabled = false;
-    }
+    let mut found = false;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.enabled = false;
+                found = true;
+            }
+        })
         .map_err(|e| e.to_string())?;
+    if !found {
+        return Err(format!("App '{}' not found in config", app_id));
+    }
 
     let _ = app_handle.emit("app-disabled", &app_id);
     crate::tray::rebuild_tray_menu(&app_handle);
@@ -312,14 +323,21 @@ pub async fn enable_app(
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
     // Update persisted config
-    let mut config = config_manager.get_config();
-    if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
-        app.enabled = true;
-        app.hibernated = false;
-    }
+    let mut found = false;
     config_manager
-        .save_config(config.clone())
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.enabled = true;
+                app.hibernated = false;
+                found = true;
+            }
+        })
         .map_err(|e| e.to_string())?;
+    if !found {
+        return Err(format!("App '{}' not found in config", app_id));
+    }
+
+    let config = config_manager.get_config();
 
     let app_config = config
         .apps

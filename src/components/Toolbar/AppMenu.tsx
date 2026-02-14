@@ -1,5 +1,6 @@
 import { Component, createSignal, onMount, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
+import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { reloadApp, hibernateApp, disableApp, getConfig, evalInApp, checkUnsavedWork } from "../../lib/ipc";
 import { appStates, setSettingsVisible } from "../../stores/uiStore";
 import { showToast } from "../Toast/ToastContainer";
@@ -67,8 +68,7 @@ const AppMenu: Component<AppMenuProps> = (props) => {
         case "open-external": {
           const state = appStates.find((s) => s.id === props.appId);
           if (state?.current_url) {
-            const { open } = await import("@tauri-apps/plugin-shell");
-            await open(state.current_url);
+            await openUrl(state.current_url);
           }
           break;
         }

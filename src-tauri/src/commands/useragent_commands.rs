@@ -22,13 +22,20 @@ pub fn set_user_agent(
     user_agent: String,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
-    let mut config = config_manager.get_config();
-    if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
-        app.user_agent = user_agent;
-    } else {
-        return Err(format!("App '{}' not found", app_id));
-    }
+    let mut found = false;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.user_agent = user_agent.clone();
+                found = true;
+            }
+        })
         .map_err(|e| e.to_string())
+        .and_then(|_| {
+            if found {
+                Ok(())
+            } else {
+                Err(format!("App '{}' not found", app_id))
+            }
+        })
 }

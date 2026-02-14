@@ -29,17 +29,18 @@ pub fn switch_workspace(
     app_handle: AppHandle,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
+    let current_config = config_manager.get_config();
 
-    let target_ws = config.workspaces.items.iter().find(|w| w.id == workspace_id)
+    let target_ws = current_config.workspaces.items.iter().find(|w| w.id == workspace_id)
         .ok_or_else(|| format!("Workspace '{}' not found", workspace_id))?
         .clone();
 
-    let should_auto_hibernate = config.workspaces.auto_hibernate_on_workspace_switch;
+    let should_auto_hibernate = current_config.workspaces.auto_hibernate_on_workspace_switch;
 
-    config.workspaces.active = workspace_id.clone();
     config_manager
-        .save_config(config.clone())
+        .update_with(|config| {
+            config.workspaces.active = workspace_id.clone();
+        })
         .map_err(|e| e.to_string())?;
 
     // Auto-hibernate apps not in the new workspace
@@ -52,12 +53,12 @@ pub fn switch_workspace(
             .collect();
         drop(apps_lock);
 
-        let mut config = config_manager.get_config();
+        let mut hibernated_ids: Vec<String> = Vec::new();
         for app_id in &active_ids {
             if !target_ws.app_ids.contains(app_id) {
                 let last_url = crate::app_manager::lifecycle::destroy_app_webview(&app_handle, app_id)
                     .unwrap_or(None);
-                let fallback_url = config.apps.iter().find(|a| a.id == *app_id)
+                let fallback_url = current_config.apps.iter().find(|a| a.id == *app_id)
                     .map(|a| a.url.clone()).unwrap_or_default();
                 let url = last_url.unwrap_or(fallback_url);
 
@@ -65,10 +66,7 @@ pub fn switch_workspace(
                     last_url: url,
                 });
 
-                // Persist hibernated flag
-                if let Some(app) = config.apps.iter_mut().find(|a| a.id == *app_id) {
-                    app.hibernated = true;
-                }
+                hibernated_ids.push(app_id.clone());
 
                 // Remove from session state
                 if let Some(session_state) = app_handle.try_state::<crate::app_manager::session_state::SessionState>() {
@@ -76,7 +74,13 @@ pub fn switch_workspace(
                 }
             }
         }
-        let _ = config_manager.save_config(config);
+        let _ = config_manager.update_with(|config| {
+            for app in config.apps.iter_mut() {
+                if hibernated_ids.iter().any(|id| id == &app.id) {
+                    app.hibernated = true;
+                }
+            }
+        });
     }
 
     let _ = app_handle.emit("workspace-switched", &workspace_id);
@@ -91,8 +95,9 @@ pub fn create_workspace(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<Workspace, String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
     let id = name.to_lowercase().replace(' ', "-");
+
+    let config = config_manager.get_config();
 
     if config.workspaces.items.iter().any(|w| w.id == id) {
         return Err(format!("Workspace '{}' already exists", id));
@@ -106,9 +111,10 @@ pub fn create_workspace(
         tile_assignments: vec![],
     };
 
-    config.workspaces.items.push(workspace.clone());
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.workspaces.items.push(workspace.clone());
+        })
         .map_err(|e| e.to_string())?;
     Ok(workspace)
 }
@@ -120,20 +126,23 @@ pub fn update_workspace(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    if let Some(ws) = config
-        .workspaces
-        .items
-        .iter_mut()
-        .find(|w| w.id == workspace.id)
-    {
-        *ws = workspace;
-    } else {
+    let mut found = false;
+    config_manager
+        .update_with(|config| {
+            if let Some(ws) = config
+                .workspaces
+                .items
+                .iter_mut()
+                .find(|w| w.id == workspace.id)
+            {
+                *ws = workspace.clone();
+                found = true;
+            }
+        })
+        .map_err(|e| e.to_string())?;
+    if !found {
         return Err("Workspace not found".into());
     }
-    config_manager
-        .save_config(config)
-        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -146,16 +155,19 @@ pub fn update_workspace_tiling(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    if let Some(ws) = config.workspaces.items.iter_mut().find(|w| w.id == workspace_id) {
-        ws.tiling_layout = tiling_layout;
-        ws.tile_assignments = tile_assignments;
-    } else {
+    let mut found = false;
+    config_manager
+        .update_with(|config| {
+            if let Some(ws) = config.workspaces.items.iter_mut().find(|w| w.id == workspace_id) {
+                ws.tiling_layout = tiling_layout.clone();
+                ws.tile_assignments = tile_assignments.clone();
+                found = true;
+            }
+        })
+        .map_err(|e| e.to_string())?;
+    if !found {
         return Err("Workspace not found".into());
     }
-    config_manager
-        .save_config(config)
-        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -170,14 +182,15 @@ pub fn delete_workspace(
     if workspace_id == "default" {
         return Err("Cannot delete the default workspace".into());
     }
-    let mut config = config_manager.get_config();
-    config.workspaces.items.retain(|w| w.id != workspace_id);
-    let was_active = config.workspaces.active == workspace_id;
-    if was_active {
-        config.workspaces.active = "default".to_string();
-    }
+    let mut was_active = false;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            config.workspaces.items.retain(|w| w.id != workspace_id);
+            was_active = config.workspaces.active == workspace_id;
+            if was_active {
+                config.workspaces.active = "default".to_string();
+            }
+        })
         .map_err(|e| e.to_string())?;
     if was_active {
         let _ = app_handle.emit("workspace-switched", "default");

@@ -62,7 +62,7 @@ const AboutTab: Component = () => {
         <div class="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
           <div class="flex items-center justify-between py-2">
             <span class="text-sm text-gray-600 dark:text-gray-300">License</span>
-            <span class="text-sm text-gray-800 dark:text-gray-200">MIT</span>
+            <span class="text-sm text-gray-800 dark:text-gray-200">BSD 3-Clause</span>
           </div>
           <div class="flex items-center justify-between py-2">
             <span class="text-sm text-gray-600 dark:text-gray-300">Source Code</span>
@@ -81,7 +81,7 @@ const AboutTab: Component = () => {
         <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
           <p class="text-xs text-gray-400 dark:text-gray-500">
             A lightweight, privacy-respecting multi-app workspace manager.
-            Built with Tauri, SolidJS, and Rust.
+            Built with Tauri 2, SolidJS, and Rust.
           </p>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
             © {new Date().getFullYear()} Orbly Contributors

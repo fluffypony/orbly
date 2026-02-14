@@ -108,18 +108,18 @@ pub fn set_audio_muted(
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
-    let app = config
-        .apps
-        .iter_mut()
-        .find(|a| a.id == app_id)
-        .ok_or("App not found")?;
-
-    app.audio_muted = muted;
-
+    let mut found = false;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.audio_muted = muted;
+                found = true;
+            }
+        })
         .map_err(|e| e.to_string())?;
+    if !found {
+        return Err("App not found".to_string());
+    }
 
     apply_audio_mute_to_webview(&app_handle, &app_id, muted)?;
 
@@ -142,34 +142,34 @@ pub fn toggle_global_mute(
     global_mute_state: State<'_, GlobalMuteState>,
 ) -> Result<bool, String> {
     crate::commands::require_main_webview(&webview)?;
-    let mut config = config_manager.get_config();
+    let config = config_manager.get_config();
     let is_muted = *global_mute_state.is_globally_muted.lock().expect("global mute lock");
 
     if is_muted {
         // Unmuting: restore each app's prior mute state
         let prior = global_mute_state.prior_states.lock().expect("prior states lock");
-        for app in config.apps.iter_mut() {
+        let mut restore_states: Vec<(String, bool)> = Vec::new();
+        for app in config.apps.iter() {
             if app.enabled {
                 let restore_muted = prior.get(&app.id).copied().unwrap_or(false);
-                app.audio_muted = restore_muted;
+                restore_states.push((app.id.clone(), restore_muted));
             }
         }
         drop(prior);
 
         clear_global_mute_snapshot(&app_handle);
 
-        let app_states: Vec<(String, bool)> = config
-            .apps
-            .iter()
-            .filter(|a| a.enabled)
-            .map(|a| (a.id.clone(), a.audio_muted))
-            .collect();
-
         config_manager
-            .save_config(config)
+            .update_with(|config| {
+                for (app_id, muted) in &restore_states {
+                    if let Some(app) = config.apps.iter_mut().find(|a| a.id == *app_id) {
+                        app.audio_muted = *muted;
+                    }
+                }
+            })
             .map_err(|e| e.to_string())?;
 
-        for (app_id, muted) in &app_states {
+        for (app_id, muted) in &restore_states {
             let _ = apply_audio_mute_to_webview(&app_handle, app_id, *muted);
             let _ = app_handle.emit(
                 "audio-muted-changed",
@@ -195,12 +195,6 @@ pub fn toggle_global_mute(
         persist_global_mute_snapshot(&app_handle, &prior, true);
         drop(prior);
 
-        for app in config.apps.iter_mut() {
-            if app.enabled {
-                app.audio_muted = true;
-            }
-        }
-
         let app_ids: Vec<String> = config
             .apps
             .iter()
@@ -209,7 +203,13 @@ pub fn toggle_global_mute(
             .collect();
 
         config_manager
-            .save_config(config)
+            .update_with(|config| {
+                for app in config.apps.iter_mut() {
+                    if app.enabled {
+                        app.audio_muted = true;
+                    }
+                }
+            })
             .map_err(|e| e.to_string())?;
 
         for app_id in &app_ids {

@@ -30,18 +30,18 @@ fn set_zoom_inner(
 ) -> Result<(), String> {
     let zoom = round_to_10(zoom).clamp(50, 200);
 
-    let mut config = config_manager.get_config();
-    let app = config
-        .apps
-        .iter_mut()
-        .find(|a| a.id == app_id)
-        .ok_or("App not found")?;
-
-    app.zoom_level = zoom;
-
+    let mut found = false;
     config_manager
-        .save_config(config)
+        .update_with(|config| {
+            if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
+                app.zoom_level = zoom;
+                found = true;
+            }
+        })
         .map_err(|e| e.to_string())?;
+    if !found {
+        return Err("App not found".to_string());
+    }
 
     apply_zoom_to_webview(app_handle, app_id, zoom)?;
 

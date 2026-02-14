@@ -1,6 +1,7 @@
 import { Component, For, Show, onMount, onCleanup, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
-import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp, checkUnsavedWork } from "../../lib/ipc";
+import { open } from "@tauri-apps/plugin-shell";
+import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp, checkUnsavedWork, updateWorkspace } from "../../lib/ipc";
 import { appConfigs, appStates, setSettingsVisible, setEditingAppIdFromContextMenu, workspaces } from "../../stores/uiStore";
 import { refreshAppConfigs, refreshAppStates } from "../../lib/stateSync";
 import ConfirmDialog from "../Dialogs/ConfirmDialog";
@@ -77,7 +78,6 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
         case "open-external": {
           const config = appConfigs.find((a) => a.id === props.appId);
           if (config?.url) {
-            const { open } = await import("@tauri-apps/plugin-shell");
             await open(config.url);
           }
           break;
@@ -115,7 +115,6 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
   const handleMoveWorkspace = async (workspaceId: string) => {
     const ws = workspaces.find((w) => w.id === workspaceId);
     if (ws && !ws.app_ids.includes(props.appId)) {
-      const { updateWorkspace } = await import("../../lib/ipc");
       await updateWorkspace({ ...ws, app_ids: [...ws.app_ids, props.appId] });
       await refreshAppConfigs();
     }
