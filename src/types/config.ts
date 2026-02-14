@@ -33,6 +33,7 @@ export interface AppConfig {
   notification_style: NotificationStyle;
   adblock_enabled: boolean;
   zoom_level: number;
+  suppress_high_usage_alert: boolean;
 }
 
 export interface WindowState {
@@ -56,7 +57,12 @@ export interface GeneralConfig {
   launch_at_login: boolean;
   check_for_updates: boolean;
   developer_mode: boolean;
+  scrollbar_color?: string | null;
+  selection_color?: string | null;
+  recipe_cache_ttl_hours: number;
   window_state: WindowState;
+  local_scripts_only: boolean;
+  cpu_alert_threshold: number;
 }
 
 export interface AdblockConfig {

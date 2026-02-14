@@ -167,15 +167,17 @@ pub fn run() {
                 }
             });
 
-            // Fetch recipes on startup (background)
-            let recipe_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                let rm = recipe_handle.state::<RecipeManager>();
-                if let Err(e) = rm.update().await {
-                    log::info!("Recipe update on startup failed (may be offline): {}", e);
-                    rm.set_error(e.to_string());
-                }
-            });
+            // Fetch recipes on startup (background), unless local_scripts_only is set
+            if !app.state::<ConfigManager>().get_config().general.local_scripts_only {
+                let recipe_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    let rm = recipe_handle.state::<RecipeManager>();
+                    if let Err(e) = rm.update().await {
+                        log::info!("Recipe update on startup failed (may be offline): {}", e);
+                        rm.set_error(e.to_string());
+                    }
+                });
+            }
 
             app_manager::start_auto_hibernate_task(app.handle().clone());
             resource_monitor::poller::start_resource_polling(app.handle().clone());

@@ -78,6 +78,8 @@ pub struct AppConfig {
     pub adblock_enabled: bool,
     #[serde(default = "default_100")]
     pub zoom_level: u32,
+    #[serde(default)]
+    pub suppress_high_usage_alert: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -132,7 +134,17 @@ pub struct GeneralConfig {
     #[serde(default)]
     pub developer_mode: bool,
     #[serde(default)]
+    pub scrollbar_color: Option<String>,
+    #[serde(default)]
+    pub selection_color: Option<String>,
+    #[serde(default)]
     pub window_state: WindowState,
+    #[serde(default)]
+    pub local_scripts_only: bool,
+    #[serde(default = "default_cpu_alert_threshold")]
+    pub cpu_alert_threshold: f64,
+    #[serde(default = "default_recipe_cache_ttl_hours")]
+    pub recipe_cache_ttl_hours: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

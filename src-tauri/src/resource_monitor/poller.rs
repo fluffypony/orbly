@@ -109,12 +109,18 @@ pub fn start_resource_polling(app_handle: AppHandle) {
 }
 
 fn check_high_usage_alerts(app_handle: &AppHandle, usages: &[super::AppResourceUsage]) {
+    let config_manager = app_handle.state::<crate::config::manager::ConfigManager>();
+    let threshold = config_manager.get_config().general.cpu_alert_threshold;
+    let config = config_manager.get_config();
     let monitor = app_handle.state::<super::ResourceMonitor>();
     let mut alerted = monitor.alerted.lock().expect("resource alerted lock");
 
     for usage in usages {
         if let Some(cpu) = usage.cpu_percent {
-            if cpu > 30.0 {
+            if cpu > threshold {
+                if config.apps.iter().any(|a| a.id == usage.app_id && a.suppress_high_usage_alert) {
+                    continue;
+                }
                 let should_alert = match alerted.get(&usage.app_id) {
                     Some(first_seen) => first_seen.elapsed() > std::time::Duration::from_secs(30),
                     None => {

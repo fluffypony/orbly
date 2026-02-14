@@ -62,6 +62,10 @@ pub fn default_dnd_days() -> Vec<String> {
     ]
 }
 
+pub fn default_recipe_cache_ttl_hours() -> u64 {
+    24
+}
+
 pub fn default_filter_lists() -> Vec<String> {
     vec![
         "https://easylist.to/easylist/easylist.txt".to_string(),
@@ -98,6 +102,10 @@ pub fn default_link_routing_rules() -> Vec<LinkRoutingRule> {
         pattern: "*".to_string(),
         target: "external".to_string(),
     }]
+}
+
+pub fn default_cpu_alert_threshold() -> f64 {
+    30.0
 }
 
 pub fn default_workspace_items() -> Vec<Workspace> {
@@ -144,7 +152,12 @@ impl Default for GeneralConfig {
             launch_at_login: false,
             check_for_updates: true,
             developer_mode: false,
+            scrollbar_color: None,
+            selection_color: None,
             window_state: WindowState::default(),
+            local_scripts_only: false,
+            cpu_alert_threshold: default_cpu_alert_threshold(),
+            recipe_cache_ttl_hours: default_recipe_cache_ttl_hours(),
         }
     }
 }

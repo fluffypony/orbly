@@ -117,6 +117,15 @@ pub fn create_app_webview(
         true
     });
 
+    // TODO: Wire certificate challenge handling when Tauri/Wry exposes certificate
+    // challenge callbacks. CertificateExceptions backend is ready for use.
+    // See: app_manager/certificate.rs for the exception storage.
+
+    // Note: Media permissions (camera/microphone) rely on platform defaults.
+    // macOS Info.plist keys (NSCameraUsageDescription, NSMicrophoneUsageDescription)
+    // are set via tauri.conf.json bundle configuration.
+    // Tauri/Wry does not currently expose on_permission_request() for WebView2/WKWebView.
+
     main_window
         .add_child(
             builder,
