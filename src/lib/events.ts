@@ -71,7 +71,7 @@ export async function setupEventListeners() {
       } catch {}
       refreshAppStates();
     }),
-    await listen<string>("app-error", () => {
+    await listen<{ appId: string; message: string }>("app-error", () => {
       refreshAppStates();
     }),
     await listen<{ appId: string; url: string }>("url-changed", () => {
