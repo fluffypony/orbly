@@ -130,6 +130,10 @@ const ShortcutsTab: Component = () => {
     <div onKeyDown={handleKeyDown}>
       <SettingSection title="Shortcuts" description="Keyboard shortcuts for common actions. Click a binding to change it." />
 
+      <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 -mt-4">
+        Note: {isMac ? "⌘+Tab is reserved by macOS for app switching, so ⌘+] / ⌘+[ are used instead." : "Ctrl+Tab and Ctrl+Shift+Tab are also available for switching between apps."}
+      </p>
+
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-200 dark:border-gray-700">

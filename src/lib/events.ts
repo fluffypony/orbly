@@ -6,6 +6,7 @@ import {
   setDndEnabled,
   recentAppIds,
   setRecentAppIds,
+  appConfigs,
 } from "../stores/uiStore";
 import { refreshAppStates, persistRecentAppIds } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
@@ -45,9 +46,10 @@ export async function setupEventListeners() {
     await listen<string>("app-enabled", () => {
       refreshAppStates();
     }),
-    await listen<string>("app-auto-hibernated", () => {
+    await listen<string>("app-auto-hibernated", (event) => {
       refreshAppStates();
-      showToast("App was auto-hibernated due to inactivity", "info");
+      const appName = appConfigs.find(a => a.id === event.payload)?.name ?? "An app";
+      showToast(`${appName} was auto-hibernated due to inactivity`, "info");
     }),
     await listen<string>("app-state-changed", () => {
       refreshAppStates();

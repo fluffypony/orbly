@@ -33,6 +33,7 @@ export function createDefaultBindings(
     { action: "next_app", keys: "CmdOrCtrl+]", global: false, handler: handlers.nextApp },
     { action: "prev_app", keys: "CmdOrCtrl+[", global: false, handler: handlers.prevApp },
     { action: "reload_app", keys: "CmdOrCtrl+R", global: false, handler: handlers.reloadCurrentApp },
+    { action: "reload_app_f5", keys: "F5", global: false, handler: handlers.reloadCurrentApp },
     { action: "apps_manager", keys: "CmdOrCtrl+Shift+A", global: false, handler: handlers.appsManager },
     { action: "downloads", keys: "CmdOrCtrl+J", global: false, handler: handlers.downloads },
     { action: "settings", keys: "CmdOrCtrl+,", global: false, handler: handlers.settings },
@@ -48,6 +49,14 @@ export function createDefaultBindings(
       handler: () => handlers.switchToApp(i),
     })),
   ];
+
+  // Add Ctrl+Tab / Ctrl+Shift+Tab for next/prev app on Windows/Linux
+  if (!navigator.platform.includes("Mac")) {
+    bindings.push(
+      { action: "next_app_alt", keys: "CmdOrCtrl+Tab", global: false, handler: handlers.nextApp },
+      { action: "prev_app_alt", keys: "CmdOrCtrl+Shift+Tab", global: false, handler: handlers.prevApp },
+    );
+  }
 
   if (overrides) {
     const overrideMap: Record<string, string> = {

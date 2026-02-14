@@ -47,6 +47,9 @@ export const [appsManagerVisible, setAppsManagerVisible] = createSignal(false);
 // Settings panel visibility
 export const [settingsVisible, setSettingsVisible] = createSignal(false);
 
+// Context menu → settings edit bridge
+export const [editingAppIdFromContextMenu, setEditingAppIdFromContextMenu] = createSignal<string | null>(null);
+
 // Theme state
 export const [theme, setTheme] = createSignal<'system' | 'light' | 'dark'>('system');
 

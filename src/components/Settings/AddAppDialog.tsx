@@ -97,6 +97,7 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
         dark_mode_sepia: 10,
         dark_mode_bg_color: "",
         dark_mode_text_color: "",
+        dark_mode_custom_css: "",
         hibernation_timeout_minutes: 15,
         download_directory: "",
         skip_download_dialog: false,

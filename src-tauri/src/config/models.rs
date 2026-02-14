@@ -60,6 +60,8 @@ pub struct AppConfig {
     pub dark_mode_bg_color: String,
     #[serde(default)]
     pub dark_mode_text_color: String,
+    #[serde(default)]
+    pub dark_mode_custom_css: String,
     #[serde(default = "default_15")]
     pub hibernation_timeout_minutes: u32,
     #[serde(default = "default_download_dir")]
@@ -147,6 +149,8 @@ pub struct GeneralConfig {
     pub cpu_alert_threshold: f64,
     #[serde(default = "default_recipe_cache_ttl_hours")]
     pub recipe_cache_ttl_hours: u64,
+    #[serde(default = "default_true")]
+    pub sidebar_hover_expand: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -223,6 +227,8 @@ pub struct DownloadGlobalConfig {
     pub unified_manager_enabled: bool,
     #[serde(default = "default_download_dir")]
     pub default_directory: String,
+    #[serde(default)]
+    pub skip_download_dialog_default: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

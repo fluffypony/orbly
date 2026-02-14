@@ -160,6 +160,7 @@ impl Default for GeneralConfig {
             local_scripts_only: false,
             cpu_alert_threshold: default_cpu_alert_threshold(),
             recipe_cache_ttl_hours: default_recipe_cache_ttl_hours(),
+            sidebar_hover_expand: true,
         }
     }
 }
@@ -216,6 +217,7 @@ impl Default for DownloadGlobalConfig {
         Self {
             unified_manager_enabled: true,
             default_directory: default_download_dir(),
+            skip_download_dialog_default: false,
         }
     }
 }

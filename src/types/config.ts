@@ -24,6 +24,7 @@ export interface AppConfig {
   dark_mode_sepia: number;
   dark_mode_bg_color: string;
   dark_mode_text_color: string;
+  dark_mode_custom_css: string;
   hibernation_timeout_minutes: number;
   download_directory: string;
   skip_download_dialog: boolean;
@@ -64,6 +65,7 @@ export interface GeneralConfig {
   window_state: WindowState;
   local_scripts_only: boolean;
   cpu_alert_threshold: number;
+  sidebar_hover_expand: boolean;
 }
 
 export interface AdblockConfig {
@@ -110,6 +112,7 @@ export interface WorkspacesConfig {
 export interface DownloadGlobalConfig {
   unified_manager_enabled: boolean;
   default_directory: string;
+  skip_download_dialog_default: boolean;
 }
 
 export interface SyncConfig {
