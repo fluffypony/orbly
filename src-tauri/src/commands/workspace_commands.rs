@@ -4,7 +4,11 @@ use crate::config::manager::ConfigManager;
 use crate::config::models::Workspace;
 
 #[tauri::command]
-pub fn get_workspaces(config_manager: State<'_, ConfigManager>) -> Result<Vec<Workspace>, String> {
+pub fn get_workspaces(
+    webview: tauri::Webview,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<Vec<Workspace>, String> {
+    crate::commands::require_main_webview(&webview)?;
     let config = config_manager.get_config();
     Ok(config.workspaces.items.clone())
 }
@@ -124,6 +128,28 @@ pub fn update_workspace(
         .find(|w| w.id == workspace.id)
     {
         *ws = workspace;
+    } else {
+        return Err("Workspace not found".into());
+    }
+    config_manager
+        .save_config(config)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_workspace_tiling(
+    workspace_id: String,
+    tiling_layout: String,
+    tile_assignments: Vec<String>,
+    webview: tauri::Webview,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
+    let mut config = config_manager.get_config();
+    if let Some(ws) = config.workspaces.items.iter_mut().find(|w| w.id == workspace_id) {
+        ws.tiling_layout = tiling_layout;
+        ws.tile_assignments = tile_assignments;
     } else {
         return Err("Workspace not found".into());
     }

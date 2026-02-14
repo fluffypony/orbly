@@ -23,6 +23,27 @@ impl GlobalMuteState {
     }
 }
 
+fn global_mute_state_path(app_handle: &AppHandle) -> Option<std::path::PathBuf> {
+    app_handle.path().app_data_dir().ok().map(|d| d.join("global-mute-state.json"))
+}
+
+fn persist_global_mute_snapshot(app_handle: &AppHandle, prior: &HashMap<String, bool>, muted: bool) {
+    if let Some(path) = global_mute_state_path(app_handle) {
+        let _ = std::fs::create_dir_all(path.parent().unwrap_or(std::path::Path::new(".")));
+        let snapshot = serde_json::json!({
+            "global_muted": muted,
+            "prior_states": prior,
+        });
+        let _ = std::fs::write(path, snapshot.to_string());
+    }
+}
+
+fn clear_global_mute_snapshot(app_handle: &AppHandle) {
+    if let Some(path) = global_mute_state_path(app_handle) {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
 #[derive(serde::Serialize, Clone)]
 struct AudioMutedChanged {
     app_id: String,
@@ -135,6 +156,8 @@ pub fn toggle_global_mute(
         }
         drop(prior);
 
+        clear_global_mute_snapshot(&app_handle);
+
         let app_states: Vec<(String, bool)> = config
             .apps
             .iter()
@@ -169,6 +192,7 @@ pub fn toggle_global_mute(
                 prior.insert(app.id.clone(), app.audio_muted);
             }
         }
+        persist_global_mute_snapshot(&app_handle, &prior, true);
         drop(prior);
 
         for app in config.apps.iter_mut() {

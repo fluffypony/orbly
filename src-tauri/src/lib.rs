@@ -13,7 +13,7 @@ mod utils;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Listener, Manager};
 use tauri_plugin_updater::UpdaterExt;
 
 use adblock::engine::AdblockState;
@@ -259,6 +259,22 @@ pub fn run() {
             // Set up system tray
             tray::setup_tray(app)?;
 
+            // Relay deep-link plugin events to app-specific frontend event.
+            let dl_handle = app.handle().clone();
+            app.listen("deep-link://new-url", move |event| {
+                let payload = event.payload();
+                if let Ok(urls) = serde_json::from_str::<Vec<String>>(payload) {
+                    if let Some(url) = urls.first() {
+                        let _ = dl_handle.emit("deep-link-received", url);
+                        log::info!("Deep link received: {}", url);
+                    }
+                }
+            });
+
+            // Notification click routing is not exposed by tauri-plugin-notification v2.3.3.
+            // Placeholder: once plugin exposes click callbacks, emit `switch-to-app`, and
+            // focus/show main window on notification activation.
+
             // Ensure clicking on the app in dock/taskbar shows and focuses the window
             if let Some(window) = app.get_webview_window("main") {
                 let win_handle = window.clone();
@@ -290,6 +306,7 @@ pub fn run() {
             commands::config_commands::update_workspaces_config,
             commands::app_lifecycle_commands::get_app_states,
             commands::app_lifecycle_commands::activate_app,
+            commands::app_lifecycle_commands::ensure_webview_exists,
             commands::app_lifecycle_commands::hibernate_app,
             commands::app_lifecycle_commands::disable_app,
             commands::app_lifecycle_commands::enable_app,
@@ -321,6 +338,7 @@ pub fn run() {
             commands::workspace_commands::switch_workspace,
             commands::workspace_commands::create_workspace,
             commands::workspace_commands::update_workspace,
+            commands::workspace_commands::update_workspace_tiling,
             commands::workspace_commands::delete_workspace,
             commands::audio_commands::set_audio_muted,
             commands::audio_commands::toggle_global_mute,
@@ -355,6 +373,9 @@ pub fn run() {
             commands::app_lifecycle_commands::heartbeat,
             commands::link_routing_commands::route_link,
             commands::favicon_commands::fetch_favicon,
+            commands::native_integration_commands::open_share_sheet_placeholder,
+            commands::native_integration_commands::run_shortcut_intent_placeholder,
+            commands::native_integration_commands::apply_focus_filter_placeholder,
         ])
         .on_window_event(|window, event| {
             match event {
@@ -383,6 +404,8 @@ pub fn run() {
                     if config.general.tray_mode {
                         api.prevent_close();
                         let _ = window.hide();
+                    } else {
+                        session_state.clear();
                     }
                 }
                 tauri::WindowEvent::Moved(pos) => {

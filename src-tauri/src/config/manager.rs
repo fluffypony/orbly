@@ -20,6 +20,13 @@ impl ConfigManager {
         }
 
         let mut config = Self::read_from_disk(&config_path)?;
+        if config.sync.enabled {
+            if let Some(cloud_json) = crate::config::icloud::load_from_icloud("orbly_config") {
+                if let Ok(cloud_config) = serde_json::from_str::<OrblyConfig>(&cloud_json) {
+                    config = cloud_config;
+                }
+            }
+        }
         Self::migrate_config(&mut config);
 
         Ok(Self {
@@ -35,6 +42,11 @@ impl ConfigManager {
     pub fn save_config(&self, config: OrblyConfig) -> Result<(), Box<dyn std::error::Error>> {
         let mut guard = self.config.lock().expect("config lock");
         Self::write_to_disk(&self.config_path, &config)?;
+        if config.sync.enabled {
+            if let Ok(json) = serde_json::to_string(&config) {
+                crate::config::icloud::save_to_icloud("orbly_config", &json);
+            }
+        }
         *guard = config;
         Ok(())
     }

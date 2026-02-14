@@ -33,7 +33,7 @@ pub struct RecipeStatus {
 
 pub struct RecipeManager {
     cache_dir: PathBuf,
-    manifest_url: String,
+    manifest_url: Mutex<String>,
     manifest: Mutex<Option<RecipeManifest>>,
     last_updated: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
     last_error: Mutex<Option<String>>,
@@ -60,11 +60,16 @@ impl RecipeManager {
 
         Self {
             cache_dir,
-            manifest_url: manifest_url.unwrap_or_else(|| DEFAULT_MANIFEST_URL.to_string()),
+            manifest_url: Mutex::new(manifest_url.unwrap_or_else(|| DEFAULT_MANIFEST_URL.to_string())),
             manifest: Mutex::new(manifest),
             last_updated: Mutex::new(last_updated),
             last_error: Mutex::new(None),
         }
+    }
+
+    pub fn set_manifest_url(&self, url: Option<String>) {
+        let mut manifest_url = self.manifest_url.lock().expect("recipe manifest_url lock");
+        *manifest_url = url.unwrap_or_else(|| DEFAULT_MANIFEST_URL.to_string());
     }
 
     fn load_cached_manifest(cache_dir: &PathBuf) -> Option<RecipeManifest> {
@@ -82,7 +87,8 @@ impl RecipeManager {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             .build()?;
-        let response = client.get(&self.manifest_url).send().await?;
+        let manifest_url = self.manifest_url.lock().expect("recipe manifest_url lock").clone();
+        let response = client.get(&manifest_url).send().await?;
         let manifest: RecipeManifest = response.json().await?;
 
         // Build a verified manifest — only include services that pass hash verification

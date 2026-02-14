@@ -66,11 +66,13 @@ pub fn start_resource_polling(app_handle: AppHandle) {
                 .filter(|r| matches!(r.state, crate::app_manager::state::AppRuntimeState::Active { .. }))
                 .count();
 
-            let (_total_cpu, _total_memory) = if active_count > 0 {
+            let (total_cpu, total_memory) = if active_count > 0 {
                 get_process_tree_resources(&monitor)
             } else {
                 (0.0, 0.0)
             };
+            let per_app_cpu = if active_count > 0 { Some(total_cpu / active_count as f64) } else { None };
+            let per_app_mem = if active_count > 0 { Some(total_memory / active_count as f64) } else { None };
 
             let mut usages = Vec::new();
             for (app_id, runtime) in &apps {
@@ -80,7 +82,7 @@ pub fn start_resource_polling(app_handle: AppHandle) {
                     crate::app_manager::state::AppRuntimeState::Loading { .. } =>
                         ("loading", None, None),
                     crate::app_manager::state::AppRuntimeState::Active { .. } =>
-                        ("active", None, None),
+                        ("active", per_app_cpu, per_app_mem),
                     crate::app_manager::state::AppRuntimeState::Hibernated { .. } =>
                         ("hibernated", Some(0.0), Some(0.0)),
                     crate::app_manager::state::AppRuntimeState::Disabled =>

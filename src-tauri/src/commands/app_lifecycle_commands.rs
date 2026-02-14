@@ -18,9 +18,13 @@ pub struct AppStateInfo {
 
 #[tauri::command]
 pub fn get_app_states(
+    webview: tauri::Webview,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
 ) -> Vec<AppStateInfo> {
+    if crate::commands::require_main_webview(&webview).is_err() {
+        return vec![];
+    }
     let config = config_manager.get_config();
     let apps_lock = app_manager.apps.lock().expect("apps lock");
 
@@ -179,6 +183,40 @@ pub async fn activate_app(
     }
 
     let _ = app_handle.emit("app-activated", &app_id);
+
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ensure_webview_exists(
+    app_id: String,
+    webview: tauri::Webview,
+    app_handle: AppHandle,
+    app_manager: State<'_, AppManager>,
+    config_manager: State<'_, ConfigManager>,
+    content_bounds: State<'_, ContentBounds>,
+) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
+
+    if app_handle.get_webview(&app_id).is_some() {
+        return Ok(());
+    }
+
+    let config = config_manager.get_config();
+    let app_config = config
+        .apps
+        .iter()
+        .find(|a| a.id == app_id)
+        .ok_or_else(|| format!("App '{}' not found in config", app_id))?
+        .clone();
+
+    let bounds = content_bounds.get();
+    let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
+    let size = tauri::LogicalSize::new(bounds.width, bounds.height);
+
+    lifecycle::create_app_webview(&app_handle, &app_config, position, size)?;
+    let _ = lifecycle::set_webview_visible(&app_handle, &app_id, false, None, None);
+    app_manager.set_visible(&app_id, false);
 
     Ok(())
 }
@@ -565,16 +603,22 @@ pub fn open_in_external_browser(url: String) -> Result<(), String> {
 pub fn accept_certificate_exception(
     host: String,
     days: Option<i64>,
+    webview: tauri::Webview,
     cert_exceptions: State<'_, CertificateExceptions>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     cert_exceptions.add_exception(&host, days.unwrap_or(30));
     Ok(())
 }
 
 #[tauri::command]
 pub fn get_certificate_exceptions(
+    webview: tauri::Webview,
     cert_exceptions: State<'_, CertificateExceptions>,
 ) -> Vec<(String, String)> {
+    if crate::commands::require_main_webview(&webview).is_err() {
+        return vec![];
+    }
     cert_exceptions.get_all()
 }
 
@@ -587,12 +631,16 @@ pub fn on_url_changed(
     adblock_state: State<'_, crate::adblock::engine::AdblockState>,
     config_manager: State<'_, crate::config::manager::ConfigManager>,
 ) -> Result<(), String> {
+    let current_app_id = app_id.clone();
     app_manager.set_state(
         &app_id,
         AppRuntimeState::Active {
             current_url: url.clone(),
         },
     );
+    if let Some(session_state) = app_handle.try_state::<SessionState>() {
+        session_state.set_active(&current_app_id, &url);
+    }
     let _ = app_handle.emit("url-changed", serde_json::json!({
         "appId": app_id,
         "url": url,

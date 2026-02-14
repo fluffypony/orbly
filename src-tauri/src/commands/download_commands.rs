@@ -98,25 +98,36 @@ pub fn retry_download(
         source_app_id: entry.source_app_id.clone(),
     };
 
+    let Some(webview) = app_handle.get_webview(&info.source_app_id) else {
+        return Err("Source app webview is not available (hibernated or closed)".to_string());
+    };
+
+    if let Some(app_manager) = app_handle.try_state::<crate::app_manager::state::AppManager>() {
+        let apps = app_manager.apps.lock().expect("apps lock");
+        if let Some(runtime) = apps.get(&info.source_app_id) {
+            if !matches!(runtime.state, crate::app_manager::state::AppRuntimeState::Active { .. }) {
+                return Err("Source app is not active; wake it before retrying download".to_string());
+            }
+        }
+    }
+
     // Remove the failed entry
     download_manager.remove(&download_id);
 
     // Navigate the source app's webview to the download URL to re-trigger
-    if let Some(webview) = app_handle.get_webview(&info.source_app_id) {
-        let js = format!(
-            r#"(function() {{
-                var a = document.createElement('a');
-                a.href = {};
-                a.download = '';
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }})();"#,
-            serde_json::to_string(&info.url).unwrap_or_default()
-        );
-        let _ = webview.eval(&js);
-    }
+    let js = format!(
+        r#"(function() {{
+            var a = document.createElement('a');
+            a.href = {};
+            a.download = '';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }})();"#,
+        serde_json::to_string(&info.url).unwrap_or_default()
+    );
+    let _ = webview.eval(&js);
 
     Ok(info)
 }

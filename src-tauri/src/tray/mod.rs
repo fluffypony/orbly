@@ -65,6 +65,7 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     let mut config = cm.get_config();
                     config.general.dnd_enabled = !config.general.dnd_enabled;
                     let _ = cm.save_config(config);
+                    rebuild_tray_menu(app_handle);
                     let _ = app_handle.emit("dnd-toggled", ());
                 }
                 "quit" => {

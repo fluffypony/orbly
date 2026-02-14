@@ -48,20 +48,60 @@ pub fn split_content_blocking_json(json: &str) -> Result<Vec<String>, String> {
 ///
 /// This requires objc2-web-kit bindings or manual ObjC FFI.
 #[cfg(target_os = "macos")]
-#[allow(dead_code, unused_imports)]
-pub fn apply_content_rule_to_webview(
+#[allow(dead_code)]
+pub fn compile_and_add_rules(
+    wk_webview: *mut std::ffi::c_void,
     identifier: &str,
     json: &str,
 ) {
-    // These imports verify the objc2-web-kit bindings compile correctly.
-    // Full implementation requires Tauri to expose with_webview() on macOS
-    // to obtain the WKWebView's WKUserContentController.
-    use objc2_foundation::NSString;
-    use objc2_web_kit::WKContentRuleListStore;
+    use block2::RcBlock;
+    use objc2::MainThreadMarker;
+    use objc2::rc::Retained;
+    use objc2_foundation::{NSError, NSString};
+    use objc2_web_kit::{WKContentRuleList, WKContentRuleListStore, WKWebView};
 
-    log::info!(
-        "WKContentRuleList '{}' prepared ({} bytes of JSON) — full compilation requires webview handle",
-        identifier,
-        json.len()
-    );
+    let mtm = match MainThreadMarker::new() {
+        Some(mtm) => mtm,
+        None => return,
+    };
+
+    let webview_ptr = wk_webview as *mut WKWebView;
+    let id_for_log = identifier.to_string();
+
+    // SAFETY: WebKit API is main-thread only; guarded by MainThreadMarker above.
+    let store = unsafe { WKContentRuleListStore::defaultStore(mtm) };
+    let Some(store) = store else { return };
+
+    let identifier_ns = NSString::from_str(identifier);
+    let json_ns = NSString::from_str(json);
+
+    // SAFETY: Callback receives either a compiled list or an NSError from WebKit.
+    let completion = RcBlock::new(move |rule_list: *mut WKContentRuleList, error: *mut NSError| {
+        if !error.is_null() {
+            log::warn!("Failed to compile WKContentRuleList '{}': error returned", id_for_log);
+            return;
+        }
+        if rule_list.is_null() {
+            return;
+        }
+        // SAFETY: Non-null pointer comes from WebKit callback contract.
+        let retained = unsafe { Retained::retain(rule_list) };
+        let Some(rule_list) = retained else { return };
+        // SAFETY: Accessing WKWebView configuration on main thread.
+        let webview: &WKWebView = unsafe { &*webview_ptr };
+        let config = unsafe { webview.configuration() };
+        // SAFETY: Accessing WKUserContentController on main thread.
+        let controller = unsafe { config.userContentController() };
+        // SAFETY: Adding a compiled rule list to the user content controller.
+        unsafe { controller.addContentRuleList(&rule_list) };
+    });
+
+    // SAFETY: Calling WebKit API with valid NSString arguments and callback block.
+    unsafe {
+        store.compileContentRuleListForIdentifier_encodedContentRuleList_completionHandler(
+            Some(&identifier_ns),
+            Some(&json_ns),
+            Some(&completion),
+        );
+    }
 }

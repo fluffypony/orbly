@@ -7,6 +7,7 @@ pub mod download_commands;
 pub mod favicon_commands;
 pub mod find_commands;
 pub mod link_routing_commands;
+pub mod native_integration_commands;
 pub mod recipe_commands;
 pub mod resource_commands;
 pub mod tray_commands;

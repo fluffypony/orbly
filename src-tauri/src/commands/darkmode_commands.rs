@@ -41,6 +41,7 @@ pub fn toggle_dark_mode(
     let sepia = app.dark_mode_sepia;
     let bg_color = app.dark_mode_bg_color.clone();
     let text_color = app.dark_mode_text_color.clone();
+    let custom_css = app.dark_mode_custom_css.clone();
 
     config_manager
         .save_config(config)
@@ -55,7 +56,7 @@ pub fn toggle_dark_mode(
             sepia,
             &bg_color,
             &text_color,
-            "",
+            &custom_css,
         );
         let _ = webview.eval(&script);
     }

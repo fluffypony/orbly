@@ -53,14 +53,46 @@ pub fn create_app_webview(
         }
     }
 
-    // Network-level ad blocking via navigation handler
-    // Always attached; checks per-app config at call time so toggling works
+    // Network-level ad blocking.
+    // NOTE: `on_web_resource_request` currently applies to tauri:// protocol responses.
+    // For external web app URLs, keep `on_navigation` fallback active to avoid regressions.
+    #[cfg(not(target_os = "macos"))]
     {
         let adblock_app_id = app_config.id.clone();
         let adblock_source_url = app_config.url.clone();
         let nav_handle = app_handle.clone();
         builder = builder.on_navigation(move |url| {
-            // Check current config to see if adblock is enabled for this app
+            let is_enabled = nav_handle
+                .try_state::<crate::config::manager::ConfigManager>()
+                .map(|cm| {
+                    cm.get_config()
+                        .apps
+                        .iter()
+                        .find(|a| a.id == adblock_app_id)
+                        .map(|a| a.adblock_enabled)
+                        .unwrap_or(false)
+                })
+                .unwrap_or(false);
+
+            if is_enabled {
+                let url_str = url.as_str();
+                if let Some(adblock_state) = nav_handle.try_state::<AdblockState>() {
+                    if adblock_state.should_block(url_str, &adblock_source_url, "document") {
+                        adblock_state.increment_blocked(&adblock_app_id);
+                        return false;
+                    }
+                }
+            }
+            true
+        });
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let adblock_app_id = app_config.id.clone();
+        let adblock_source_url = app_config.url.clone();
+        let nav_handle = app_handle.clone();
+        builder = builder.on_navigation(move |url| {
             let is_enabled = nav_handle
                 .try_state::<crate::config::manager::ConfigManager>()
                 .map(|cm| {
@@ -214,22 +246,44 @@ pub fn create_app_webview(
         true
     });
 
-    // TODO: Wire certificate challenge handling when Tauri/Wry exposes certificate
-    // challenge callbacks. CertificateExceptions backend is ready for use.
-    // See: app_manager/certificate.rs for the exception storage.
+    // Certificate handling limitation:
+    // Tauri/Wry currently does not expose SSL challenge callbacks for child webviews.
+    // When available, this should transition app state to `certificate_error` and emit
+    // `app-state-changed`, while checking CertificateExceptions for auto-accept.
 
     // Note: Media permissions (camera/microphone) rely on platform defaults.
     // macOS Info.plist keys (NSCameraUsageDescription, NSMicrophoneUsageDescription)
     // are set via tauri.conf.json bundle configuration.
     // Tauri/Wry does not currently expose on_permission_request() for WebView2/WKWebView.
 
-    main_window
+    let webview = main_window
         .add_child(
             builder,
             tauri::LogicalPosition::from(position),
             tauri::LogicalSize::from(size),
         )
         .map_err(|e| format!("Failed to create webview: {e}"))?;
+
+    if app_handle
+        .state::<crate::config::manager::ConfigManager>()
+        .get_config()
+        .general
+        .developer_mode
+    {
+        webview.open_devtools();
+    }
+
+    #[cfg(target_os = "macos")]
+    if app_config.adblock_enabled {
+        if let Some(adblock_state) = app_handle.try_state::<AdblockState>() {
+            if let Some(json) = adblock_state.get_content_blocking_json() {
+                let id = app_config.id.clone();
+                let _ = webview.with_webview(move |wk_webview| {
+                    crate::adblock::content_rules::compile_and_add_rules(wk_webview.inner(), &id, &json);
+                });
+            }
+        }
+    }
 
     // Apply zoom level natively after webview creation
     if app_config.zoom_level != 100 {
@@ -723,6 +777,10 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         if (!url) return _origOpen.call(window, url, target, features);
         try {{
             var parsed = new URL(url, location.href);
+            if (target === '_blank' && parsed.origin === pageOrigin) {{
+                window.location.href = parsed.href;
+                return null;
+            }}
             if (parsed.origin !== pageOrigin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {{
                 if (window.__TAURI_INTERNALS__) {{
                     window.__TAURI_INTERNALS__.invoke('route_link', {{

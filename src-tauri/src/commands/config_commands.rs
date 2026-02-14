@@ -4,20 +4,30 @@ use crate::config::manager::ConfigManager;
 use crate::config::models::{AppConfig, GeneralConfig, OrblyConfig};
 
 #[tauri::command]
-pub fn get_config(config_manager: State<'_, ConfigManager>) -> Result<OrblyConfig, String> {
+pub fn get_config(
+    webview: tauri::Webview,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<OrblyConfig, String> {
+    crate::commands::require_main_webview(&webview)?;
     Ok(config_manager.get_config())
 }
 
 #[tauri::command]
-pub fn get_apps(config_manager: State<'_, ConfigManager>) -> Result<Vec<AppConfig>, String> {
+pub fn get_apps(
+    webview: tauri::Webview,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<Vec<AppConfig>, String> {
+    crate::commands::require_main_webview(&webview)?;
     Ok(config_manager.get_config().apps)
 }
 
 #[tauri::command(rename_all = "snake_case")]
 pub fn get_app(
     app_id: String,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<Option<AppConfig>, String> {
+    crate::commands::require_main_webview(&webview)?;
     Ok(config_manager.get_app(&app_id))
 }
 
@@ -146,10 +156,17 @@ pub fn update_general_config(
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
+    let old_manifest_url = config.general.recipe_manifest_url.clone();
     config.general = general;
     config_manager
         .save_config(config)
         .map_err(|e| e.to_string())?;
+    if old_manifest_url != config_manager.get_config().general.recipe_manifest_url {
+        if let Some(recipe_manager) = app_handle.try_state::<crate::recipes::RecipeManager>() {
+            recipe_manager.set_manifest_url(config_manager.get_config().general.recipe_manifest_url.clone());
+        }
+    }
+    let _ = app_handle.emit("config-updated", ());
     crate::tray::rebuild_tray_menu(&app_handle);
     Ok(())
 }
@@ -158,14 +175,31 @@ pub fn update_general_config(
 pub fn update_adblock_config(
     adblock: crate::config::models::AdblockConfig,
     webview: tauri::Webview,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
+    let old_enabled = config.adblock.enabled;
     config.adblock = adblock;
+    let adblock_cfg = config.adblock.clone();
     config_manager
         .save_config(config)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    if let Some(state) = app_handle.try_state::<crate::adblock::engine::AdblockState>() {
+        if adblock_cfg.enabled {
+            if let Some(rules_text) = state.get_filter_rules_text() {
+                state.load_rules(&rules_text, &adblock_cfg.custom_rules);
+            }
+        } else if old_enabled {
+            state.load_rules("", &[]);
+        }
+    }
+    if old_enabled != adblock_cfg.enabled {
+        let _ = app_handle.emit("content-rules-updated", ());
+    }
+    Ok(())
 }
 
 #[tauri::command]

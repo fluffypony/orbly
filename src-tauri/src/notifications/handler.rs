@@ -92,6 +92,7 @@ fn send_native_notification(app_handle: &AppHandle, title: &str, body: &str, app
         .builder()
         .title(title)
         .body(body)
+        .extra("app_id", app_id)
         .group(app_id)
         .show()
         .map_err(|e| e.to_string())?;
@@ -115,14 +116,11 @@ pub fn is_in_dnd_schedule(config: &OrblyConfig) -> bool {
         chrono::Weekday::Sat => "sat",
         chrono::Weekday::Sun => "sun",
     };
-    if !config
+    let day_enabled = config
         .general
         .dnd_schedule_days
         .iter()
-        .any(|d| d == day_str)
-    {
-        return false;
-    }
+        .any(|d| d == day_str);
 
     // Parse schedule times
     let start = match parse_time(&config.general.dnd_schedule_start) {
@@ -137,11 +135,29 @@ pub fn is_in_dnd_schedule(config: &OrblyConfig) -> bool {
     let current_minutes = now.hour() as u32 * 60 + now.minute() as u32;
 
     if start <= end {
+        if !day_enabled {
+            return false;
+        }
         // Same-day schedule (e.g., 09:00 - 18:00): DND is active WITHIN the window
         current_minutes >= start && current_minutes < end
     } else {
+        if day_enabled && current_minutes >= start {
+            return true;
+        }
+        if current_minutes < end {
+            let prev_day = match now.weekday() {
+                chrono::Weekday::Mon => "sun",
+                chrono::Weekday::Tue => "mon",
+                chrono::Weekday::Wed => "tue",
+                chrono::Weekday::Thu => "wed",
+                chrono::Weekday::Fri => "thu",
+                chrono::Weekday::Sat => "fri",
+                chrono::Weekday::Sun => "sat",
+            };
+            return config.general.dnd_schedule_days.iter().any(|d| d == prev_day);
+        }
         // Overnight schedule (e.g., 18:00 - 09:00): DND is active OUTSIDE the inverse window
-        current_minutes >= start || current_minutes < end
+        false
     }
 }
 
