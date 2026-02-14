@@ -80,10 +80,14 @@ pub fn create_app_webview(
             if let Some(json) = adblock_state.get_content_blocking_json() {
                 match crate::adblock::content_rules::split_content_blocking_json(&json) {
                     Ok(chunks) => {
+                        let rule_count: usize = chunks.iter()
+                            .filter_map(|c| serde_json::from_str::<Vec<serde_json::Value>>(c).ok())
+                            .map(|v| v.len())
+                            .sum();
                         log::info!(
                             "Prepared {} WKContentRuleList chunk(s) ({} total rules) for app {}",
                             chunks.len(),
-                            json.len(),
+                            rule_count,
                             app_config.id,
                         );
                     }
@@ -523,7 +527,7 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
                         const style = document.createElement('style');
                         style.id = '__orbly_adblock_cosmetic__';
                         style.textContent = {};
-                        document.head.appendChild(style);
+                        (document.head || document.documentElement).appendChild(style);
                     }})();"#,
                     serde_json::to_string(&css_string).unwrap_or_default()
                 ));

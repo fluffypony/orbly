@@ -1,4 +1,4 @@
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::downloads::{DownloadEntry, DownloadManager};
 
@@ -73,11 +73,18 @@ pub fn open_download_folder(
     open::that(parent).map_err(|e| e.to_string())
 }
 
+#[derive(serde::Serialize, Clone)]
+pub struct RetryInfo {
+    pub url: String,
+    pub source_app_id: String,
+}
+
 #[tauri::command(rename_all = "snake_case")]
 pub fn retry_download(
     download_id: String,
+    app_handle: tauri::AppHandle,
     download_manager: State<'_, DownloadManager>,
-) -> Result<String, String> {
+) -> Result<RetryInfo, String> {
     let downloads = download_manager.get_all();
     let entry = downloads.iter().find(|d| d.id == download_id)
         .ok_or_else(|| "Download not found".to_string())?;
@@ -86,8 +93,30 @@ pub fn retry_download(
         return Err("Download is not in failed state".to_string());
     }
 
-    // Remove the failed entry and return the URL for the frontend to re-trigger
-    let url = entry.url.clone();
+    let info = RetryInfo {
+        url: entry.url.clone(),
+        source_app_id: entry.source_app_id.clone(),
+    };
+
+    // Remove the failed entry
     download_manager.remove(&download_id);
-    Ok(url)
+
+    // Navigate the source app's webview to the download URL to re-trigger
+    if let Some(webview) = app_handle.get_webview(&info.source_app_id) {
+        let js = format!(
+            r#"(function() {{
+                var a = document.createElement('a');
+                a.href = {};
+                a.download = '';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }})();"#,
+            serde_json::to_string(&info.url).unwrap_or_default()
+        );
+        let _ = webview.eval(&js);
+    }
+
+    Ok(info)
 }

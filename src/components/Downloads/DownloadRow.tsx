@@ -65,9 +65,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
 
   const retryFailed = async () => {
     try {
-      const url = await ipcRetryDownload(props.download.id);
-      // Open the URL in the browser to re-trigger the download
-      window.open(url, '_blank');
+      await ipcRetryDownload(props.download.id);
     } catch (err) {
       console.error("Failed to retry download:", err);
     }
