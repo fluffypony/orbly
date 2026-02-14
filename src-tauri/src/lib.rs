@@ -222,6 +222,7 @@ pub fn run() {
             commands::workspace_commands::delete_workspace,
             commands::audio_commands::set_audio_muted,
             commands::audio_commands::toggle_global_mute,
+            commands::audio_commands::set_media_playing,
             commands::zoom_commands::set_zoom_level,
             commands::zoom_commands::zoom_in,
             commands::zoom_commands::zoom_out,
@@ -239,6 +240,8 @@ pub fn run() {
             commands::app_lifecycle_commands::get_certificate_exceptions,
             commands::recipe_commands::update_recipes,
             commands::recipe_commands::get_recipe_status,
+            commands::link_routing_commands::route_link,
+            commands::favicon_commands::fetch_favicon,
         ])
         .on_window_event(|window, event| {
             match event {

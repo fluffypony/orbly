@@ -3019,6 +3019,7 @@ name = "orbly"
 version = "0.1.0"
 dependencies = [
  "adblock",
+ "base64 0.22.1",
  "chrono",
  "dirs 6.0.0",
  "env_logger",

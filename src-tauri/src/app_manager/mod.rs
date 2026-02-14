@@ -28,7 +28,16 @@ pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {
                             continue;
                         }
 
+                        // Skip if app is playing media
+                        if runtime.is_playing_media {
+                            continue;
+                        }
+
                         if let Some(last) = runtime.last_interaction {
+                            // Never hibernate if interacted within last 60 seconds
+                            if last.elapsed().as_secs() < 60 {
+                                continue;
+                            }
                             let elapsed_minutes = last.elapsed().as_secs() / 60;
                             if elapsed_minutes >= app_config.hibernation_timeout_minutes as u64 {
                                 // Re-check current state under lock before destroying

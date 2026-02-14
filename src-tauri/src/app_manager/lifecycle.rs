@@ -209,6 +209,40 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         scripts.push(audio_init);
     }
 
+    // Media playing detection for auto-hibernate safety
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+    var lastPlaying = false;
+
+    function checkMediaPlaying() {{
+        var playing = false;
+        var elements = document.querySelectorAll('audio, video');
+        for (var i = 0; i < elements.length; i++) {{
+            if (!elements[i].paused && !elements[i].ended) {{
+                playing = true;
+                break;
+            }}
+        }}
+        if (playing !== lastPlaying) {{
+            lastPlaying = playing;
+            if (window.__TAURI_INTERNALS__) {{
+                window.__TAURI_INTERNALS__.invoke('set_media_playing', {{
+                    app_id: ORBLY_APP_ID,
+                    playing: playing
+                }}).catch(function() {{}});
+            }}
+        }}
+    }}
+
+    setInterval(checkMediaPlaying, 3000);
+}})();
+"#,
+        app_config.id
+    ));
+
     // Recipe CSS/JS injection (before user custom CSS/JS so user overrides take priority)
     if let Some(ref r) = recipe {
         if let Some(ref css) = r.injection_css {
@@ -266,6 +300,60 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
             }
         }
     }
+
+    // Link interception for link routing
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+    var pageOrigin = location.origin;
+
+    // Intercept link clicks
+    document.addEventListener('click', function(e) {{
+        var link = e.target.closest('a[href]');
+        if (!link) return;
+        var href = link.href;
+        if (!href) return;
+        try {{
+            var url = new URL(href, location.href);
+            if (url.origin !== pageOrigin && (url.protocol === 'http:' || url.protocol === 'https:')) {{
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.__TAURI_INTERNALS__) {{
+                    window.__TAURI_INTERNALS__.invoke('route_link', {{
+                        url: url.href,
+                        source_app_id: ORBLY_APP_ID
+                    }}).catch(function() {{
+                        window.open(url.href, '_self');
+                    }});
+                }}
+            }}
+        }} catch(ex) {{}}
+    }}, true);
+
+    // Override window.open for cross-origin
+    var _origOpen = window.open;
+    window.open = function(url, target, features) {{
+        if (!url) return _origOpen.call(window, url, target, features);
+        try {{
+            var parsed = new URL(url, location.href);
+            if (parsed.origin !== pageOrigin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {{
+                if (window.__TAURI_INTERNALS__) {{
+                    window.__TAURI_INTERNALS__.invoke('route_link', {{
+                        url: parsed.href,
+                        source_app_id: ORBLY_APP_ID
+                    }}).catch(function() {{}});
+                }}
+                return null;
+            }}
+        }} catch(ex) {{}}
+        return _origOpen.call(window, url, target, features);
+    }};
+}})();
+"#,
+        app_config.id
+    ));
 
     scripts.join("\n")
 }

@@ -1,4 +1,4 @@
-import { Component } from "solid-js";
+import { Component, onMount, onCleanup, createSignal } from "solid-js";
 import { sidebarExpanded, setSidebarExpanded } from "../../stores/uiStore";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import AppIconList from "./AppIconList";
@@ -6,8 +6,10 @@ import SidebarFooter from "./SidebarFooter";
 
 const Sidebar: Component = () => {
   let hoverTimeout: ReturnType<typeof setTimeout> | undefined;
+  const [forceCollapsed, setForceCollapsed] = createSignal(false);
 
   const handleMouseEnter = () => {
+    if (forceCollapsed()) return;
     hoverTimeout = setTimeout(() => setSidebarExpanded(true), 300);
   };
 
@@ -15,6 +17,20 @@ const Sidebar: Component = () => {
     clearTimeout(hoverTimeout);
     setSidebarExpanded(false);
   };
+
+  onMount(() => {
+    const checkWidth = () => {
+      if (window.innerWidth < 900) {
+        setForceCollapsed(true);
+        setSidebarExpanded(false);
+      } else {
+        setForceCollapsed(false);
+      }
+    };
+    checkWidth();
+    window.addEventListener("resize", checkWidth);
+    onCleanup(() => window.removeEventListener("resize", checkWidth));
+  });
 
   return (
     <aside

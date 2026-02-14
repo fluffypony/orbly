@@ -121,5 +121,12 @@ export const getCertificateExceptions = () =>
 export const updateRecipes = () => invoke<void>("update_recipes");
 export const getRecipeStatus = () => invoke<{ status: string; last_updated: string; manifest_version: number | null; service_count: number }>("get_recipe_status");
 
+// Favicon commands
+export const fetchFavicon = (url: string) => invoke<string>("fetch_favicon", { url });
+
+// Link routing commands
+export const routeLink = (url: string, sourceAppId: string) =>
+  invoke<void>("route_link", { url, source_app_id: sourceAppId });
+
 // Startup
 export const frontendReady = () => invoke<void>("frontend_ready");

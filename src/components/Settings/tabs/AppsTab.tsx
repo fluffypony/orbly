@@ -5,10 +5,13 @@ import { updateApp, hibernateApp, disableApp, enableApp } from "../../../lib/ipc
 import { refreshAppConfigs } from "../../../lib/stateSync";
 import type { AppConfig, NotificationStyle, DarkModeType } from "../../../types/config";
 import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput, Button } from "../SettingsControls";
+import AddAppDialog from "../AddAppDialog";
+import InjectionEditor from "../../AppSettings/InjectionEditor";
 
 const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) => {
   const [app, setApp] = createStore<AppConfig>({ ...props.app });
   const [saving, setSaving] = createSignal(false);
+  const [showInjection, setShowInjection] = createSignal(false);
 
   const save = async () => {
     setSaving(true);
@@ -75,6 +78,9 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         <SettingRow label="Ad blocking">
           <ToggleSwitch checked={app.adblock_enabled} onChange={(v) => setApp("adblock_enabled", v)} />
         </SettingRow>
+        <SettingRow label="Custom CSS/JS" description="Inject custom styles and scripts">
+          <Button onClick={() => setShowInjection(true)}>Edit</Button>
+        </SettingRow>
       </div>
 
       <div class="flex justify-end gap-2 mt-4">
@@ -83,12 +89,23 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
           {saving() ? "Saving..." : "Save"}
         </Button>
       </div>
+      <Show when={showInjection()}>
+        <InjectionEditor
+          app={{ ...app }}
+          onSave={async (_updated) => {
+            await refreshAppConfigs();
+            setShowInjection(false);
+          }}
+          onClose={() => setShowInjection(false)}
+        />
+      </Show>
     </div>
   );
 };
 
 const AppsTab: Component = () => {
   const [editingAppId, setEditingAppId] = createSignal<string | null>(null);
+  const [showAddApp, setShowAddApp] = createSignal(false);
 
   const handleBulkAction = async (action: "hibernate" | "disable" | "enable") => {
     try {
@@ -122,6 +139,7 @@ const AppsTab: Component = () => {
       <SettingSection title="Apps" description="Manage your configured applications" />
 
       <div class="flex gap-2 mb-4">
+        <Button variant="primary" onClick={() => setShowAddApp(true)}>+ Add App</Button>
         <Button onClick={() => handleBulkAction("hibernate")}>Hibernate All</Button>
         <Button onClick={() => handleBulkAction("disable")}>Disable All</Button>
         <Button onClick={() => handleBulkAction("enable")}>Enable All</Button>
@@ -160,6 +178,10 @@ const AppsTab: Component = () => {
         <div class="text-center py-12 text-gray-400 text-sm">
           No apps configured yet.
         </div>
+      </Show>
+
+      <Show when={showAddApp()}>
+        <AddAppDialog onClose={() => setShowAddApp(false)} />
       </Show>
     </div>
   );

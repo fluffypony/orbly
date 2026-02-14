@@ -134,3 +134,16 @@ pub fn toggle_global_mute(
 
     Ok(new_muted)
 }
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn set_media_playing(
+    app_id: String,
+    playing: bool,
+    app_manager: State<'_, crate::app_manager::state::AppManager>,
+) -> Result<(), String> {
+    let mut apps = app_manager.apps.lock().expect("apps lock");
+    if let Some(runtime) = apps.get_mut(&app_id) {
+        runtime.is_playing_media = playing;
+    }
+    Ok(())
+}

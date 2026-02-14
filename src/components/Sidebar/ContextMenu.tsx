@@ -1,7 +1,9 @@
-import { Component, onMount, onCleanup } from "solid-js";
+import { Component, onMount, onCleanup, createSignal, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { hibernateApp, disableApp, enableApp, reloadApp } from "../../lib/ipc";
-import { appConfigs, appStates } from "../../stores/uiStore";
+import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted } from "../../lib/ipc";
+import { refreshAppConfigs } from "../../lib/stateSync";
+import { appConfigs, appStates, setSettingsVisible } from "../../stores/uiStore";
+import ConfirmDialog from "../Dialogs/ConfirmDialog";
 
 interface ContextMenuProps {
   position: { x: number; y: number };
@@ -25,6 +27,8 @@ const menuItems = [
 ] as const;
 
 const ContextMenu: Component<ContextMenuProps> = (props) => {
+  const [showRemoveConfirm, setShowRemoveConfirm] = createSignal(false);
+
   const handleAction = async (action: string) => {
     try {
       switch (action) {
@@ -43,9 +47,14 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           }
           break;
         }
-        case "toggle-mute":
-          // Will be wired in a later phase (needs updateApp with audio_muted toggle)
+        case "toggle-mute": {
+          const config = appConfigs.find((a) => a.id === props.appId);
+          if (config) {
+            await setAudioMuted(props.appId, !config.audio_muted);
+            await refreshAppConfigs();
+          }
           break;
+        }
         case "open-external": {
           const config = appConfigs.find((a) => a.id === props.appId);
           if (config?.url) {
@@ -54,13 +63,30 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           }
           break;
         }
-        default:
-          console.log(`Context menu action: ${action} for app: ${props.appId}`);
+        case "remove":
+          setShowRemoveConfirm(true);
+          return; // Don't close the menu yet
+        case "edit":
+          setSettingsVisible(true);
+          break;
+        case "move-section":
+        case "move-workspace":
           break;
       }
     } catch (err) {
       console.error(`Failed to execute ${action}:`, err);
     }
+    props.onClose();
+  };
+
+  const handleRemoveConfirm = async () => {
+    try {
+      await removeApp(props.appId);
+      await refreshAppConfigs();
+    } catch (err) {
+      console.error("Failed to remove app:", err);
+    }
+    setShowRemoveConfirm(false);
     props.onClose();
   };
 
@@ -117,6 +143,16 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           );
         })}
       </div>
+      <Show when={showRemoveConfirm()}>
+        <ConfirmDialog
+          title="Remove App"
+          message={`Are you sure you want to remove "${appConfigs.find((a) => a.id === props.appId)?.name ?? "this app"}"? This cannot be undone.`}
+          confirmLabel="Remove"
+          variant="danger"
+          onConfirm={handleRemoveConfirm}
+          onCancel={() => { setShowRemoveConfirm(false); props.onClose(); }}
+        />
+      </Show>
     </Portal>
   );
 };

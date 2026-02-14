@@ -35,6 +35,7 @@ chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", features = ["json"] }
 sha2 = "0.10"
 hex = "0.4"
+base64 = "0.22"
 dirs = "6"
 adblock = { version = "0.12", default-features = false, features = ["content-blocking", "css-validation", "embedded-domain-resolver"] }
 open = "5"
