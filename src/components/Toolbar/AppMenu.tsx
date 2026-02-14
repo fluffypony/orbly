@@ -1,25 +1,36 @@
 import { Component, createSignal, onMount, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { reloadApp, hibernateApp, disableApp } from "../../lib/ipc";
-import { appStates } from "../../stores/uiStore";
+import { reloadApp, hibernateApp, disableApp, getConfig } from "../../lib/ipc";
+import { appStates, setSettingsVisible } from "../../stores/uiStore";
 
 interface AppMenuProps {
   appId: string;
 }
 
-const menuItems = [
+type MenuItem = { label: string; action: string };
+
+const baseMenuItems: MenuItem[] = [
   { label: "Reload", action: "reload" },
   { label: "Hibernate", action: "hibernate" },
   { label: "Disable", action: "disable" },
   { label: "---", action: "separator" },
   { label: "Open in External Browser", action: "open-external" },
   { label: "Edit Settings", action: "edit-settings" },
-] as const;
+];
 
 const AppMenu: Component<AppMenuProps> = (props) => {
   const [open, setOpen] = createSignal(false);
   const [menuPos, setMenuPos] = createSignal({ x: 0, y: 0 });
   let buttonRef: HTMLButtonElement | undefined;
+  const [devMode, setDevMode] = createSignal(false);
+
+  const menuItems = (): MenuItem[] => {
+    const items = [...baseMenuItems];
+    if (devMode()) {
+      items.push({ label: "Inject Console", action: "inject-console" });
+    }
+    return items;
+  };
 
   const toggleMenu = () => {
     if (!open() && buttonRef) {
@@ -49,8 +60,10 @@ const AppMenu: Component<AppMenuProps> = (props) => {
           }
           break;
         }
+        case "edit-settings":
+          setSettingsVisible(true);
+          break;
         default:
-          console.log(`App menu action: ${action} for app: ${props.appId}`);
           break;
       }
     } catch (err) {
@@ -72,9 +85,13 @@ const AppMenu: Component<AppMenuProps> = (props) => {
     }
   };
 
-  onMount(() => {
+  onMount(async () => {
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
+    try {
+      const config = await getConfig();
+      setDevMode(config.general.developer_mode);
+    } catch {}
   });
 
   onCleanup(() => {
@@ -109,7 +126,7 @@ const AppMenu: Component<AppMenuProps> = (props) => {
               top: `${menuPos().y}px`,
             }}
           >
-            {menuItems.map((item) =>
+            {menuItems().map((item) =>
               item.action === "separator" ? (
                 <div class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
               ) : (

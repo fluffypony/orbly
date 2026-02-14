@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::config::manager::ConfigManager;
 use crate::config::models::Workspace;
@@ -25,14 +25,36 @@ pub fn switch_workspace(
 ) -> Result<(), String> {
     let mut config = config_manager.get_config();
 
-    if !config.workspaces.items.iter().any(|w| w.id == workspace_id) {
-        return Err(format!("Workspace '{}' not found", workspace_id));
-    }
+    let target_ws = config.workspaces.items.iter().find(|w| w.id == workspace_id)
+        .ok_or_else(|| format!("Workspace '{}' not found", workspace_id))?
+        .clone();
+
+    let should_auto_hibernate = config.workspaces.auto_hibernate_on_workspace_switch;
 
     config.workspaces.active = workspace_id.clone();
     config_manager
-        .save_config(config)
+        .save_config(config.clone())
         .map_err(|e| e.to_string())?;
+
+    // Auto-hibernate apps not in the new workspace
+    if should_auto_hibernate && workspace_id != "default" {
+        let app_manager = app_handle.state::<crate::app_manager::state::AppManager>();
+        let apps_lock = app_manager.apps.lock().expect("apps lock");
+        let active_ids: Vec<String> = apps_lock.iter()
+            .filter(|(_, r)| matches!(r.state, crate::app_manager::state::AppRuntimeState::Active { .. }))
+            .map(|(id, _)| id.clone())
+            .collect();
+        drop(apps_lock);
+
+        for app_id in active_ids {
+            if !target_ws.app_ids.contains(&app_id) {
+                let _ = crate::app_manager::lifecycle::destroy_app_webview(&app_handle, &app_id);
+                app_manager.set_state(&app_id, crate::app_manager::state::AppRuntimeState::Hibernated {
+                    last_url: config.apps.iter().find(|a| a.id == app_id).map(|a| a.url.clone()).unwrap_or_default(),
+                });
+            }
+        }
+    }
 
     let _ = app_handle.emit("workspace-switched", &workspace_id);
     Ok(())

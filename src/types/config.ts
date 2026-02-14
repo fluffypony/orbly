@@ -55,6 +55,7 @@ export interface GeneralConfig {
   show_badge_in_tray: boolean;
   launch_at_login: boolean;
   check_for_updates: boolean;
+  developer_mode: boolean;
   window_state: WindowState;
 }
 
@@ -92,6 +93,7 @@ export interface Workspace {
 export interface WorkspacesConfig {
   active: string;
   items: Workspace[];
+  auto_hibernate_on_workspace_switch: boolean;
 }
 
 export interface DownloadGlobalConfig {

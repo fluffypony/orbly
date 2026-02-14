@@ -141,19 +141,31 @@ const AppIconList: Component = () => {
       const fromIndex = ids.indexOf(draggable.id as string);
       const toIndex = ids.indexOf(droppable.id as string);
       if (fromIndex !== toIndex) {
+        // Determine the target section from the droppable app
+        const droppableApp = sortedApps().find((a) => a.id === droppable.id);
+        const targetSection = droppableApp?.sidebarSection || "";
+
         const reordered = ids.slice();
         reordered.splice(toIndex, 0, ...reordered.splice(fromIndex, 1));
         reordered.forEach((id, index) => {
           const configIndex = appConfigs.findIndex((c) => c.id === id);
           if (configIndex !== -1) {
             setAppConfigs(configIndex, "position", index);
+            // Update sidebar_section if the dragged app moved to a different section
+            if (id === draggable.id) {
+              setAppConfigs(configIndex, "sidebar_section", targetSection);
+            }
           }
         });
-        // Persist updated positions to backend
+        // Persist updated positions and section to backend
         reordered.forEach((id, index) => {
           const app = appConfigs.find((c) => c.id === id);
           if (app) {
-            updateApp({ ...app, position: index }).catch((err) =>
+            const updates = { ...app, position: index };
+            if (id === draggable.id) {
+              updates.sidebar_section = targetSection;
+            }
+            updateApp(updates).catch((err) =>
               console.error("Failed to persist position:", err)
             );
           }

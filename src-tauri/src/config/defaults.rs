@@ -143,6 +143,7 @@ impl Default for GeneralConfig {
             show_badge_in_tray: true,
             launch_at_login: false,
             check_for_updates: true,
+            developer_mode: false,
             window_state: WindowState::default(),
         }
     }
@@ -188,6 +189,7 @@ impl Default for WorkspacesConfig {
         Self {
             active: default_workspace(),
             items: default_workspace_items(),
+            auto_hibernate_on_workspace_switch: false,
         }
     }
 }

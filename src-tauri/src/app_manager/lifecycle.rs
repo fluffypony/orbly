@@ -364,6 +364,56 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         app_config.id
     ));
 
+    // OAuth detection: open known OAuth URLs in system browser
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var oauthPatterns = [
+        'accounts.google.com/o/oauth',
+        'accounts.google.com/signin/oauth',
+        'login.microsoftonline.com',
+        'github.com/login/oauth',
+        'appleid.apple.com/auth',
+        'www.facebook.com/v',
+        'api.twitter.com/oauth',
+        'discord.com/oauth2',
+        'slack.com/oauth',
+        'login.live.com/oauth'
+    ];
+
+    var origAssign = Object.getOwnPropertyDescriptor(Location.prototype, 'href');
+    var observer = new MutationObserver(function() {{
+        var url = location.href;
+        for (var i = 0; i < oauthPatterns.length; i++) {{
+            if (url.indexOf(oauthPatterns[i]) !== -1) {{
+                if (window.__TAURI_INTERNALS__) {{
+                    window.__TAURI_INTERNALS__.invoke('open_in_external_browser', {{ url: url }}).catch(function() {{}});
+                    history.back();
+                }}
+                break;
+            }}
+        }}
+    }});
+
+    observer.observe(document.documentElement, {{ childList: true, subtree: true }});
+
+    window.addEventListener('load', function() {{
+        var url = location.href;
+        for (var i = 0; i < oauthPatterns.length; i++) {{
+            if (url.indexOf(oauthPatterns[i]) !== -1) {{
+                if (window.__TAURI_INTERNALS__) {{
+                    window.__TAURI_INTERNALS__.invoke('open_in_external_browser', {{ url: url }}).catch(function() {{}});
+                    history.back();
+                }}
+                break;
+            }}
+        }}
+    }});
+}})();
+"#
+    ));
+
     // Link interception for link routing
     scripts.push(format!(
         r#"

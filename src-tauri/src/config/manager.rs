@@ -19,7 +19,8 @@ impl ConfigManager {
             fs::create_dir_all(parent)?;
         }
 
-        let config = Self::read_from_disk(&config_path)?;
+        let mut config = Self::read_from_disk(&config_path)?;
+        Self::migrate_config(&mut config);
 
         Ok(Self {
             config: Mutex::new(config),
@@ -92,6 +93,15 @@ impl ConfigManager {
             Ok(Some(removed))
         } else {
             Ok(None)
+        }
+    }
+
+    fn migrate_config(config: &mut OrblyConfig) {
+        let current_version = 1u32;
+        if config.general.config_version < current_version {
+            // Future migrations would go here, e.g.:
+            // if config.general.config_version < 2 { migrate_v1_to_v2(config); }
+            config.general.config_version = current_version;
         }
     }
 

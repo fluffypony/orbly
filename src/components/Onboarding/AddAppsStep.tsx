@@ -57,6 +57,7 @@ const AddAppsStep: Component<AddAppsStepProps> = (props) => {
     const name = customName().trim();
     const url = customUrl().trim();
     if (!name || !url) return;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) return;
     const customId = `custom-${Date.now()}`;
     const template: ServiceTemplate = { id: customId, name, url, icon: "🌐", category: "custom" };
     setSelected([...selected, { template, customName: name, customUrl: url }]);
@@ -157,8 +158,13 @@ const AddAppsStep: Component<AddAppsStepProps> = (props) => {
                 Cancel
               </button>
               <button
-                class="px-3 py-1 text-xs bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600"
+                class={`px-3 py-1 text-xs rounded-md cursor-pointer ${
+                  customUrl().trim() && (customUrl().trim().startsWith("http://") || customUrl().trim().startsWith("https://"))
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
                 onClick={addCustomService}
+                disabled={!customUrl().trim() || (!customUrl().trim().startsWith("http://") && !customUrl().trim().startsWith("https://"))}
               >
                 Add
               </button>

@@ -29,6 +29,7 @@ const NotificationsTab: Component = () => {
     show_badge_in_tray: true,
     launch_at_login: false,
     check_for_updates: true,
+    developer_mode: false,
     window_state: { maximized: false },
   });
 

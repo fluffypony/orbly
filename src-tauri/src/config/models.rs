@@ -130,6 +130,8 @@ pub struct GeneralConfig {
     #[serde(default = "default_true")]
     pub check_for_updates: bool,
     #[serde(default)]
+    pub developer_mode: bool,
+    #[serde(default)]
     pub window_state: WindowState,
 }
 
@@ -179,6 +181,8 @@ pub struct WorkspacesConfig {
     pub active: String,
     #[serde(default = "default_workspace_items")]
     pub items: Vec<Workspace>,
+    #[serde(default)]
+    pub auto_hibernate_on_workspace_switch: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
