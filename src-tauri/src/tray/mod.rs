@@ -100,6 +100,43 @@ pub fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn rebuild_tray_menu(app_handle: &AppHandle) {
+    let Some(tray) = app_handle.tray_by_id("main") else {
+        return;
+    };
+
+    let config_manager = app_handle.state::<ConfigManager>();
+    let config = config_manager.get_config();
+
+    let Ok(show_hide) = MenuItemBuilder::with_id("show_hide", "Show/Hide Orbly").build(app_handle) else { return };
+    let mut menu_builder = MenuBuilder::new(app_handle).item(&show_hide).separator();
+
+    for app_config in &config.apps {
+        if app_config.enabled {
+            if let Ok(item) = MenuItemBuilder::with_id(
+                &format!("app_{}", app_config.id),
+                &app_config.name,
+            ).build(app_handle) {
+                menu_builder = menu_builder.item(&item);
+            }
+        }
+    }
+
+    let Ok(dnd_toggle) = CheckMenuItemBuilder::with_id("toggle_dnd", "Do Not Disturb")
+        .checked(config.general.dnd_enabled)
+        .build(app_handle) else { return };
+    let Ok(quit) = MenuItemBuilder::with_id("quit", "Quit Orbly").build(app_handle) else { return };
+
+    if let Ok(menu) = menu_builder
+        .separator()
+        .item(&dnd_toggle)
+        .separator()
+        .item(&quit)
+        .build() {
+        let _ = tray.set_menu(Some(menu));
+    }
+}
+
 pub fn update_tray_badge(app_handle: &AppHandle, total_count: u32) {
     if let Some(tray) = app_handle.tray_by_id("main") {
         if total_count > 0 {

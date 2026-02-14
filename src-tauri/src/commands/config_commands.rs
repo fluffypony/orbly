@@ -1,4 +1,4 @@
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use crate::config::manager::ConfigManager;
 use crate::config::models::{AppConfig, GeneralConfig, OrblyConfig};
@@ -24,27 +24,34 @@ pub fn get_app(
 #[tauri::command]
 pub fn add_app(
     app: AppConfig,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
-    config_manager.add_app(app).map_err(|e| e.to_string())
+    config_manager.add_app(app).map_err(|e| e.to_string())?;
+    crate::tray::rebuild_tray_menu(&app_handle);
+    Ok(())
 }
 
 #[tauri::command]
 pub fn update_app(
     app: AppConfig,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
-    config_manager.update_app(app).map_err(|e| e.to_string())
+    config_manager.update_app(app).map_err(|e| e.to_string())?;
+    crate::tray::rebuild_tray_menu(&app_handle);
+    Ok(())
 }
 
 #[tauri::command(rename_all = "snake_case")]
 pub fn remove_app(
     app_id: String,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<Option<AppConfig>, String> {
-    config_manager
-        .remove_app(&app_id)
-        .map_err(|e| e.to_string())
+    let result = config_manager.remove_app(&app_id).map_err(|e| e.to_string())?;
+    crate::tray::rebuild_tray_menu(&app_handle);
+    Ok(result)
 }
 
 #[tauri::command]

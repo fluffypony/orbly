@@ -86,6 +86,10 @@ pub fn start_resource_polling(app_handle: AppHandle) {
                         ("hibernated", Some(0.0), Some(0.0)),
                     crate::app_manager::state::AppRuntimeState::Disabled =>
                         ("disabled", Some(0.0), Some(0.0)),
+                    crate::app_manager::state::AppRuntimeState::Error { .. } =>
+                        ("error", Some(0.0), Some(0.0)),
+                    crate::app_manager::state::AppRuntimeState::Crashed =>
+                        ("crashed", Some(0.0), Some(0.0)),
                 };
                 let usage = super::AppResourceUsage {
                     app_id: app_id.clone(),

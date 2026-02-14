@@ -10,12 +10,14 @@ import AppsManager from "./components/AppsManager/AppsManager";
 import Settings from "./components/Settings/Settings";
 import Onboarding from "./components/Onboarding/Onboarding";
 import { initializeState } from "./lib/stateSync";
+import { initThemeManager } from "./lib/themeManager";
 import { setupEventListeners, teardownEventListeners } from "./lib/events";
 import { registerShortcuts, unregisterAllShortcuts } from "./lib/shortcuts";
 import { createDefaultBindings } from "./lib/defaultShortcuts";
 import {
   activeAppId,
   appConfigs,
+  dndEnabled,
   setSidebarExpanded,
   setDndEnabled,
   downloadsVisible,
@@ -25,7 +27,7 @@ import {
   settingsVisible,
   setSettingsVisible,
 } from "./stores/uiStore";
-import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset, getConfig, frontendReady } from "./lib/ipc";
+import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset, getConfig, frontendReady, updateGeneralConfig } from "./lib/ipc";
 import { showToast } from "./components/Toast/ToastContainer";
 
 const App: Component = () => {
@@ -37,6 +39,7 @@ const App: Component = () => {
   const initializeApp = async () => {
     await setupEventListeners();
     await initializeState();
+    initThemeManager();
 
     const unlistenHighUsage = await listen<{ appId: string; appName: string; cpu: number }>(
       "high-usage-alert",
@@ -53,7 +56,15 @@ const App: Component = () => {
     const bindings = createDefaultBindings({
       quickSwitcher: () => setQuickSwitcherVisible((v) => !v),
       toggleSidebar: () => setSidebarExpanded((v) => !v),
-      toggleDnd: () => setDndEnabled((v) => !v),
+      toggleDnd: () => {
+        const newVal = !dndEnabled();
+        setDndEnabled(newVal);
+        getConfig().then(config => {
+          updateGeneralConfig({ ...config.general, dnd_enabled: newVal }).catch(err => {
+            console.error("Failed to persist DND state:", err);
+          });
+        }).catch(() => {});
+      },
       nextApp: () => {
         const apps = [...appConfigs]
           .filter((a) => a.enabled)

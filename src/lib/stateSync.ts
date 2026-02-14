@@ -5,6 +5,7 @@ import {
   setDndEnabled,
   setWorkspaces,
   setActiveWorkspaceId,
+  setTheme,
 } from "../stores/uiStore";
 
 export async function initializeState() {
@@ -12,6 +13,7 @@ export async function initializeState() {
     const config = await getConfig();
     setAppConfigs(config.apps);
     setDndEnabled(config.general.dnd_enabled);
+    setTheme(config.general.theme);
     setWorkspaces(config.workspaces.items);
     setActiveWorkspaceId(config.workspaces.active);
 

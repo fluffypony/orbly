@@ -18,7 +18,7 @@ use adblock::engine::AdblockState;
 use adblock::filter_lists::FilterListManager;
 use app_manager::certificate::CertificateExceptions;
 use app_manager::session_state::SessionState;
-use app_manager::state::{AppManager, ContentBounds};
+use app_manager::state::{AppManager, AppRuntimeState, ContentBounds};
 use config::manager::ConfigManager;
 use darkmode::DarkModeManager;
 use downloads::DownloadManager;
@@ -250,8 +250,17 @@ pub fn run() {
                     if config.general.tray_mode {
                         api.prevent_close();
                         let _ = window.hide();
+                    } else {
+                        // Persist session state for crash recovery before closing
+                        let session_state = window.app_handle().state::<SessionState>();
+                        let app_manager = window.app_handle().state::<AppManager>();
+                        let apps = app_manager.apps.lock().expect("apps lock");
+                        for (app_id, runtime) in apps.iter() {
+                            if let AppRuntimeState::Active { current_url } = &runtime.state {
+                                session_state.set_active(app_id, current_url);
+                            }
+                        }
                     }
-                    // If tray_mode is false, allow the window to close normally
                 }
                 tauri::WindowEvent::Moved(pos) => {
                     let timer = window.app_handle().state::<WindowStateSaveTimer>();

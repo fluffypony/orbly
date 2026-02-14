@@ -39,3 +39,6 @@ export const [appsManagerVisible, setAppsManagerVisible] = createSignal(false);
 
 // Settings panel visibility
 export const [settingsVisible, setSettingsVisible] = createSignal(false);
+
+// Theme state
+export const [theme, setTheme] = createSignal<'system' | 'light' | 'dark'>('system');

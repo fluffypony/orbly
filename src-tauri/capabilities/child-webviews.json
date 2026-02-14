@@ -1,0 +1,6 @@
+{
+  "identifier": "child-webviews",
+  "description": "Minimal IPC for app webviews",
+  "remote": { "urls": ["https://*", "http://*"] },
+  "permissions": ["core:default", "core:event:allow-emit"]
+}

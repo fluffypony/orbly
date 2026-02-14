@@ -2,6 +2,7 @@ import { Component, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown } from "../SettingsControls";
 import { getConfig, updateGeneralConfig } from "../../../lib/ipc";
+import { setTheme } from "../../../stores/uiStore";
 import type { GeneralConfig } from "../../../types/config";
 
 const GeneralTab: Component = () => {
@@ -34,6 +35,9 @@ const GeneralTab: Component = () => {
 
   const save = async (updates: Partial<GeneralConfig>) => {
     setConfig(updates);
+    if (updates.theme) {
+      setTheme(updates.theme);
+    }
     if (!initialized) return;
     try {
       const latest = await getConfig();

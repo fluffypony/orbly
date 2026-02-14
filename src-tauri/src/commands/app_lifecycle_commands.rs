@@ -2,6 +2,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::app_manager::certificate::CertificateExceptions;
 use crate::app_manager::lifecycle;
+use crate::app_manager::session_state::SessionState;
 use crate::app_manager::state::{AppManager, AppRuntimeState, ContentBounds};
 use crate::config::manager::ConfigManager;
 
@@ -36,6 +37,8 @@ pub fn get_app_states(
                             ("hibernated".to_string(), Some(last_url.clone()))
                         }
                         AppRuntimeState::Disabled => ("disabled".to_string(), None),
+                        AppRuntimeState::Error { .. } => ("error".to_string(), None),
+                        AppRuntimeState::Crashed => ("crashed".to_string(), None),
                     }
                 } else {
                     ("disabled".to_string(), None)
@@ -120,10 +123,15 @@ pub async fn activate_app(
     app_manager.set_state(
         &app_id,
         AppRuntimeState::Active {
-            current_url: load_url,
+            current_url: load_url.clone(),
         },
     );
     app_manager.touch_interaction(&app_id);
+
+    // Track active app for crash recovery
+    if let Some(session_state) = app_handle.try_state::<SessionState>() {
+        session_state.set_active(&app_id, &load_url);
+    }
 
     // Clear persisted hibernated flag
     if app_config.hibernated {
@@ -164,6 +172,11 @@ pub fn hibernate_app(
         },
     );
 
+    // Remove from session state for crash recovery
+    if let Some(session_state) = app_handle.try_state::<SessionState>() {
+        session_state.remove(&app_id);
+    }
+
     // Update persisted config
     let mut config = config_manager.get_config();
     if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
@@ -189,6 +202,11 @@ pub fn disable_app(
 
     app_manager.set_state(&app_id, AppRuntimeState::Disabled);
 
+    // Remove from session state for crash recovery
+    if let Some(session_state) = app_handle.try_state::<SessionState>() {
+        session_state.remove(&app_id);
+    }
+
     // Update persisted config
     let mut config = config_manager.get_config();
     if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
@@ -199,6 +217,7 @@ pub fn disable_app(
         .map_err(|e| e.to_string())?;
 
     let _ = app_handle.emit("app-disabled", &app_id);
+    crate::tray::rebuild_tray_menu(&app_handle);
 
     Ok(())
 }
@@ -245,6 +264,7 @@ pub async fn enable_app(
     app_manager.touch_interaction(&app_id);
 
     let _ = app_handle.emit("app-enabled", &app_id);
+    crate::tray::rebuild_tray_menu(&app_handle);
 
     Ok(())
 }
@@ -343,6 +363,14 @@ pub async fn frontend_ready(
     content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
     let config = config_manager.get_config();
+
+    // Check for previous session (crash recovery)
+    let previous_session = if let Some(session_state) = app_handle.try_state::<SessionState>() {
+        session_state.get_previous_session()
+    } else {
+        std::collections::HashMap::new()
+    };
+
     let bounds = content_bounds.get();
 
     let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
@@ -355,7 +383,13 @@ pub async fn frontend_ready(
     for app_config in &config.apps {
         if app_config.enabled && !app_config.hibernated {
             if app_handle.get_webview(&app_config.id).is_none() {
-                if let Err(e) = lifecycle::create_app_webview(&app_handle, app_config, position, size) {
+                let mut wake_config = app_config.clone();
+                if let Some(recovered_url) = previous_session.get(&app_config.id) {
+                    if !recovered_url.is_empty() {
+                        wake_config.url = recovered_url.clone();
+                    }
+                }
+                if let Err(e) = lifecycle::create_app_webview(&app_handle, &wake_config, position, size) {
                     log::error!("Failed to create webview for {}: {}", app_config.id, e);
                     continue;
                 }
@@ -366,6 +400,11 @@ pub async fn frontend_ready(
                 first_active_id = Some(app_config.id.clone());
             }
         }
+    }
+
+    // Clear session state after successful restore
+    if let Some(session_state) = app_handle.try_state::<SessionState>() {
+        session_state.clear();
     }
 
     // Hide all webviews initially
@@ -379,10 +418,11 @@ pub async fn frontend_ready(
 
         // Update runtime state
         if let Some(app_config) = config.apps.iter().find(|a| a.id == *first_id) {
+            let url = previous_session.get(first_id).cloned().unwrap_or_else(|| app_config.url.clone());
             app_manager.set_state(
                 first_id,
                 AppRuntimeState::Active {
-                    current_url: app_config.url.clone(),
+                    current_url: url,
                 },
             );
             app_manager.touch_interaction(first_id);
@@ -395,10 +435,11 @@ pub async fn frontend_ready(
     for id in &created_ids {
         if Some(id) != first_active_id.as_ref() {
             if let Some(app_config) = config.apps.iter().find(|a| a.id == *id) {
+                let url = previous_session.get(id).cloned().unwrap_or_else(|| app_config.url.clone());
                 app_manager.set_state(
                     id,
                     AppRuntimeState::Active {
-                        current_url: app_config.url.clone(),
+                        current_url: url,
                     },
                 );
             }

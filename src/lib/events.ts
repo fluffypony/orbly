@@ -60,6 +60,9 @@ export async function setupEventListeners() {
     await listen<void>("dnd-toggled", () => {
       refreshAppStates();
     }),
+    await listen<string>("app-error", () => {
+      refreshAppStates();
+    }),
   );
 }
 

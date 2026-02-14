@@ -10,6 +10,10 @@ pub enum AppRuntimeState {
     Hibernated { last_url: String },
     /// Webview destroyed, user explicitly disabled
     Disabled,
+    /// Page load failed
+    Error { message: String },
+    /// Webview process crashed
+    Crashed,
 }
 
 #[derive(Debug, Clone)]
@@ -17,6 +21,7 @@ pub struct AppRuntime {
     pub state: AppRuntimeState,
     pub badge_count: Option<i32>,
     pub last_interaction: Option<Instant>,
+    pub is_playing_media: bool,
 }
 
 pub struct AppManager {
@@ -54,6 +59,7 @@ impl AppManager {
                     state,
                     badge_count: None,
                     last_interaction: None,
+                    is_playing_media: false,
                 },
             );
         }

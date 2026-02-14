@@ -8,6 +8,7 @@ import {
   setAppsManagerVisible,
   setSettingsVisible,
 } from "../../stores/uiStore";
+import { getConfig, updateGeneralConfig } from "../../lib/ipc";
 
 interface IconButtonProps {
   label: string;
@@ -50,7 +51,16 @@ const SidebarFooter: Component = () => {
           label={dndEnabled() ? "Disable Do Not Disturb" : "Enable Do Not Disturb"}
           icon={dndEnabled() ? "🔕" : "🔔"}
           active={dndEnabled()}
-          onClick={() => setDndEnabled(!dndEnabled())}
+          onClick={async () => {
+            const newVal = !dndEnabled();
+            setDndEnabled(newVal);
+            try {
+              const config = await getConfig();
+              await updateGeneralConfig({ ...config.general, dnd_enabled: newVal });
+            } catch (err) {
+              console.error("Failed to persist DND state:", err);
+            }
+          }}
         />
         <IconButton
           label="Downloads"
