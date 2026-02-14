@@ -48,14 +48,20 @@ pub fn split_content_blocking_json(json: &str) -> Result<Vec<String>, String> {
 ///
 /// This requires objc2-web-kit bindings or manual ObjC FFI.
 #[cfg(target_os = "macos")]
-#[allow(dead_code)]
+#[allow(dead_code, unused_imports)]
 pub fn apply_content_rule_to_webview(
-    _wv: &dyn std::any::Any,
     identifier: &str,
-    _json: &str,
+    json: &str,
 ) {
-    log::debug!(
-        "Content rule '{}' prepared for WKContentRuleList compilation",
-        identifier
+    // These imports verify the objc2-web-kit bindings compile correctly.
+    // Full implementation requires Tauri to expose with_webview() on macOS
+    // to obtain the WKWebView's WKUserContentController.
+    use objc2_foundation::NSString;
+    use objc2_web_kit::WKContentRuleListStore;
+
+    log::info!(
+        "WKContentRuleList '{}' prepared ({} bytes of JSON) — full compilation requires webview handle",
+        identifier,
+        json.len()
     );
 }
