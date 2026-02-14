@@ -158,6 +158,7 @@ pub fn toggle_global_mute(
         }
 
         *global_mute_state.is_globally_muted.lock().expect("global mute lock") = false;
+        let _ = app_handle.emit("global-mute-changed", false);
         Ok(false)
     } else {
         // Muting: save prior states, then mute all
@@ -199,6 +200,7 @@ pub fn toggle_global_mute(
         }
 
         *global_mute_state.is_globally_muted.lock().expect("global mute lock") = true;
+        let _ = app_handle.emit("global-mute-changed", true);
         Ok(true)
     }
 }

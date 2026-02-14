@@ -2,8 +2,9 @@ import { Component, For, onMount, onCleanup, createSignal } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { createStore } from "solid-js/store";
 import { SettingSection, SettingRow, ToggleSwitch, TextInput, Button } from "../SettingsControls";
-import { getConfig, updateFilterLists, updateApp, addCustomAdblockRule, updateAdblockConfig, getRecipeStatus, updateRecipes } from "../../../lib/ipc";
+import { getConfig, updateFilterLists, updateApp, addCustomAdblockRule, updateAdblockConfig } from "../../../lib/ipc";
 import { refreshAppConfigs } from "../../../lib/stateSync";
+import RecipeStatusPanel from "../RecipeStatusPanel";
 import { appConfigs } from "../../../stores/uiStore";
 import type { AdblockConfig } from "../../../types/config";
 
@@ -17,8 +18,6 @@ const AdBlockingTab: Component = () => {
   const [newFilterUrl, setNewFilterUrl] = createSignal("");
   const [newCustomRule, setNewCustomRule] = createSignal("");
   const [updating, setUpdating] = createSignal(false);
-  const [recipeStatus, setRecipeStatus] = createSignal<{ status: string; last_updated: string; manifest_version: number | null; service_count: number } | null>(null);
-  const [updatingRecipes, setUpdatingRecipes] = createSignal(false);
   let initialized = false;
 
   let unlistenFilterUpdate: (() => void) | undefined;
@@ -30,12 +29,6 @@ const AdBlockingTab: Component = () => {
       initialized = true;
     } catch (err) {
       console.error("Failed to load adblock config:", err);
-    }
-    try {
-      const status = await getRecipeStatus();
-      setRecipeStatus(status);
-    } catch (err) {
-      console.error("Failed to load recipe status:", err);
     }
     unlistenFilterUpdate = await listen("filter-lists-updated", async () => {
       try {
@@ -177,40 +170,7 @@ const AdBlockingTab: Component = () => {
 
       <div class="mt-8">
         <SettingSection title="Remote Scripts" description="Service-specific badge scraping and injection scripts updated from the Orbly recipe server" />
-        {(() => {
-          const s = recipeStatus();
-          if (!s) return null;
-          const statusLabel = s.status === "up-to-date" ? "Up to date" : s.status === "fetch-failed" ? "Fetch failed" : s.status === "no-data" ? "No data" : s.status;
-          const statusColor = s.status === "up-to-date" ? "text-green-500" : s.status === "fetch-failed" ? "text-red-500" : "text-gray-400";
-          return (
-            <>
-              <SettingRow label="Status" description={s.service_count > 0 ? `${s.service_count} service recipes loaded` : undefined}>
-                <span class={`text-sm font-medium ${statusColor}`}>{statusLabel}</span>
-              </SettingRow>
-              <SettingRow label="Last updated" description={s.last_updated ? formatDate(s.last_updated) : "Never"}>
-                <Button
-                  onClick={async () => {
-                    setUpdatingRecipes(true);
-                    try {
-                      await updateRecipes();
-                      // Wait a moment for the background task to complete
-                      await new Promise(r => setTimeout(r, 2000));
-                      const newStatus = await getRecipeStatus();
-                      setRecipeStatus(newStatus);
-                    } catch (err) {
-                      console.error("Failed to update recipes:", err);
-                    } finally {
-                      setUpdatingRecipes(false);
-                    }
-                  }}
-                  disabled={updatingRecipes()}
-                >
-                  {updatingRecipes() ? "Updating..." : "Refresh Now"}
-                </Button>
-              </SettingRow>
-            </>
-          );
-        })()}
+        <RecipeStatusPanel />
       </div>
     </div>
   );

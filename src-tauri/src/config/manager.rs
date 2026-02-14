@@ -183,3 +183,51 @@ impl ConfigManager {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config_serialization_roundtrip() {
+        let config = OrblyConfig::default();
+        let toml_str = toml::to_string_pretty(&config).expect("serialize");
+        let parsed: OrblyConfig = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(parsed.general.config_version, config.general.config_version);
+        assert_eq!(parsed.apps.len(), 0);
+    }
+
+    #[test]
+    fn test_missing_fields_use_defaults() {
+        let toml_str = "[general]\nconfig_version = 1\n";
+        let config: OrblyConfig = toml::from_str(toml_str).expect("deserialize");
+        assert_eq!(config.general.config_version, 1);
+        assert!(config.general.tray_mode); // default is true
+        assert!(config.general.show_badge_in_tray); // default is true
+        assert_eq!(config.apps.len(), 0);
+    }
+
+    #[test]
+    fn test_migrate_v0_to_v1() {
+        let mut config = OrblyConfig::default();
+        config.general.config_version = 0;
+        ConfigManager::migrate_config(&mut config);
+        assert_eq!(config.general.config_version, 1);
+    }
+
+    #[test]
+    fn test_migrate_unknown_version() {
+        let mut config = OrblyConfig::default();
+        config.general.config_version = 99;
+        ConfigManager::migrate_config(&mut config);
+        // Should not crash, version stays as-is
+        assert_eq!(config.general.config_version, 99);
+    }
+
+    #[test]
+    fn test_extra_fields_ignored() {
+        let toml_str = "[general]\nconfig_version = 1\nunknown_field = \"value\"\n";
+        let config: OrblyConfig = toml::from_str(toml_str).expect("deserialize");
+        assert_eq!(config.general.config_version, 1);
+    }
+}

@@ -16,20 +16,13 @@ export const [appStates, setAppStates] = createStore<AppStateInfo[]>([]);
 export const [activeWorkspaceId, setActiveWorkspaceId] = createSignal("default");
 export const [workspaces, setWorkspaces] = createStore<Workspace[]>([]);
 
-// Whether to include disabled apps in visible list (some views dim them, others hide)
-export const [showDisabledApps, setShowDisabledApps] = createSignal(true);
-
-// Derived: apps visible in current workspace (optionally filtered by enabled status)
+// Derived: apps visible in current workspace
 export const visibleApps = createMemo(() => {
   const wsId = activeWorkspaceId();
   const ws = workspaces.find((w) => w.id === wsId);
-  let apps = (ws && ws.id !== "default")
+  return (ws && ws.id !== "default")
     ? appConfigs.filter((a) => ws.app_ids.includes(a.id))
     : [...appConfigs];
-  if (!showDisabledApps()) {
-    apps = apps.filter((a) => a.enabled);
-  }
-  return apps;
 });
 
 // DND state

@@ -66,13 +66,13 @@ const AboutTab: Component = () => {
           </div>
           <div class="flex items-center justify-between py-2">
             <span class="text-sm text-gray-600 dark:text-gray-300">Source Code</span>
-            <Button onClick={() => open("https://github.com/fluffypony/orbly")}>
+            <Button onClick={async () => { try { await open("https://github.com/fluffypony/orbly"); } catch (err) { console.error("Failed to open URL:", err); } }}>
               Open on GitHub
             </Button>
           </div>
           <div class="flex items-center justify-between py-2">
             <span class="text-sm text-gray-600 dark:text-gray-300">Website</span>
-            <Button onClick={() => open("https://getorb.ly")}>
+            <Button onClick={async () => { try { await open("https://getorb.ly"); } catch (err) { console.error("Failed to open URL:", err); } }}>
               getorb.ly
             </Button>
           </div>

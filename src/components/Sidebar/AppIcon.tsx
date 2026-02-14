@@ -4,7 +4,7 @@ import { sidebarExpanded, activeAppId } from "../../stores/uiStore";
 interface AppIconProps {
   id: string;
   name: string;
-  state: "active" | "hibernated" | "disabled";
+  state: "active" | "loading" | "hibernated" | "disabled";
   badgeCount: number | null;
   icon?: string;
   audioMuted: boolean;
@@ -93,6 +93,12 @@ const AppIcon: Component<AppIconProps> = (props) => {
         <Show when={props.state === "disabled"}>
           <div class="absolute inset-0 flex items-center justify-center">
             <div class="w-8 h-0.5 bg-gray-500 rotate-45 absolute" />
+          </div>
+        </Show>
+
+        <Show when={props.state === "loading"}>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-8 h-8 rounded-lg border-2 border-blue-400 border-t-transparent animate-spin" />
           </div>
         </Show>
       </div>

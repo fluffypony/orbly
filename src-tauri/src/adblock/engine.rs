@@ -142,3 +142,41 @@ impl AdblockState {
         self.filter_rules_text.lock().expect("filter rules lock").clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_adblock_state() {
+        let state = AdblockState::new();
+        assert_eq!(state.get_blocked_count("app1"), 0);
+    }
+
+    #[test]
+    fn test_increment_blocked_count() {
+        let state = AdblockState::new();
+        state.increment_blocked("app1");
+        state.increment_blocked("app1");
+        state.increment_blocked("app2");
+        assert_eq!(state.get_blocked_count("app1"), 2);
+        assert_eq!(state.get_blocked_count("app2"), 1);
+        assert_eq!(state.get_blocked_count("app3"), 0);
+    }
+
+    #[test]
+    fn test_load_rules_and_block() {
+        let state = AdblockState::new();
+        state.load_rules("||ads.example.com^\n||tracker.test.com^", &[]);
+        assert!(state.should_block("https://ads.example.com/banner.js", "https://example.com", "script"));
+        assert!(!state.should_block("https://example.com/page.html", "https://example.com", "document"));
+    }
+
+    #[test]
+    fn test_custom_rules() {
+        let state = AdblockState::new();
+        let custom = vec!["||custom-block.test^".to_string()];
+        state.load_rules("", &custom);
+        assert!(state.should_block("https://custom-block.test/ad.js", "https://example.com", "script"));
+    }
+}

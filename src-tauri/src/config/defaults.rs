@@ -161,6 +161,7 @@ impl Default for GeneralConfig {
             cpu_alert_threshold: default_cpu_alert_threshold(),
             recipe_cache_ttl_hours: default_recipe_cache_ttl_hours(),
             sidebar_hover_expand: true,
+            recipe_manifest_url: None,
         }
     }
 }

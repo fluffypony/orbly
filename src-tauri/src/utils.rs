@@ -35,3 +35,48 @@ pub fn wildcard_match(pattern: &str, text: &str) -> bool {
 
     pi == pattern_chars.len()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_exact_match() {
+        assert!(wildcard_match("hello", "hello"));
+        assert!(!wildcard_match("hello", "world"));
+    }
+
+    #[test]
+    fn test_wildcard_star() {
+        assert!(wildcard_match("*.example.com/*", "https://www.example.com/page"));
+        assert!(wildcard_match("*.example.com/*", "http://sub.example.com/path/to/page"));
+        assert!(!wildcard_match("*.example.com/*", "https://example.org/page"));
+    }
+
+    #[test]
+    fn test_case_insensitive() {
+        assert!(wildcard_match("Hello", "HELLO"));
+        assert!(wildcard_match("HELLO", "hello"));
+        assert!(wildcard_match("*.Example.COM/*", "https://sub.example.com/path"));
+    }
+
+    #[test]
+    fn test_empty_strings() {
+        assert!(wildcard_match("", ""));
+        assert!(!wildcard_match("", "hello"));
+        assert!(wildcard_match("*", ""));
+        assert!(wildcard_match("*", "anything"));
+    }
+
+    #[test]
+    fn test_multiple_wildcards() {
+        assert!(wildcard_match("*://*.example.com/*", "https://www.example.com/page"));
+        assert!(wildcard_match("*google*", "https://mail.google.com/inbox"));
+    }
+
+    #[test]
+    fn test_url_special_chars() {
+        assert!(wildcard_match("*example.com/path?q=*", "https://example.com/path?q=search"));
+        assert!(wildcard_match("*://localhost:*", "http://localhost:3000"));
+    }
+}

@@ -4,7 +4,7 @@ use crate::config::manager::ConfigManager;
 
 /// Returns a list of user agent presets as (label, ua_string) pairs.
 /// An empty ua_string means "use system default".
-/// The "Custom" entry signals the frontend to allow a free-form input.
+/// The frontend adds its own "Custom" option for free-form input.
 #[tauri::command]
 pub fn get_ua_presets() -> Vec<(String, String)> {
     vec![
@@ -13,7 +13,6 @@ pub fn get_ua_presets() -> Vec<(String, String)> {
         ("Firefox".to_string(), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:138.0) Gecko/20100101 Firefox/138.0".to_string()),
         ("Safari".to_string(), "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15".to_string()),
         ("Mobile Safari".to_string(), "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1".to_string()),
-        ("Custom".to_string(), "custom".to_string()),
     ]
 }
 

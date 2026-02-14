@@ -1,15 +1,13 @@
 import { Component, createSignal, onMount, For, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput } from "../SettingsControls";
-import { getConfig, updateGeneralConfig, getCertificateExceptions, removeCertificateException, getRecipeStatus, updateRecipes, setLaunchAtLogin } from "../../../lib/ipc";
+import { getConfig, updateGeneralConfig, getCertificateExceptions, removeCertificateException, setLaunchAtLogin } from "../../../lib/ipc";
 import { setTheme } from "../../../stores/uiStore";
+import RecipeStatusPanel from "../RecipeStatusPanel";
 import type { GeneralConfig } from "../../../types/config";
 
 const GeneralTab: Component = () => {
   const [certExceptions, setCertExceptions] = createSignal<[string, string][]>([]);
-  const [recipeStatus, setRecipeStatus] = createSignal<{ status: string; last_updated: string; manifest_version: number | null; service_count: number } | null>(null);
-  const [updatingRecipes, setUpdatingRecipes] = createSignal(false);
-
   const [config, setConfig] = createStore<GeneralConfig>({
     config_version: 1,
     theme: "system",
@@ -42,8 +40,6 @@ const GeneralTab: Component = () => {
       initialized = true;
       const certs = await getCertificateExceptions();
       setCertExceptions(certs);
-      const status = await getRecipeStatus();
-      setRecipeStatus(status);
     } catch (err) {
       console.error("Failed to load general config:", err);
     }
@@ -217,51 +213,7 @@ const GeneralTab: Component = () => {
 
       <div class="mt-6">
         <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">Remote Recipes</h4>
-        {(() => {
-          const s = recipeStatus();
-          if (!s) return <p class="text-xs text-gray-400">Loading status...</p>;
-          const statusLabel = s.status === "up-to-date" ? "Up to date" : s.status === "fetch-failed" ? "Fetch failed" : s.status === "no-data" ? "No data" : s.status;
-          const statusColor = s.status === "up-to-date" ? "text-green-500" : s.status === "fetch-failed" ? "text-red-500" : "text-gray-400";
-          const formatDate = (dateStr: string) => {
-            if (!dateStr) return "Never";
-            try { return new Date(dateStr).toLocaleString(); } catch { return dateStr; }
-          };
-          return (
-            <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-              <div>
-                <p class="text-sm">
-                  <span class={`font-medium ${statusColor}`}>{statusLabel}</span>
-                  <Show when={s.service_count > 0}>
-                    <span class="text-gray-400 ml-2">({s.service_count} recipes)</span>
-                  </Show>
-                </p>
-                <p class="text-xs text-gray-400 mt-0.5">Last updated: {formatDate(s.last_updated)}</p>
-              </div>
-              <button
-                class="text-xs px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50"
-                disabled={updatingRecipes() || config.local_scripts_only}
-                onClick={async () => {
-                  setUpdatingRecipes(true);
-                  try {
-                    await updateRecipes();
-                    await new Promise(r => setTimeout(r, 2000));
-                    const newStatus = await getRecipeStatus();
-                    setRecipeStatus(newStatus);
-                  } catch (err) {
-                    console.error("Failed to update recipes:", err);
-                  } finally {
-                    setUpdatingRecipes(false);
-                  }
-                }}
-              >
-                {updatingRecipes() ? "Updating..." : "Refresh Now"}
-              </button>
-            </div>
-          );
-        })()}
-        <Show when={config.local_scripts_only}>
-          <p class="text-xs text-gray-400 mt-1">Remote fetching is disabled (local scripts only mode).</p>
-        </Show>
+        <RecipeStatusPanel localScriptsOnly={config.local_scripts_only} />
       </div>
     </div>
   );
