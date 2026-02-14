@@ -59,6 +59,7 @@ pub fn update_filter_lists(app_handle: AppHandle) -> Result<(), String> {
 
                 log::info!("Filter lists updated successfully");
                 let _ = app_handle.emit("filter-lists-updated", ());
+                let _ = app_handle.emit("content-rules-updated", ());
             }
             Err(e) => {
                 log::error!("Failed to update filter lists: {}", e);

@@ -1,6 +1,27 @@
+use std::collections::HashMap;
+use std::sync::Mutex;
+
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::config::manager::ConfigManager;
+
+/// Stores per-app mute states before global mute was applied,
+/// so they can be restored when globally unmuting.
+pub struct GlobalMuteState {
+    /// Map from app_id to their mute state before global mute.
+    prior_states: Mutex<HashMap<String, bool>>,
+    /// Whether global mute is currently active.
+    pub is_globally_muted: Mutex<bool>,
+}
+
+impl GlobalMuteState {
+    pub fn new() -> Self {
+        Self {
+            prior_states: Mutex::new(HashMap::new()),
+            is_globally_muted: Mutex::new(false),
+        }
+    }
+}
 
 #[derive(serde::Serialize, Clone)]
 struct AudioMutedChanged {
@@ -94,45 +115,95 @@ pub fn set_audio_muted(
 pub fn toggle_global_mute(
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
+    global_mute_state: State<'_, GlobalMuteState>,
 ) -> Result<bool, String> {
     let mut config = config_manager.get_config();
+    let is_muted = *global_mute_state.is_globally_muted.lock().expect("global mute lock");
 
-    let any_unmuted = config
-        .apps
-        .iter()
-        .any(|a| a.enabled && !a.audio_muted);
-
-    let new_muted = any_unmuted;
-
-    for app in config.apps.iter_mut() {
-        if app.enabled {
-            app.audio_muted = new_muted;
+    if is_muted {
+        // Unmuting: restore each app's prior mute state
+        let prior = global_mute_state.prior_states.lock().expect("prior states lock");
+        for app in config.apps.iter_mut() {
+            if app.enabled {
+                let restore_muted = prior.get(&app.id).copied().unwrap_or(false);
+                app.audio_muted = restore_muted;
+            }
         }
+        drop(prior);
+
+        let app_states: Vec<(String, bool)> = config
+            .apps
+            .iter()
+            .filter(|a| a.enabled)
+            .map(|a| (a.id.clone(), a.audio_muted))
+            .collect();
+
+        config_manager
+            .save_config(config)
+            .map_err(|e| e.to_string())?;
+
+        for (app_id, muted) in &app_states {
+            let _ = apply_audio_mute_to_webview(&app_handle, app_id, *muted);
+            let _ = app_handle.emit(
+                "audio-muted-changed",
+                AudioMutedChanged {
+                    app_id: app_id.clone(),
+                    muted: *muted,
+                },
+            );
+        }
+
+        *global_mute_state.is_globally_muted.lock().expect("global mute lock") = false;
+        Ok(false)
+    } else {
+        // Muting: save prior states, then mute all
+        let mut prior = global_mute_state.prior_states.lock().expect("prior states lock");
+        prior.clear();
+        for app in config.apps.iter() {
+            if app.enabled {
+                prior.insert(app.id.clone(), app.audio_muted);
+            }
+        }
+        drop(prior);
+
+        for app in config.apps.iter_mut() {
+            if app.enabled {
+                app.audio_muted = true;
+            }
+        }
+
+        let app_ids: Vec<String> = config
+            .apps
+            .iter()
+            .filter(|a| a.enabled)
+            .map(|a| a.id.clone())
+            .collect();
+
+        config_manager
+            .save_config(config)
+            .map_err(|e| e.to_string())?;
+
+        for app_id in &app_ids {
+            let _ = apply_audio_mute_to_webview(&app_handle, app_id, true);
+            let _ = app_handle.emit(
+                "audio-muted-changed",
+                AudioMutedChanged {
+                    app_id: app_id.clone(),
+                    muted: true,
+                },
+            );
+        }
+
+        *global_mute_state.is_globally_muted.lock().expect("global mute lock") = true;
+        Ok(true)
     }
+}
 
-    let app_ids: Vec<String> = config
-        .apps
-        .iter()
-        .filter(|a| a.enabled)
-        .map(|a| a.id.clone())
-        .collect();
-
-    config_manager
-        .save_config(config)
-        .map_err(|e| e.to_string())?;
-
-    for app_id in &app_ids {
-        let _ = apply_audio_mute_to_webview(&app_handle, app_id, new_muted);
-        let _ = app_handle.emit(
-            "audio-muted-changed",
-            AudioMutedChanged {
-                app_id: app_id.clone(),
-                muted: new_muted,
-            },
-        );
-    }
-
-    Ok(new_muted)
+#[tauri::command]
+pub fn get_global_mute_state(
+    global_mute_state: State<'_, GlobalMuteState>,
+) -> bool {
+    *global_mute_state.is_globally_muted.lock().expect("global mute lock")
 }
 
 #[tauri::command(rename_all = "snake_case")]

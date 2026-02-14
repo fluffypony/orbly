@@ -26,7 +26,7 @@ import {
   appStates,
   visibleApps,
 } from "../../stores/uiStore";
-import { activateApp, updateApp } from "../../lib/ipc";
+import { activateApp, enableApp, updateApp } from "../../lib/ipc";
 
 interface SortableAppIconProps {
   app: {
@@ -122,6 +122,21 @@ const AppIconList: Component = () => {
   });
 
   const handleClick = async (id: string) => {
+    const state = appStates.find((s) => s.id === id);
+    if (state?.state === "disabled") {
+      const confirmed = window.confirm(
+        "This app is disabled. Would you like to enable it?"
+      );
+      if (confirmed) {
+        try {
+          await enableApp(id);
+          await activateApp(id);
+        } catch (err) {
+          console.error("Failed to enable/activate app:", err);
+        }
+      }
+      return;
+    }
     try {
       await activateApp(id);
     } catch (err) {

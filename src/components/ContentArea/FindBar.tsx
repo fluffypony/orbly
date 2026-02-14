@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, createEffect, onCleanup } from "solid-js";
+import { Component, Show, createSignal, createEffect, onCleanup, onMount } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { findInPage, clearFindInPage, getFindCount } from "../../lib/ipc";
 import { activeAppId } from "../../stores/uiStore";
@@ -14,16 +14,20 @@ const FindBar: Component<FindBarProps> = (props) => {
   let inputRef: HTMLInputElement | undefined;
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let unlistenFindCount: (() => void) | undefined;
+  let listenerPromise: Promise<() => void> | undefined;
 
-  // Listen for match count updates from backend
-  (async () => {
-    unlistenFindCount = await listen<{ appId: string; count: number }>("find-count-updated", (event) => {
+  // Listen for match count updates from backend  
+  onMount(() => {
+    listenerPromise = listen<{ appId: string; count: number }>("find-count-updated", (event) => {
       const appId = activeAppId();
       if (appId === event.payload.appId) {
         setMatchCount(event.payload.count);
       }
     });
-  })();
+    listenerPromise.then((fn) => {
+      unlistenFindCount = fn;
+    });
+  });
 
   const doFind = (forward: boolean) => {
     const appId = activeAppId();
@@ -74,7 +78,11 @@ const FindBar: Component<FindBarProps> = (props) => {
 
   onCleanup(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
-    unlistenFindCount?.();
+    if (unlistenFindCount) {
+      unlistenFindCount();
+    } else if (listenerPromise) {
+      listenerPromise.then((fn) => fn());
+    }
     const appId = activeAppId();
     if (appId) {
       clearFindInPage(appId).catch(() => {});

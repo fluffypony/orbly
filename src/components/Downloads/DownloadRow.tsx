@@ -1,5 +1,5 @@
 import { Component, Show, Switch, Match } from "solid-js";
-import { openDownloadFile, openDownloadFolder, cancelDownload as ipcCancelDownload } from "../../lib/ipc";
+import { openDownloadFile, openDownloadFolder, cancelDownload as ipcCancelDownload, retryDownload as ipcRetryDownload } from "../../lib/ipc";
 import type { DownloadEntry } from "../../types/downloads";
 
 interface DownloadRowProps {
@@ -60,6 +60,16 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
       await ipcCancelDownload(props.download.id);
     } catch (err) {
       console.error("Failed to cancel download:", err);
+    }
+  };
+
+  const retryFailed = async () => {
+    try {
+      const url = await ipcRetryDownload(props.download.id);
+      // Open the URL in the browser to re-trigger the download
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error("Failed to retry download:", err);
     }
   };
 
@@ -135,6 +145,15 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
               title="Cancel"
             >
               ✕
+            </button>
+          </Show>
+          <Show when={statusType() === "Failed"}>
+            <button
+              class="text-gray-400 hover:text-blue-500 cursor-pointer"
+              onClick={retryFailed}
+              title="Retry"
+            >
+              🔄
             </button>
           </Show>
           <Show when={statusType() !== "Downloading"}>

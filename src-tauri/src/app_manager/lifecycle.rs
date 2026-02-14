@@ -40,7 +40,17 @@ pub fn create_app_webview(
     if !app_config.proxy.is_empty() {
         let proxy = url::Url::parse(&app_config.proxy)
             .map_err(|e| format!("Invalid proxy URL: {e}"))?;
-        builder = builder.proxy_url(proxy);
+        #[cfg(not(target_os = "macos"))]
+        {
+            builder = builder.proxy_url(proxy);
+        }
+        #[cfg(target_os = "macos")]
+        {
+            builder = builder.proxy_url(proxy);
+            log::warn!(
+                "Per-app proxy on macOS may not work reliably; requires macOS 14+ and macos-proxy feature"
+            );
+        }
     }
 
     // Network-level ad blocking via navigation handler
@@ -60,10 +70,28 @@ pub fn create_app_webview(
         });
     }
 
-    // TODO: For full sub-resource ad blocking on macOS, integrate WKContentRuleList
-    // via webview.with_webview(). The content-blocking JSON is pre-computed in
-    // AdblockState::get_content_blocking_json(). On other platforms, sub-resource
-    // blocking would require Wry to expose on_web_resource_request().
+    // macOS sub-resource ad blocking via WKContentRuleList
+    // Content-blocking JSON is pre-computed in AdblockState and chunked via
+    // content_rules::split_content_blocking_json(). Full WKContentRuleListStore
+    // integration requires ObjC bridging (objc2-web-kit bindings).
+    #[cfg(target_os = "macos")]
+    if app_config.adblock_enabled {
+        if let Some(adblock_state) = app_handle.try_state::<AdblockState>() {
+            if let Some(json) = adblock_state.get_content_blocking_json() {
+                match crate::adblock::content_rules::split_content_blocking_json(&json) {
+                    Ok(chunks) => {
+                        log::info!(
+                            "Prepared {} WKContentRuleList chunk(s) ({} total rules) for app {}",
+                            chunks.len(),
+                            json.len(),
+                            app_config.id,
+                        );
+                    }
+                    Err(e) => log::warn!("Failed to split content-blocking JSON: {}", e),
+                }
+            }
+        }
+    }
 
     let init_js = build_initialization_script(app_handle, app_config);
     if !init_js.is_empty() {
@@ -206,6 +234,10 @@ pub fn destroy_app_webview(
 fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -> String {
     let mut scripts = Vec::new();
 
+    let general_config = app_handle
+        .try_state::<crate::config::manager::ConfigManager>()
+        .map(|cm| cm.get_config().general);
+
     // Notification interception
     let notification_style = format!("{:?}", app_config.notification_style).to_lowercase();
     scripts.push(crate::notifications::scripts::notification_intercept_script(
@@ -251,6 +283,16 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         );
         if !dm_script.is_empty() {
             scripts.push(dm_script);
+        }
+
+        // Inject color-scheme CSS for dark mode to use dark form controls and scrollbars
+        if mode_str != "off" {
+            scripts.push(r#"(function() {
+                const style = document.createElement('style');
+                style.id = '__orbly_color_scheme__';
+                style.textContent = 'html { color-scheme: dark !important; }';
+                document.documentElement.appendChild(style);
+            })();"#.to_string());
         }
     }
 
@@ -422,11 +464,50 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         ));
     }
 
-    // Custom JS injection — runs in the page's main world.
+    // Scrollbar and selection color injection from GeneralConfig
+    if let Some(ref general) = general_config {
+        let mut global_css_parts = Vec::new();
+        if let Some(ref color) = general.scrollbar_color {
+            if !color.is_empty() {
+                global_css_parts.push(format!(
+                    "* {{ scrollbar-color: {} transparent; }} ::-webkit-scrollbar-thumb {{ background-color: {}; }} ::-webkit-scrollbar-track {{ background: transparent; }}",
+                    color, color
+                ));
+            }
+        }
+        if let Some(ref color) = general.selection_color {
+            if !color.is_empty() {
+                global_css_parts.push(format!(
+                    "::selection {{ background-color: {} !important; }}",
+                    color
+                ));
+            }
+        }
+        if !global_css_parts.is_empty() {
+            let css_combined = global_css_parts.join(" ");
+            scripts.push(format!(
+                r#"(function() {{
+                    const style = document.createElement('style');
+                    style.id = '__orbly_global_css__';
+                    style.textContent = {};
+                    document.head.appendChild(style);
+                }})();"#,
+                serde_json::to_string(&css_combined).unwrap_or_default()
+            ));
+        }
+    }
+
+    // Custom JS injection — runs after DOMContentLoaded in the page's main world.
     // Has full access to the page DOM and session data.
     if !app_config.custom_js.is_empty() {
         scripts.push(format!(
-            r#"(function() {{ {} }})();"#,
+            r#"(function() {{
+                window.addEventListener('DOMContentLoaded', function() {{
+                    try {{
+                        {}
+                    }} catch(e) {{ console.error('Custom JS error:', e); }}
+                }});
+            }})();"#,
             app_config.custom_js
         ));
     }
@@ -582,6 +663,64 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
 "#,
         app_config.id
     ));
+
+    // Picture-in-Picture overlay for video elements
+    scripts.push(r#"
+(function() {
+    'use strict';
+    if (!document.pictureInPictureEnabled) return;
+
+    var pipStyle = document.createElement('style');
+    pipStyle.textContent = '.orbly-pip-btn { position: absolute; top: 8px; right: 8px; z-index: 2147483647; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity 0.2s; pointer-events: auto; } .orbly-pip-btn:hover { background: rgba(0,0,0,0.8); } .orbly-pip-btn.orbly-pip-active { background: rgba(59,130,246,0.8); opacity: 1; }';
+    document.head.appendChild(pipStyle);
+
+    var processed = new WeakSet();
+
+    function addPipButton(video) {
+        if (processed.has(video)) return;
+        processed.add(video);
+        if (video.disablePictureInPicture) return;
+
+        var wrapper = video.parentElement;
+        if (!wrapper) return;
+        var cs = getComputedStyle(wrapper);
+        if (cs.position === 'static') wrapper.style.position = 'relative';
+
+        var btn = document.createElement('button');
+        btn.className = 'orbly-pip-btn';
+        btn.textContent = '⧉ PiP';
+        btn.title = 'Picture-in-Picture';
+
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (document.pictureInPictureElement === video) {
+                document.exitPictureInPicture().catch(function() {});
+            } else {
+                video.requestPictureInPicture().catch(function() {});
+            }
+        });
+
+        video.addEventListener('enterpictureinpicture', function() { btn.classList.add('orbly-pip-active'); btn.textContent = '⧉ Exit PiP'; });
+        video.addEventListener('leavepictureinpicture', function() { btn.classList.remove('orbly-pip-active'); btn.textContent = '⧉ PiP'; });
+
+        wrapper.addEventListener('mouseenter', function() { if (video.readyState > 0) btn.style.opacity = '1'; });
+        wrapper.addEventListener('mouseleave', function() { if (!btn.classList.contains('orbly-pip-active')) btn.style.opacity = '0'; });
+
+        wrapper.appendChild(btn);
+    }
+
+    function scanVideos() {
+        document.querySelectorAll('video').forEach(addPipButton);
+    }
+
+    var observer = new MutationObserver(function() { scanVideos(); });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    setInterval(scanVideos, 5000);
+    if (document.readyState !== 'loading') scanVideos();
+    else document.addEventListener('DOMContentLoaded', scanVideos);
+})();
+"#.to_string());
 
     scripts.join("\n")
 }

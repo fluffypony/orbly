@@ -86,13 +86,16 @@ pub fn remove_app(
 #[tauri::command]
 pub fn update_general_config(
     general: GeneralConfig,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     let mut config = config_manager.get_config();
     config.general = general;
     config_manager
         .save_config(config)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    crate::tray::rebuild_tray_menu(&app_handle);
+    Ok(())
 }
 
 #[tauri::command]
@@ -163,5 +166,15 @@ pub fn import_config_json(
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
     let config: OrblyConfig = serde_json::from_str(&json).map_err(|e| e.to_string())?;
+    config_manager.save_config(config).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_shortcuts_config(
+    shortcuts: crate::config::models::ShortcutConfig,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    let mut config = config_manager.get_config();
+    config.shortcuts = shortcuts;
     config_manager.save_config(config).map_err(|e| e.to_string())
 }

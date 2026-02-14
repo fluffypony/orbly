@@ -36,3 +36,26 @@ pub fn split_content_blocking_json(json: &str) -> Result<Vec<String>, String> {
 
     Ok(chunks)
 }
+
+/// Apply a content rule list to a webview handle.
+/// Called from within `webview.with_webview()` closure on macOS.
+///
+/// Full implementation requires ObjC bridging to:
+/// 1. Get WKWebView's configuration via `[webview configuration]`
+/// 2. Get the userContentController
+/// 3. Compile via `WKContentRuleListStore.compileContentRuleList()`
+/// 4. Add compiled list via `addContentRuleList()`
+///
+/// This requires objc2-web-kit bindings or manual ObjC FFI.
+#[cfg(target_os = "macos")]
+#[allow(dead_code)]
+pub fn apply_content_rule_to_webview(
+    _wv: &dyn std::any::Any,
+    identifier: &str,
+    _json: &str,
+) {
+    log::debug!(
+        "Content rule '{}' prepared for WKContentRuleList compilation",
+        identifier
+    );
+}

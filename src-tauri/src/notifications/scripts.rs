@@ -10,11 +10,24 @@ pub fn notification_intercept_script(app_id: &str, notification_style: &str) -> 
 
     class OrblyNotification {{
         constructor(title, options = {{}}) {{
+            if (ORBLY_NOTIFICATION_STYLE === 'off') {{
+                this._title = title;
+                this._options = options;
+                this.onclick = null;
+                this.onclose = null;
+                this.onerror = null;
+                this.onshow = null;
+                return;
+            }}
+            var notifBody = options.body || '';
+            if (ORBLY_NOTIFICATION_STYLE === 'private') {{
+                notifBody = 'New notification';
+            }}
             if (window.__TAURI_INTERNALS__) {{
                 const payload = {{
                     app_id: ORBLY_APP_ID,
                     title: title,
-                    body: options.body || '',
+                    body: notifBody,
                     icon: options.icon || '',
                     tag: options.tag || '',
                     style: ORBLY_NOTIFICATION_STYLE,

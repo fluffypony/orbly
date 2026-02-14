@@ -72,3 +72,22 @@ pub fn open_download_folder(
         .ok_or("Invalid path")?;
     open::that(parent).map_err(|e| e.to_string())
 }
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn retry_download(
+    download_id: String,
+    download_manager: State<'_, DownloadManager>,
+) -> Result<String, String> {
+    let downloads = download_manager.get_all();
+    let entry = downloads.iter().find(|d| d.id == download_id)
+        .ok_or_else(|| "Download not found".to_string())?;
+
+    if !matches!(entry.status, crate::downloads::DownloadStatus::Failed { .. }) {
+        return Err("Download is not in failed state".to_string());
+    }
+
+    // Remove the failed entry and return the URL for the frontend to re-trigger
+    let url = entry.url.clone();
+    download_manager.remove(&download_id);
+    Ok(url)
+}

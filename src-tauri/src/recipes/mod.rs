@@ -213,4 +213,21 @@ impl RecipeManager {
     pub fn set_error(&self, error: String) {
         *self.last_error.lock().expect("recipe last_error lock") = Some(error);
     }
+
+    /// Check if the cached manifest is still fresh based on TTL.
+    pub fn is_cache_fresh(&self, ttl_hours: u64) -> bool {
+        let manifest_path = self.cache_dir.join("manifest.json");
+        if !manifest_path.exists() {
+            return false;
+        }
+        match manifest_path.metadata().and_then(|m| m.modified()) {
+            Ok(modified) => {
+                let age = std::time::SystemTime::now()
+                    .duration_since(modified)
+                    .unwrap_or(std::time::Duration::from_secs(u64::MAX));
+                age < std::time::Duration::from_secs(ttl_hours * 3600)
+            }
+            Err(_) => false,
+        }
+    }
 }

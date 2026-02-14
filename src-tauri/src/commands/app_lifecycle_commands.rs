@@ -504,6 +504,8 @@ pub fn on_url_changed(
     url: String,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
+    adblock_state: State<'_, crate::adblock::engine::AdblockState>,
+    config_manager: State<'_, crate::config::manager::ConfigManager>,
 ) -> Result<(), String> {
     app_manager.set_state(
         &app_id,
@@ -515,6 +517,34 @@ pub fn on_url_changed(
         "appId": app_id,
         "url": url,
     }));
+
+    // Update cosmetic filters for the new URL
+    let config = config_manager.get_config();
+    if let Some(app_config) = config.apps.iter().find(|a| a.id == app_id) {
+        if app_config.adblock_enabled {
+            let cosmetic_css = adblock_state.get_cosmetic_filters(&url);
+            if !cosmetic_css.is_empty() {
+                let css_string = cosmetic_css.join("\n");
+                let css_json = serde_json::to_string(&css_string).unwrap_or_default();
+                if let Some(webview) = app_handle.get_webview(&app_id) {
+                    let script = format!(
+                        r#"(function() {{
+                            var el = document.getElementById('__orbly_adblock_cosmetic__');
+                            if (!el) {{
+                                el = document.createElement('style');
+                                el.id = '__orbly_adblock_cosmetic__';
+                                document.head.appendChild(el);
+                            }}
+                            el.textContent = {};
+                        }})();"#,
+                        css_json
+                    );
+                    let _ = webview.eval(&script);
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 

@@ -135,6 +135,19 @@ fn check_high_usage_alerts(app_handle: &AppHandle, usages: &[super::AppResourceU
                         "appName": usage.app_name,
                         "cpu": cpu,
                     }));
+
+                    // Also dispatch a native OS notification
+                    use tauri_plugin_notification::NotificationExt;
+                    let _ = app_handle
+                        .notification()
+                        .builder()
+                        .title("High CPU Usage")
+                        .body(&format!(
+                            "{} is using {:.0}% CPU. Consider reloading or hibernating it.",
+                            usage.app_name, cpu,
+                        ))
+                        .show();
+
                     alerted.remove(&usage.app_id);
                 }
             } else {

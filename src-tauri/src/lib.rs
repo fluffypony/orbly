@@ -108,6 +108,7 @@ pub fn run() {
             app.manage(CertificateExceptions::new());
             app.manage(session_state);
             app.manage(recipe_manager);
+            app.manage(crate::commands::audio_commands::GlobalMuteState::new());
 
             // Load adblock filter lists in the background
             let adblock_handle = app.handle().clone();
@@ -172,8 +173,13 @@ pub fn run() {
             // Fetch recipes on startup (background), unless local_scripts_only is set
             if !app.state::<ConfigManager>().get_config().general.local_scripts_only {
                 let recipe_handle = app.handle().clone();
+                let recipe_ttl = app.state::<ConfigManager>().get_config().general.recipe_cache_ttl_hours;
                 tauri::async_runtime::spawn(async move {
                     let rm = recipe_handle.state::<RecipeManager>();
+                    if rm.is_cache_fresh(recipe_ttl) {
+                        log::info!("Recipe cache is fresh, skipping update");
+                        return;
+                    }
                     if let Err(e) = rm.update().await {
                         log::info!("Recipe update on startup failed (may be offline): {}", e);
                         rm.set_error(e.to_string());
@@ -263,6 +269,7 @@ pub fn run() {
             commands::config_commands::test_link_route,
             commands::config_commands::export_config_json,
             commands::config_commands::import_config_json,
+            commands::config_commands::update_shortcuts_config,
             commands::app_lifecycle_commands::get_app_states,
             commands::app_lifecycle_commands::activate_app,
             commands::app_lifecycle_commands::hibernate_app,
@@ -288,6 +295,7 @@ pub fn run() {
             commands::download_commands::cancel_download,
             commands::download_commands::clear_completed_downloads,
             commands::download_commands::remove_download,
+            commands::download_commands::retry_download,
             commands::download_commands::open_download_file,
             commands::download_commands::open_download_folder,
             commands::workspace_commands::get_workspaces,
@@ -298,6 +306,7 @@ pub fn run() {
             commands::workspace_commands::delete_workspace,
             commands::audio_commands::set_audio_muted,
             commands::audio_commands::toggle_global_mute,
+            commands::audio_commands::get_global_mute_state,
             commands::audio_commands::set_media_playing,
             commands::zoom_commands::set_zoom_level,
             commands::zoom_commands::zoom_in,

@@ -67,6 +67,7 @@ export const clearCompletedDownloads = () => invoke<void>("clear_completed_downl
 export const removeDownload = (downloadId: string) => invoke<void>("remove_download", { download_id: downloadId });
 export const openDownloadFile = (downloadId: string) => invoke<void>("open_download_file", { download_id: downloadId });
 export const openDownloadFolder = (downloadId: string) => invoke<void>("open_download_folder", { download_id: downloadId });
+export const retryDownload = (downloadId: string) => invoke<string>("retry_download", { download_id: downloadId });
 
 // Workspace commands
 export const getWorkspaces = () => invoke<Workspace[]>("get_workspaces");

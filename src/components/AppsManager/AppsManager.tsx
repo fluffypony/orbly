@@ -1,6 +1,6 @@
 import { Component, For, Show, createSignal, createEffect, onCleanup } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
-import { getResourceUsage, reloadApp, hibernateApp, disableApp, killApp } from "../../lib/ipc";
+import { getResourceUsage, reloadApp, hibernateApp, disableApp, enableApp, killApp } from "../../lib/ipc";
 
 interface AppsManagerProps {
   visible: boolean;
@@ -117,6 +117,9 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
         case "disable":
           await disableApp(appId);
           break;
+        case "enable":
+          await enableApp(appId);
+          break;
         case "kill":
           await killApp(appId);
           break;
@@ -200,27 +203,38 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
                         </td>
                         <td class="text-center px-3 py-2">
                           <div class="flex gap-1 justify-center">
-                            <button
-                              title="Reload"
-                              class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
-                              onClick={() => handleAction("reload", usage.app_id)}
-                            >
-                              🔄
-                            </button>
-                            <button
-                              title="Hibernate"
-                              class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
-                              onClick={() => handleAction("hibernate", usage.app_id)}
-                            >
-                              🌙
-                            </button>
-                            <button
-                              title="Disable"
-                              class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
-                              onClick={() => handleAction("disable", usage.app_id)}
-                            >
-                              ⏻
-                            </button>
+                            <Show when={usage.status === "disabled"}>
+                              <button
+                                title="Enable"
+                                class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
+                                onClick={() => handleAction("enable", usage.app_id)}
+                              >
+                                ▶️
+                              </button>
+                            </Show>
+                            <Show when={usage.status !== "disabled"}>
+                              <button
+                                title="Reload"
+                                class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
+                                onClick={() => handleAction("reload", usage.app_id)}
+                              >
+                                🔄
+                              </button>
+                              <button
+                                title="Hibernate"
+                                class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
+                                onClick={() => handleAction("hibernate", usage.app_id)}
+                              >
+                                🌙
+                              </button>
+                              <button
+                                title="Disable"
+                                class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
+                                onClick={() => handleAction("disable", usage.app_id)}
+                              >
+                                ⏻
+                              </button>
+                            </Show>
                             <button
                               title="Kill"
                               class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 cursor-pointer"
