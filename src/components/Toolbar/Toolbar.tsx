@@ -7,7 +7,11 @@ import DarkModeToggle from "./DarkModeToggle";
 import AdblockToggle from "./AdblockToggle";
 import AppMenu from "./AppMenu";
 
-const Toolbar: Component = () => {
+interface ToolbarProps {
+  onToggleFindBar?: () => void;
+}
+
+const Toolbar: Component<ToolbarProps> = (props) => {
   const activeApp = () => appConfigs.find((a) => a.id === activeAppId());
   const activeState = () => appStates.find((a) => a.id === activeAppId());
 
@@ -64,6 +68,19 @@ const Toolbar: Component = () => {
                 <rect x="14" y="14" width="7" height="7" />
               </svg>
             </button>
+            <Show when={props.onToggleFindBar && activeState()?.state === "active"}>
+              <button
+                class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer"
+                title="Find in page"
+                aria-label="Find in page"
+                onClick={props.onToggleFindBar}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            </Show>
             <AppMenu appId={app().id} />
           </>
         )}

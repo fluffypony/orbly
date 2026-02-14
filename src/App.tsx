@@ -200,7 +200,7 @@ const App: Component = () => {
         <div class="flex h-screen w-screen bg-white dark:bg-[#121212] select-none">
           <Sidebar />
           <div class="flex-1 flex flex-col min-w-0">
-            <Toolbar />
+            <Toolbar onToggleFindBar={() => setFindBarVisible((v) => !v)} />
             <div class="flex-1 relative overflow-hidden">
               <ContentArea
                 findBarVisible={findBarVisible()}
