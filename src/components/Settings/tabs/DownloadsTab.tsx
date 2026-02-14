@@ -1,5 +1,6 @@
 import { Component, For, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
+import { open } from "@tauri-apps/plugin-dialog";
 import { SettingSection, SettingRow, ToggleSwitch, TextInput } from "../SettingsControls";
 import { getConfig, updateApp, updateDownloadsConfig } from "../../../lib/ipc";
 import { refreshAppConfigs } from "../../../lib/stateSync";
@@ -49,7 +50,20 @@ const DownloadsTab: Component = () => {
       <SettingSection title="Downloads" description="Configure download behavior and locations" />
 
       <SettingRow label="Default download directory" description="Where files are saved by default">
-        <TextInput value={downloads.default_directory} onChange={(v) => save({ default_directory: v })} class="w-64" />
+        <div class="flex items-center gap-2">
+          <TextInput value={downloads.default_directory} onChange={(v) => save({ default_directory: v })} class="w-52" />
+          <button
+            class="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+            onClick={async () => {
+              try {
+                const selected = await open({ directory: true });
+                if (selected) save({ default_directory: selected as string });
+              } catch {}
+            }}
+          >
+            Browse...
+          </button>
+        </div>
       </SettingRow>
 
       <SettingRow label="Unified download manager" description="Show all downloads in a single panel">

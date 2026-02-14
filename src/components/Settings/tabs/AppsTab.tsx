@@ -57,6 +57,26 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         <SettingRow label="URL">
           <TextInput value={app.url} onChange={(v) => setApp("url", v)} class="w-64" />
         </SettingRow>
+        <SettingRow label="Icon">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+              {app.icon && app.icon.startsWith("data:") ? (
+                <img src={app.icon} class="w-8 h-8 rounded-lg object-cover" alt="" />
+              ) : app.icon && app.icon.length <= 2 ? (
+                <span class="text-lg">{app.icon}</span>
+              ) : (
+                <span class="text-sm font-bold text-gray-500">{app.name.charAt(0)}</span>
+              )}
+            </div>
+            <TextInput value={app.icon} onChange={(v) => setApp("icon", v)} class="w-24" placeholder="🌐" />
+          </div>
+        </SettingRow>
+        <SettingRow label="Sidebar section">
+          <TextInput value={app.sidebar_section} onChange={(v) => setApp("sidebar_section", v)} placeholder="(none)" />
+        </SettingRow>
+        <SettingRow label="Workspace">
+          <TextInput value={app.workspace} onChange={(v) => setApp("workspace", v)} placeholder="default" />
+        </SettingRow>
         <SettingRow label="User Agent" description="Override the browser user agent string">
           <div class="flex flex-col gap-1.5">
             <SelectDropdown
@@ -106,8 +126,63 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
             onChange={(v) => setApp("dark_mode", v as DarkModeType)}
           />
         </SettingRow>
+        <Show when={app.dark_mode !== "off"}>
+          <SettingRow label="Brightness" description="Dark mode brightness (50-150)">
+            <input
+              type="range"
+              min="50"
+              max="150"
+              value={app.dark_mode_brightness}
+              onInput={(e) => setApp("dark_mode_brightness", parseInt(e.currentTarget.value))}
+              class="w-32"
+            />
+            <span class="text-xs text-gray-400 ml-2 w-8">{app.dark_mode_brightness}</span>
+          </SettingRow>
+          <SettingRow label="Contrast" description="Dark mode contrast (50-150)">
+            <input
+              type="range"
+              min="50"
+              max="150"
+              value={app.dark_mode_contrast}
+              onInput={(e) => setApp("dark_mode_contrast", parseInt(e.currentTarget.value))}
+              class="w-32"
+            />
+            <span class="text-xs text-gray-400 ml-2 w-8">{app.dark_mode_contrast}</span>
+          </SettingRow>
+          <SettingRow label="Sepia" description="Dark mode sepia (0-100)">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={app.dark_mode_sepia}
+              onInput={(e) => setApp("dark_mode_sepia", parseInt(e.currentTarget.value))}
+              class="w-32"
+            />
+            <span class="text-xs text-gray-400 ml-2 w-8">{app.dark_mode_sepia}</span>
+          </SettingRow>
+          <SettingRow label="Background color" description="Override dark mode background">
+            <TextInput value={app.dark_mode_bg_color} onChange={(v) => setApp("dark_mode_bg_color", v)} class="w-32" placeholder="#1a1a1a" />
+          </SettingRow>
+          <SettingRow label="Text color" description="Override dark mode text color">
+            <TextInput value={app.dark_mode_text_color} onChange={(v) => setApp("dark_mode_text_color", v)} class="w-32" placeholder="#e0e0e0" />
+          </SettingRow>
+        </Show>
         <SettingRow label="Auto-hibernate timeout" description="Minutes of inactivity (0 = never)">
           <TextInput value={String(app.hibernation_timeout_minutes)} onChange={(v) => setApp("hibernation_timeout_minutes", parseInt(v) || 0)} class="w-20" />
+        </SettingRow>
+        <SettingRow label="Zoom level" description="Page zoom level (50-200%)">
+          <div class="flex items-center gap-2">
+            <input
+              type="range"
+              min="50"
+              max="200"
+              step="10"
+              value={app.zoom_level}
+              onInput={(e) => setApp("zoom_level", parseInt(e.currentTarget.value))}
+              class="w-32"
+            />
+            <span class="text-xs text-gray-400 w-10">{app.zoom_level}%</span>
+          </div>
         </SettingRow>
         <SettingRow label="Proxy" description="HTTP/SOCKS5 proxy (protocol://host:port)">
           <TextInput value={app.proxy} onChange={(v) => setApp("proxy", v)} class="w-64" placeholder="socks5://127.0.0.1:1080" />

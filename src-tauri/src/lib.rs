@@ -14,6 +14,7 @@ use std::sync::Mutex;
 use std::time::Instant;
 
 use tauri::{Emitter, Manager};
+use tauri_plugin_updater::UpdaterExt;
 
 use adblock::engine::AdblockState;
 use adblock::filter_lists::FilterListManager;
@@ -180,6 +181,27 @@ pub fn run() {
                 });
             }
 
+            // Auto-update check on startup
+            if app.state::<ConfigManager>().get_config().general.check_for_updates {
+                let update_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    if let Ok(updater) = update_handle.updater() {
+                        match updater.check().await {
+                            Ok(Some(update)) => {
+                                let _ = update_handle.emit("update-available", &update.version);
+                            }
+                            Ok(None) => {
+                                log::info!("No updates available");
+                            }
+                            Err(e) => {
+                                log::info!("Update check failed: {}", e);
+                            }
+                        }
+                    }
+                });
+            }
+
             // DND schedule automation task
             let dnd_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -294,9 +316,11 @@ pub fn run() {
             commands::app_lifecycle_commands::open_in_external_browser,
             commands::app_lifecycle_commands::accept_certificate_exception,
             commands::app_lifecycle_commands::get_certificate_exceptions,
+            commands::app_lifecycle_commands::remove_certificate_exception,
             commands::recipe_commands::update_recipes,
             commands::recipe_commands::get_recipe_status,
             commands::app_lifecycle_commands::on_url_changed,
+            commands::app_lifecycle_commands::on_page_load_error,
             commands::app_lifecycle_commands::eval_in_app,
             commands::app_lifecycle_commands::check_unsaved_work,
             commands::app_lifecycle_commands::set_has_unsaved_work,

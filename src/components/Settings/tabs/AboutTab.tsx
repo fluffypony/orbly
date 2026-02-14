@@ -1,10 +1,30 @@
-import { Component, createSignal, onMount } from "solid-js";
+import { Component, Show, createSignal, onMount } from "solid-js";
 import { getVersion } from "@tauri-apps/api/app";
 import { open } from "@tauri-apps/plugin-shell";
+import { check } from "@tauri-apps/plugin-updater";
 import { SettingSection, Button } from "../SettingsControls";
 
 const AboutTab: Component = () => {
   const [version, setVersion] = createSignal("0.1.0");
+  const [checking, setChecking] = createSignal(false);
+  const [updateStatus, setUpdateStatus] = createSignal<string | null>(null);
+
+  const handleCheckUpdates = async () => {
+    setChecking(true);
+    setUpdateStatus(null);
+    try {
+      const update = await check();
+      if (update) {
+        setUpdateStatus(`Update available: v${update.version}`);
+      } else {
+        setUpdateStatus("You're up to date!");
+      }
+    } catch (err) {
+      setUpdateStatus("Failed to check for updates");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   onMount(async () => {
     try {
@@ -28,6 +48,15 @@ const AboutTab: Component = () => {
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Orbly</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">Version {version()}</p>
           </div>
+        </div>
+
+        <div class="flex items-center gap-2 mt-2">
+          <Button onClick={handleCheckUpdates} disabled={checking()}>
+            {checking() ? "Checking..." : "Check for Updates"}
+          </Button>
+          <Show when={updateStatus()}>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{updateStatus()}</span>
+          </Show>
         </div>
 
         <div class="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">

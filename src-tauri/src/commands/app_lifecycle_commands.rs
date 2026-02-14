@@ -13,6 +13,7 @@ pub struct AppStateInfo {
     pub state: String, // "active", "hibernated", "disabled"
     pub badge_count: Option<i32>,
     pub current_url: Option<String>,
+    pub error_message: Option<String>,
 }
 
 #[tauri::command]
@@ -27,21 +28,23 @@ pub fn get_app_states(
         .apps
         .iter()
         .map(|app_config| {
-            let (state_str, current_url) =
+            let (state_str, current_url, error_message) =
                 if let Some(runtime) = apps_lock.get(&app_config.id) {
                     match &runtime.state {
                         AppRuntimeState::Active { current_url } => {
-                            ("active".to_string(), Some(current_url.clone()))
+                            ("active".to_string(), Some(current_url.clone()), None)
                         }
                         AppRuntimeState::Hibernated { last_url } => {
-                            ("hibernated".to_string(), Some(last_url.clone()))
+                            ("hibernated".to_string(), Some(last_url.clone()), None)
                         }
-                        AppRuntimeState::Disabled => ("disabled".to_string(), None),
-                        AppRuntimeState::Error { .. } => ("error".to_string(), None),
-                        AppRuntimeState::Crashed => ("crashed".to_string(), None),
+                        AppRuntimeState::Disabled => ("disabled".to_string(), None, None),
+                        AppRuntimeState::Error { message } => {
+                            ("error".to_string(), None, Some(message.clone()))
+                        }
+                        AppRuntimeState::Crashed => ("crashed".to_string(), None, None),
                     }
                 } else {
-                    ("disabled".to_string(), None)
+                    ("disabled".to_string(), None, None)
                 };
 
             let badge_count = apps_lock
@@ -54,6 +57,7 @@ pub fn get_app_states(
                 state: state_str,
                 badge_count,
                 current_url,
+                error_message,
             }
         })
         .collect()
@@ -554,5 +558,34 @@ pub fn set_has_unsaved_work(
     if let Some(runtime) = apps.get_mut(&app_id) {
         runtime.has_unsaved_work = has_unsaved;
     }
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn remove_certificate_exception(
+    host: String,
+    cert_exceptions: State<'_, CertificateExceptions>,
+) -> Result<(), String> {
+    cert_exceptions.remove_exception(&host);
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn on_page_load_error(
+    app_id: String,
+    message: String,
+    app_handle: AppHandle,
+    app_manager: State<'_, crate::app_manager::state::AppManager>,
+) -> Result<(), String> {
+    app_manager.set_state(
+        &app_id,
+        AppRuntimeState::Error {
+            message: message.clone(),
+        },
+    );
+    let _ = app_handle.emit(
+        "app-error",
+        serde_json::json!({ "appId": app_id, "message": message }),
+    );
     Ok(())
 }

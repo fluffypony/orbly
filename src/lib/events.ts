@@ -77,6 +77,13 @@ export async function setupEventListeners() {
     await listen<{ appId: string; url: string }>("url-changed", () => {
       refreshAppStates();
     }),
+    await listen<string>("update-available", (event) => {
+      showToast(
+        `Update available: v${event.payload}`,
+        "info",
+        10000,
+      );
+    }),
   );
 }
 

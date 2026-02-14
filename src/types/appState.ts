@@ -4,6 +4,7 @@ export interface AppStateInfo {
   state: 'active' | 'hibernated' | 'disabled' | 'error' | 'crashed';
   badge_count: number | null;
   current_url: string | null;
+  error_message?: string;
 }
 
 export type AppEvent =

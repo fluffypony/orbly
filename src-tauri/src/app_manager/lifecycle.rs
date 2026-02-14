@@ -331,6 +331,38 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         app_config.id
     ));
 
+    // Page load error detection
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+
+    window.addEventListener('error', function(e) {{
+        if (window.__TAURI_INTERNALS__) {{
+            window.__TAURI_INTERNALS__.invoke('on_page_load_error', {{
+                app_id: ORBLY_APP_ID,
+                message: e.message || 'Unknown error'
+            }}).catch(function() {{}});
+        }}
+    }});
+
+    // Detect if page body is empty after timeout (failed load)
+    setTimeout(function() {{
+        if (document.body && document.body.innerHTML.trim() === '') {{
+            if (window.__TAURI_INTERNALS__) {{
+                window.__TAURI_INTERNALS__.invoke('on_page_load_error', {{
+                    app_id: ORBLY_APP_ID,
+                    message: 'Page loaded but content is empty'
+                }}).catch(function() {{}});
+            }}
+        }}
+    }}, 10000);
+}})();
+"#,
+        app_config.id
+    ));
+
     // Report user interaction for auto-hibernate tracking
     scripts.push(format!(
         r#"

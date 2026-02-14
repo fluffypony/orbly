@@ -121,6 +121,8 @@ export const acceptCertificateException = (host: string, days?: number) =>
   invoke<void>("accept_certificate_exception", { host, days });
 export const getCertificateExceptions = () =>
   invoke<[string, string][]>("get_certificate_exceptions");
+export const removeCertificateException = (host: string) =>
+  invoke<void>("remove_certificate_exception", { host });
 
 // Recipe commands
 export const updateRecipes = () => invoke<void>("update_recipes");

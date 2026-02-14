@@ -83,7 +83,7 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
               </div>
             </Match>
             <Match when={activeState()?.state === "error"}>
-              <ErrorState appName={app().name} />
+              <ErrorState appName={app().name} message={activeState()?.error_message} />
             </Match>
             <Match when={activeState()?.state === "crashed"}>
               <CrashedState appName={app().name} onReload={handleReload} />

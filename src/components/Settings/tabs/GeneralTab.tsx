@@ -1,11 +1,13 @@
-import { Component, onMount } from "solid-js";
+import { Component, createSignal, onMount, For, Show } from "solid-js";
 import { createStore } from "solid-js/store";
-import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown } from "../SettingsControls";
-import { getConfig, updateGeneralConfig } from "../../../lib/ipc";
+import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput } from "../SettingsControls";
+import { getConfig, updateGeneralConfig, getCertificateExceptions, removeCertificateException } from "../../../lib/ipc";
 import { setTheme } from "../../../stores/uiStore";
 import type { GeneralConfig } from "../../../types/config";
 
 const GeneralTab: Component = () => {
+  const [certExceptions, setCertExceptions] = createSignal<[string, string][]>([]);
+
   const [config, setConfig] = createStore<GeneralConfig>({
     config_version: 1,
     theme: "system",
@@ -34,6 +36,8 @@ const GeneralTab: Component = () => {
       const fullConfig = await getConfig();
       setConfig(fullConfig.general);
       initialized = true;
+      const certs = await getCertificateExceptions();
+      setCertExceptions(certs);
     } catch (err) {
       console.error("Failed to load general config:", err);
     }
@@ -50,6 +54,15 @@ const GeneralTab: Component = () => {
       await updateGeneralConfig({ ...config, window_state: latest.general.window_state });
     } catch (err) {
       console.error("Failed to save general config:", err);
+    }
+  };
+
+  const handleRemoveCert = async (host: string) => {
+    try {
+      await removeCertificateException(host);
+      setCertExceptions(certExceptions().filter(([h]) => h !== host));
+    } catch (err) {
+      console.error("Failed to remove certificate exception:", err);
     }
   };
 
@@ -110,6 +123,72 @@ const GeneralTab: Component = () => {
           onChange={(v) => save({ local_scripts_only: v })}
         />
       </SettingRow>
+
+      <SettingRow label="CPU alert threshold" description="Alert when an app exceeds this CPU % for 30+ seconds">
+        <input
+          type="number"
+          min="10"
+          max="100"
+          value={config.cpu_alert_threshold}
+          onInput={(e) => save({ cpu_alert_threshold: parseInt(e.currentTarget.value) || 30 })}
+          class="w-20 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </SettingRow>
+
+      <SettingRow label="Scrollbar color" description="CSS color for scrollbars (empty for default)">
+        <TextInput
+          value={config.scrollbar_color ?? ''}
+          onChange={(v) => save({ scrollbar_color: v || null })}
+          placeholder="e.g. #888"
+          class="w-32"
+        />
+      </SettingRow>
+
+      <SettingRow label="Selection color" description="CSS color for text selection (empty for default)">
+        <TextInput
+          value={config.selection_color ?? ''}
+          onChange={(v) => save({ selection_color: v || null })}
+          placeholder="e.g. #0088ff"
+          class="w-32"
+        />
+      </SettingRow>
+
+      <SettingRow label="Recipe cache TTL (hours)" description="How long to cache remote recipes before refreshing">
+        <input
+          type="number"
+          min="1"
+          max="168"
+          value={config.recipe_cache_ttl_hours}
+          onInput={(e) => save({ recipe_cache_ttl_hours: parseInt(e.currentTarget.value) || 24 })}
+          class="w-20 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </SettingRow>
+
+      <div class="mt-6">
+        <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">Certificate Exceptions</h4>
+        <Show when={certExceptions().length > 0} fallback={
+          <p class="text-xs text-gray-400 dark:text-gray-500">No certificate exceptions configured.</p>
+        }>
+          <div class="space-y-1">
+            <For each={certExceptions()}>
+              {([host, expiry]) => (
+                <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  <div>
+                    <p class="text-sm text-gray-800 dark:text-gray-200">{host}</p>
+                    <p class="text-xs text-gray-400">Expires: {expiry}</p>
+                  </div>
+                  <button
+                    class="text-xs text-red-500 hover:text-red-600 cursor-pointer"
+                    onClick={() => handleRemoveCert(host)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
+      </div>
     </div>
   );
 };
