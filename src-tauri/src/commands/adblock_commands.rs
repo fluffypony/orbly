@@ -32,7 +32,8 @@ pub fn get_blocked_count(app_id: String, adblock_state: State<'_, AdblockState>)
 }
 
 #[tauri::command]
-pub fn update_filter_lists(app_handle: AppHandle) -> Result<(), String> {
+pub fn update_filter_lists(webview: tauri::Webview, app_handle: AppHandle) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let config_manager = app_handle.state::<ConfigManager>();
     let config = config_manager.get_config();
 
@@ -73,9 +74,11 @@ pub fn update_filter_lists(app_handle: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn add_custom_adblock_rule(
     rule: String,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
     adblock_state: State<'_, AdblockState>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.adblock.custom_rules.push(rule);
 

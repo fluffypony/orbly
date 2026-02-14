@@ -15,9 +15,11 @@ pub fn get_resource_usage(
 #[tauri::command(rename_all = "snake_case")]
 pub fn kill_app(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let destroyed_url = lifecycle::destroy_app_webview(&app_handle, &app_id)?;
 
     let mut apps = app_manager.apps.lock().expect("apps lock");

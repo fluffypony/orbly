@@ -24,9 +24,11 @@ pub fn get_app(
 #[tauri::command]
 pub fn add_app(
     app: AppConfig,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     config_manager.add_app(app).map_err(|e| e.to_string())?;
     crate::tray::rebuild_tray_menu(&app_handle);
     Ok(())
@@ -35,9 +37,11 @@ pub fn add_app(
 #[tauri::command]
 pub fn update_app(
     app: AppConfig,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     config_manager.update_app(app).map_err(|e| e.to_string())?;
     crate::tray::rebuild_tray_menu(&app_handle);
     Ok(())
@@ -47,9 +51,11 @@ pub fn update_app(
 pub fn remove_app(
     app_id: String,
     delete_data: bool,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<Option<AppConfig>, String> {
+    crate::commands::require_main_webview(&webview)?;
     let result = config_manager.remove_app(&app_id).map_err(|e| e.to_string())?;
 
     if delete_data {
@@ -86,9 +92,11 @@ pub fn remove_app(
 #[tauri::command]
 pub fn update_general_config(
     general: GeneralConfig,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.general = general;
     config_manager
@@ -101,8 +109,10 @@ pub fn update_general_config(
 #[tauri::command]
 pub fn update_adblock_config(
     adblock: crate::config::models::AdblockConfig,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.adblock = adblock;
     config_manager
@@ -113,8 +123,10 @@ pub fn update_adblock_config(
 #[tauri::command]
 pub fn update_downloads_config(
     downloads: crate::config::models::DownloadGlobalConfig,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.downloads = downloads;
     config_manager
@@ -125,8 +137,10 @@ pub fn update_downloads_config(
 #[tauri::command(rename_all = "snake_case")]
 pub fn update_link_routing_config(
     link_routing: crate::config::models::LinkRoutingConfig,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.link_routing = link_routing;
     config_manager
@@ -172,8 +186,10 @@ pub fn import_config_json(
 #[tauri::command]
 pub fn update_shortcuts_config(
     shortcuts: crate::config::models::ShortcutConfig,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.shortcuts = shortcuts;
     config_manager.save_config(config).map_err(|e| e.to_string())

@@ -20,9 +20,11 @@ pub fn get_active_workspace(
 #[tauri::command(rename_all = "snake_case")]
 pub fn switch_workspace(
     workspace_id: String,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
     app_handle: AppHandle,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
 
     let target_ws = config.workspaces.items.iter().find(|w| w.id == workspace_id)
@@ -81,8 +83,10 @@ pub fn switch_workspace(
 pub fn create_workspace(
     name: String,
     app_ids: Vec<String>,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<Workspace, String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let id = name.to_lowercase().replace(' ', "-");
 
@@ -106,8 +110,10 @@ pub fn create_workspace(
 #[tauri::command]
 pub fn update_workspace(
     workspace: Workspace,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     if let Some(ws) = config
         .workspaces
@@ -128,9 +134,11 @@ pub fn update_workspace(
 #[tauri::command(rename_all = "snake_case")]
 pub fn delete_workspace(
     workspace_id: String,
+    webview: tauri::Webview,
     config_manager: State<'_, ConfigManager>,
     app_handle: AppHandle,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     if workspace_id == "default" {
         return Err("Cannot delete the default workspace".into());
     }

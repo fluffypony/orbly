@@ -60,18 +60,22 @@ fn set_zoom_inner(
 pub fn set_zoom_level(
     app_id: String,
     zoom: u32,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     set_zoom_inner(&app_id, zoom, &app_handle, config_manager.inner())
 }
 
 #[tauri::command(rename_all = "snake_case")]
 pub fn zoom_in(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<u32, String> {
+    crate::commands::require_main_webview(&webview)?;
     let config = config_manager.get_config();
     let app = config
         .apps
@@ -87,9 +91,11 @@ pub fn zoom_in(
 #[tauri::command(rename_all = "snake_case")]
 pub fn zoom_out(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<u32, String> {
+    crate::commands::require_main_webview(&webview)?;
     let config = config_manager.get_config();
     let app = config
         .apps
@@ -105,8 +111,10 @@ pub fn zoom_out(
 #[tauri::command(rename_all = "snake_case")]
 pub fn zoom_reset(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     set_zoom_inner(&app_id, 100, &app_handle, config_manager.inner())
 }

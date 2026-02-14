@@ -113,10 +113,12 @@ pub fn set_audio_muted(
 
 #[tauri::command]
 pub fn toggle_global_mute(
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
     global_mute_state: State<'_, GlobalMuteState>,
 ) -> Result<bool, String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let is_muted = *global_mute_state.is_globally_muted.lock().expect("global mute lock");
 

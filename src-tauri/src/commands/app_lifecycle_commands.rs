@@ -69,11 +69,13 @@ pub fn get_app_states(
 #[tauri::command(rename_all = "snake_case")]
 pub async fn activate_app(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
     content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let app_config = config
         .apps
@@ -173,10 +175,12 @@ pub async fn activate_app(
 #[tauri::command(rename_all = "snake_case")]
 pub fn hibernate_app(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let last_url = lifecycle::destroy_app_webview(&app_handle, &app_id)?;
 
     let config = config_manager.get_config();
@@ -218,10 +222,12 @@ pub fn hibernate_app(
 #[tauri::command(rename_all = "snake_case")]
 pub fn disable_app(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let _ = lifecycle::destroy_app_webview(&app_handle, &app_id)?;
 
     app_manager.set_state(&app_id, AppRuntimeState::Disabled);
@@ -249,11 +255,13 @@ pub fn disable_app(
 #[tauri::command(rename_all = "snake_case")]
 pub async fn enable_app(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     app_manager: State<'_, AppManager>,
     config_manager: State<'_, ConfigManager>,
     content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     // Update persisted config
     let mut config = config_manager.get_config();
     if let Some(app) = config.apps.iter_mut().find(|a| a.id == app_id) {
@@ -294,7 +302,8 @@ pub async fn enable_app(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn reload_app(app_id: String, app_handle: AppHandle) -> Result<(), String> {
+pub fn reload_app(app_id: String, webview: tauri::Webview, app_handle: AppHandle) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview
             .eval("location.reload()")
@@ -381,11 +390,13 @@ pub fn get_current_url(app_id: String, app_handle: AppHandle) -> Result<String, 
 
 #[tauri::command]
 pub async fn frontend_ready(
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
     app_manager: State<'_, AppManager>,
     content_bounds: State<'_, ContentBounds>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let config = config_manager.get_config();
 
     // Check for previous session (crash recovery)
@@ -583,8 +594,10 @@ pub fn on_url_changed(
 pub fn eval_in_app(
     app_id: String,
     script: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     if let Some(webview) = app_handle.get_webview(&app_id) {
         webview
             .eval(&script)

@@ -41,3 +41,4 @@ adblock = { version = "0.12", default-features = false, features = ["content-blo
 open = "5"
 shellexpand = "3"
 sysinfo = "0.33"
+tauri-plugin-dialog = "2"

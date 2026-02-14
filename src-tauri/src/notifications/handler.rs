@@ -1,4 +1,4 @@
-use chrono::Timelike;
+use chrono::{Datelike, Timelike};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_notification::NotificationExt;
 
@@ -105,14 +105,21 @@ pub fn is_in_dnd_schedule(config: &OrblyConfig) -> bool {
 
     let now = chrono::Local::now();
 
-    // Check day of week
-    let day = now.format("%a").to_string().to_lowercase();
-    let day_short = &day[..3];
+    // Check day of week using locale-independent weekday matching
+    let day_str = match now.weekday() {
+        chrono::Weekday::Mon => "mon",
+        chrono::Weekday::Tue => "tue",
+        chrono::Weekday::Wed => "wed",
+        chrono::Weekday::Thu => "thu",
+        chrono::Weekday::Fri => "fri",
+        chrono::Weekday::Sat => "sat",
+        chrono::Weekday::Sun => "sun",
+    };
     if !config
         .general
         .dnd_schedule_days
         .iter()
-        .any(|d| d == day_short)
+        .any(|d| d == day_str)
     {
         return false;
     }

@@ -7,10 +7,12 @@ use crate::darkmode::DarkModeManager;
 #[tauri::command(rename_all = "snake_case")]
 pub fn toggle_dark_mode(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
     dark_mode_manager: State<'_, DarkModeManager>,
 ) -> Result<String, String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let app = config
         .apps
@@ -70,10 +72,12 @@ pub fn update_dark_mode_settings(
     sepia: u32,
     bg_color: String,
     text_color: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
     dark_mode_manager: State<'_, DarkModeManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let app = config
         .apps
