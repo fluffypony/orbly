@@ -3,10 +3,11 @@ import {
   setActiveAppId,
   setActiveDownloadCount,
   setActiveWorkspaceId,
+  setDndEnabled,
 } from "../stores/uiStore";
 import { refreshAppStates } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
-import { activateApp, getActiveDownloadCount } from "./ipc";
+import { activateApp, getActiveDownloadCount, getConfig } from "./ipc";
 
 let unlisteners: UnlistenFn[] = [];
 let downloadCountInterval: ReturnType<typeof setInterval> | undefined;
@@ -57,7 +58,11 @@ export async function setupEventListeners() {
     await listen<string>("switch-to-app", (event) => {
       activateApp(event.payload);
     }),
-    await listen<void>("dnd-toggled", () => {
+    await listen<void>("dnd-toggled", async () => {
+      try {
+        const config = await getConfig();
+        setDndEnabled(config.general.dnd_enabled);
+      } catch {}
       refreshAppStates();
     }),
     await listen<string>("app-error", () => {

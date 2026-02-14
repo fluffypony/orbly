@@ -38,6 +38,14 @@ pub fn route_link(
             }
             // Check if target is an app id
             if config.apps.iter().any(|a| a.id == rule.target) {
+                // Navigate the target app's webview to this URL
+                if let Some(webview) = app_handle.get_webview(&rule.target) {
+                    let nav_js = format!(
+                        "window.location.href = {};",
+                        serde_json::to_string(&url).unwrap_or_default()
+                    );
+                    let _ = webview.eval(&nav_js);
+                }
                 let _ = app_handle.emit("switch-to-app", rule.target.clone());
                 return Ok(());
             }

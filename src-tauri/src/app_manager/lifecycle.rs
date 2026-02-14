@@ -243,6 +243,35 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         app_config.id
     ));
 
+    // Report user interaction for auto-hibernate tracking
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+    var lastReport = 0;
+
+    function reportInteraction() {{
+        var now = Date.now();
+        if (now - lastReport < 30000) return;
+        lastReport = now;
+        if (window.__TAURI_INTERNALS__) {{
+            window.__TAURI_INTERNALS__.invoke('notify_app_interaction', {{
+                app_id: ORBLY_APP_ID
+            }}).catch(function() {{}});
+        }}
+    }}
+
+    document.addEventListener('mousemove', reportInteraction, true);
+    document.addEventListener('mousedown', reportInteraction, true);
+    document.addEventListener('keydown', reportInteraction, true);
+    document.addEventListener('scroll', reportInteraction, true);
+    document.addEventListener('touchstart', reportInteraction, true);
+}})();
+"#,
+        app_config.id
+    ));
+
     // Recipe CSS/JS injection (before user custom CSS/JS so user overrides take priority)
     if let Some(ref r) = recipe {
         if let Some(ref css) = r.injection_css {

@@ -1,6 +1,6 @@
 import { Component, Show, Switch, Match, onMount, onCleanup } from "solid-js";
 import { activeAppId, appConfigs, appStates } from "../../stores/uiStore";
-import { setContentAreaBounds, enableApp, reloadApp, notifyAppInteraction } from "../../lib/ipc";
+import { setContentAreaBounds, enableApp, reloadApp } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
@@ -29,23 +29,6 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
       });
       observer.observe(containerRef);
       onCleanup(() => observer.disconnect());
-
-      // Report user interactions for auto-hibernate tracking
-      let interactionTimer: ReturnType<typeof setTimeout> | undefined;
-      const reportInteraction = () => {
-        clearTimeout(interactionTimer);
-        interactionTimer = setTimeout(() => {
-          const id = activeAppId();
-          if (id) notifyAppInteraction(id).catch(() => {});
-        }, 1000);
-      };
-
-      const events = ["mousemove", "mousedown", "keydown"] as const;
-      events.forEach((evt) => containerRef!.addEventListener(evt, reportInteraction));
-      onCleanup(() => {
-        events.forEach((evt) => containerRef?.removeEventListener(evt, reportInteraction));
-        clearTimeout(interactionTimer);
-      });
     }
   });
 
