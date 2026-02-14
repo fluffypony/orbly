@@ -7,6 +7,42 @@ use tauri::{Emitter, Manager};
 
 use crate::config::manager::ConfigManager;
 
+/// Spawns a background task that monitors heartbeats from visible webviews
+/// and transitions apps to Crashed state if heartbeat is missing for too long.
+pub fn start_crash_detection_task(app_handle: tauri::AppHandle) {
+    const HEARTBEAT_TIMEOUT_SECS: u64 = 90;
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+
+            let app_manager = app_handle.state::<state::AppManager>();
+            let apps = app_manager.apps.lock().expect("apps lock").clone();
+
+            for (app_id, runtime) in &apps {
+                // Only check visible, active apps that have sent at least one heartbeat
+                if !runtime.is_visible {
+                    continue;
+                }
+                if let state::AppRuntimeState::Active { .. } = &runtime.state {
+                    if let Some(last_hb) = runtime.last_heartbeat {
+                        if last_hb.elapsed().as_secs() > HEARTBEAT_TIMEOUT_SECS {
+                            log::warn!(
+                                "App '{}' heartbeat timeout ({}s), marking as crashed",
+                                app_id,
+                                last_hb.elapsed().as_secs()
+                            );
+                            app_manager.set_state(app_id, state::AppRuntimeState::Crashed);
+                            let _ = app_handle.emit("app-crashed", app_id.clone());
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 /// Spawns a background task that periodically checks for apps that should be auto-hibernated
 /// based on their configured inactivity timeout.
 pub fn start_auto_hibernate_task(app_handle: tauri::AppHandle) {

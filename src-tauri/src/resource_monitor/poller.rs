@@ -80,6 +80,8 @@ pub fn start_resource_polling(app_handle: AppHandle) {
                 let app_config = config.apps.iter().find(|a| a.id == *app_id);
                 let name = app_config.map(|a| a.name.clone()).unwrap_or_default();
                 let (status, cpu, mem) = match &runtime.state {
+                    crate::app_manager::state::AppRuntimeState::Loading { .. } =>
+                        ("loading", Some(per_app_cpu), Some(per_app_mem)),
                     crate::app_manager::state::AppRuntimeState::Active { .. } =>
                         ("active", Some(per_app_cpu), Some(per_app_mem)),
                     crate::app_manager::state::AppRuntimeState::Hibernated { .. } =>

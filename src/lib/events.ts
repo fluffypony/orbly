@@ -50,6 +50,9 @@ export async function setupEventListeners() {
     await listen<string>("app-state-changed", () => {
       refreshAppStates();
     }),
+    await listen<string>("app-crashed", () => {
+      refreshAppStates();
+    }),
     await listen<{ appId: string; count: number | null }>("badge-updated", () => {
       refreshAppStates();
     }),

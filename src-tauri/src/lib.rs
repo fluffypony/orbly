@@ -230,6 +230,7 @@ pub fn run() {
             });
 
             app_manager::start_auto_hibernate_task(app.handle().clone());
+            app_manager::start_crash_detection_task(app.handle().clone());
             resource_monitor::poller::start_resource_polling(app.handle().clone());
 
             // Restore window state from config
@@ -334,6 +335,7 @@ pub fn run() {
             commands::app_lifecycle_commands::eval_in_app,
             commands::app_lifecycle_commands::check_unsaved_work,
             commands::app_lifecycle_commands::set_has_unsaved_work,
+            commands::app_lifecycle_commands::heartbeat,
             commands::link_routing_commands::route_link,
             commands::favicon_commands::fetch_favicon,
         ])
@@ -353,8 +355,14 @@ pub fn run() {
                         let app_manager = window.app_handle().state::<AppManager>();
                         let apps = app_manager.apps.lock().expect("apps lock");
                         for (app_id, runtime) in apps.iter() {
-                            if let AppRuntimeState::Active { current_url } = &runtime.state {
-                                session_state.set_active(app_id, current_url);
+                            match &runtime.state {
+                                AppRuntimeState::Active { current_url } => {
+                                    session_state.set_active(app_id, current_url);
+                                }
+                                AppRuntimeState::Loading { target_url } => {
+                                    session_state.set_active(app_id, target_url);
+                                }
+                                _ => {}
                             }
                         }
                     }

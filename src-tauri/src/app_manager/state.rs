@@ -23,7 +23,9 @@ pub struct AppRuntime {
     pub state: AppRuntimeState,
     pub badge_count: Option<i32>,
     pub last_interaction: Option<Instant>,
+    pub last_heartbeat: Option<Instant>,
     pub is_playing_media: bool,
+    pub is_visible: bool,
     pub has_unsaved_work: bool,
 }
 
@@ -62,7 +64,9 @@ impl AppManager {
                     state,
                     badge_count: None,
                     last_interaction: None,
+                    last_heartbeat: None,
                     is_playing_media: false,
+                    is_visible: false,
                     has_unsaved_work: false,
                 },
             );
@@ -88,6 +92,18 @@ impl AppManager {
     pub fn touch_interaction(&self, app_id: &str) {
         if let Some(runtime) = self.apps.lock().expect("apps lock").get_mut(app_id) {
             runtime.last_interaction = Some(Instant::now());
+        }
+    }
+
+    pub fn touch_heartbeat(&self, app_id: &str) {
+        if let Some(runtime) = self.apps.lock().expect("apps lock").get_mut(app_id) {
+            runtime.last_heartbeat = Some(Instant::now());
+        }
+    }
+
+    pub fn set_visible(&self, app_id: &str, visible: bool) {
+        if let Some(runtime) = self.apps.lock().expect("apps lock").get_mut(app_id) {
+            runtime.is_visible = visible;
         }
     }
 

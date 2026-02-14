@@ -132,10 +132,12 @@ pub async fn activate_app(
 
     for other_id in &other_ids {
         let _ = lifecycle::set_webview_visible(&app_handle, other_id, false, None, None);
+        app_manager.set_visible(other_id, false);
     }
 
     // Show this webview
     lifecycle::set_webview_visible(&app_handle, &app_id, true, Some(position), Some(size))?;
+    app_manager.set_visible(&app_id, true);
 
     // For new webviews, keep Loading state until on_url_changed fires.
     // For existing webviews, set Active immediately.
@@ -484,6 +486,15 @@ pub async fn frontend_ready(
         crate::tray::update_tray_badge(&app_handle, total);
     }
 
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn heartbeat(
+    app_id: String,
+    app_manager: State<'_, AppManager>,
+) -> Result<(), String> {
+    app_manager.touch_heartbeat(&app_id);
     Ok(())
 }
 

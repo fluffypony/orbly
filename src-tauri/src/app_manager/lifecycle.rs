@@ -579,6 +579,24 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         app_config.id
     ));
 
+    // Heartbeat for crash detection (only reported when document is visible)
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+    setInterval(function() {{
+        if (document.visibilityState === 'visible' && window.__TAURI_INTERNALS__) {{
+            window.__TAURI_INTERNALS__.invoke('heartbeat', {{
+                app_id: ORBLY_APP_ID
+            }}).catch(function() {{}});
+        }}
+    }}, 10000);
+}})();
+"#,
+        app_config.id
+    ));
+
     // OAuth detection: open known OAuth URLs in system browser
     scripts.push(format!(
         r#"
