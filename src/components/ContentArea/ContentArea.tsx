@@ -1,6 +1,6 @@
 import { Component, Show, Switch, Match, For, onMount, onCleanup, createSignal, createEffect, on } from "solid-js";
 import { activeAppId, appConfigs, appStates, layoutMode, tileAssignments, setTileAssignments, setActiveTileId, activeTileId, visibleApps } from "../../stores/uiStore";
-import { setContentAreaBounds, enableApp, reloadApp, applyLayout } from "../../lib/ipc";
+import { setContentAreaBounds, enableApp, reloadApp, applyLayout, activateApp } from "../../lib/ipc";
 import type { AppLayoutInfo } from "../../lib/ipc";
 import EmptyState from "./EmptyState";
 import LoadingState from "./LoadingState";
@@ -136,9 +136,41 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
 
   const enabledApps = () => visibleApps().filter(a => a.enabled);
 
-  const handleAssignApp = (tileIndex: number, appId: string) => {
+  const handleAssignApp = async (tileIndex: number, appId: string) => {
     setTileAssignments(tileIndex, appId);
     setActiveTileId(tileIndex);
+    // Ensure webview exists by activating the app
+    try {
+      await activateApp(appId);
+    } catch (err) {
+      console.error("Failed to activate app for tile:", err);
+    }
+    // Re-apply tiling layout since activateApp hides other webviews
+    const rects = tileRects();
+    const rect = containerRef?.getBoundingClientRect();
+    if (rect && rects.length > 0) {
+      const layoutInfos: AppLayoutInfo[] = [];
+      const assignments = tileAssignments;
+      for (let i = 0; i < rects.length; i++) {
+        const aid = i === tileIndex ? appId : assignments[i];
+        if (aid) {
+          layoutInfos.push({
+            app_id: aid,
+            x: rect.x + rects[i].x,
+            y: rect.y + rects[i].y,
+            width: rects[i].width,
+            height: rects[i].height,
+          });
+        }
+      }
+      if (layoutInfos.length > 0) {
+        try {
+          await applyLayout(layoutInfos);
+        } catch (err) {
+          console.error("Failed to apply tiling layout:", err);
+        }
+      }
+    }
   };
 
   return (

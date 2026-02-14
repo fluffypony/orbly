@@ -70,6 +70,7 @@ pub fn update_app(
                             target_url: app.url.clone(),
                         },
                     );
+                    app_manager.touch_interaction(&app.id);
                     let _ = app_handle.emit("app-state-changed", &app.id);
 
                     if let Err(e) = crate::app_manager::lifecycle::create_app_webview(&app_handle, &app, position, size) {

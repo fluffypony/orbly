@@ -7,9 +7,11 @@ use crate::config::manager::ConfigManager;
 #[tauri::command(rename_all = "snake_case")]
 pub fn toggle_adblock(
     app_id: String,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<bool, String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let app = config
         .apps

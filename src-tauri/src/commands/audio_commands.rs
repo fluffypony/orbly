@@ -82,9 +82,11 @@ pub fn get_audio_mute_init_script(muted: bool) -> String {
 pub fn set_audio_muted(
     app_id: String,
     muted: bool,
+    webview: tauri::Webview,
     app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     let app = config
         .apps
