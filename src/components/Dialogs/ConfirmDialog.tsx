@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, JSX } from "solid-js";
+import { Component, JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 
 interface ConfirmDialogProps {
