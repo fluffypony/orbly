@@ -273,6 +273,7 @@ pub fn run() {
             commands::config_commands::export_config_json,
             commands::config_commands::import_config_json,
             commands::config_commands::update_shortcuts_config,
+            commands::config_commands::update_workspaces_config,
             commands::app_lifecycle_commands::get_app_states,
             commands::app_lifecycle_commands::activate_app,
             commands::app_lifecycle_commands::hibernate_app,

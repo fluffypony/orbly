@@ -302,15 +302,44 @@ pub async fn enable_app(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn reload_app(app_id: String, webview: tauri::Webview, app_handle: AppHandle) -> Result<(), String> {
+pub fn reload_app(
+    app_id: String,
+    webview: tauri::Webview,
+    app_handle: AppHandle,
+    app_manager: State<'_, AppManager>,
+    config_manager: State<'_, ConfigManager>,
+    content_bounds: State<'_, ContentBounds>,
+) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
-    if let Some(webview) = app_handle.get_webview(&app_id) {
-        webview
-            .eval("location.reload()")
+    if let Some(wv) = app_handle.get_webview(&app_id) {
+        wv.eval("location.reload()")
             .map_err(|e| format!("Failed to reload webview: {e}"))?;
         Ok(())
     } else {
-        Err(format!("Webview '{}' not found", app_id))
+        // Webview doesn't exist (crashed/killed) — recreate it
+        let config = config_manager.get_config();
+        let app_config = config
+            .apps
+            .iter()
+            .find(|a| a.id == app_id)
+            .ok_or_else(|| format!("App '{}' not found in config", app_id))?
+            .clone();
+
+        let bounds = content_bounds.get();
+        let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
+        let size = tauri::LogicalSize::new(bounds.width, bounds.height);
+
+        app_manager.set_state(
+            &app_id,
+            AppRuntimeState::Loading {
+                target_url: app_config.url.clone(),
+            },
+        );
+        let _ = app_handle.emit("app-state-changed", &app_id);
+
+        lifecycle::create_app_webview(&app_handle, &app_config, position, size)?;
+        app_manager.touch_interaction(&app_id);
+        Ok(())
     }
 }
 

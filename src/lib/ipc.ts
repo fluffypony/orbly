@@ -59,6 +59,7 @@ export const addCustomAdblockRule = (rule: string) => invoke<void>("add_custom_a
 export const updateAdblockConfig = (adblock: import("../types/config").AdblockConfig) => invoke<void>("update_adblock_config", { adblock });
 export const updateDownloadsConfig = (downloads: import("../types/config").DownloadGlobalConfig) => invoke<void>("update_downloads_config", { downloads });
 export const updateShortcutsConfig = (shortcuts: import("../types/config").ShortcutConfig) => invoke<void>("update_shortcuts_config", { shortcuts });
+export const updateWorkspacesConfig = (workspaces: import("../types/config").WorkspacesConfig) => invoke<void>("update_workspaces_config", { workspaces });
 
 // Download commands
 export const getDownloads = () => invoke<import("../types/downloads").DownloadEntry[]>("get_downloads");

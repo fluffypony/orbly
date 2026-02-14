@@ -20,6 +20,7 @@ declare module "solid-js" {
 import AppIcon from "./AppIcon";
 import SidebarSection from "./SidebarSection";
 import ContextMenu from "./ContextMenu";
+import ConfirmDialog from "../Dialogs/ConfirmDialog";
 import {
   appConfigs,
   setAppConfigs,
@@ -73,6 +74,7 @@ const AppIconList: Component = () => {
     appId: string;
   } | null>(null);
   const [activeItem, setActiveItem] = createSignal<string | null>(null);
+  const [confirmEnableAppId, setConfirmEnableAppId] = createSignal<string | null>(null);
 
   const sortedApps = createMemo(() => {
     return [...visibleApps()]
@@ -124,17 +126,7 @@ const AppIconList: Component = () => {
   const handleClick = async (id: string) => {
     const state = appStates.find((s) => s.id === id);
     if (state?.state === "disabled") {
-      const confirmed = window.confirm(
-        "This app is disabled. Would you like to enable it?"
-      );
-      if (confirmed) {
-        try {
-          await enableApp(id);
-          await activateApp(id);
-        } catch (err) {
-          console.error("Failed to enable/activate app:", err);
-        }
-      }
+      setConfirmEnableAppId(id);
       return;
     }
     try {
@@ -142,6 +134,19 @@ const AppIconList: Component = () => {
     } catch (err) {
       console.error("Failed to activate app:", err);
     }
+  };
+
+  const handleConfirmEnable = async () => {
+    const id = confirmEnableAppId();
+    if (id) {
+      try {
+        await enableApp(id);
+        await activateApp(id);
+      } catch (err) {
+        console.error("Failed to enable/activate app:", err);
+      }
+    }
+    setConfirmEnableAppId(null);
   };
 
   const handleContextMenu = (e: MouseEvent, id: string) => {
@@ -253,6 +258,16 @@ const AppIconList: Component = () => {
             onClose={() => setContextMenuPos(null)}
           />
         )}
+      </Show>
+
+      <Show when={confirmEnableAppId()}>
+        <ConfirmDialog
+          title="Enable App"
+          message="This app is disabled. Would you like to enable it?"
+          confirmLabel="Enable"
+          onConfirm={handleConfirmEnable}
+          onCancel={() => setConfirmEnableAppId(null)}
+        />
       </Show>
     </div>
   );

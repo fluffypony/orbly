@@ -194,3 +194,15 @@ pub fn update_shortcuts_config(
     config.shortcuts = shortcuts;
     config_manager.save_config(config).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn update_workspaces_config(
+    workspaces: crate::config::models::WorkspacesConfig,
+    webview: tauri::Webview,
+    config_manager: State<'_, ConfigManager>,
+) -> Result<(), String> {
+    crate::commands::require_main_webview(&webview)?;
+    let mut config = config_manager.get_config();
+    config.workspaces = workspaces;
+    config_manager.save_config(config).map_err(|e| e.to_string())
+}

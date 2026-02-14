@@ -89,8 +89,11 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
   const statusIcon = (status: string) => {
     switch (status) {
       case "active": return "🟢";
+      case "loading": return "🔵";
       case "hibernated": return "🟡";
-      case "disabled": return "🔴";
+      case "crashed": return "⚠️";
+      case "error": return "🔴";
+      case "disabled": return "⏸️";
       default: return "⚪";
     }
   };

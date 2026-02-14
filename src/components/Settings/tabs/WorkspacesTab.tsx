@@ -1,6 +1,6 @@
 import { Component, For, Show, createSignal, onMount } from "solid-js";
 import { SettingSection, SettingRow, ToggleSwitch, TextInput, Button } from "../SettingsControls";
-import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, getConfig, importConfigJson } from "../../../lib/ipc";
+import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, getConfig, updateWorkspacesConfig } from "../../../lib/ipc";
 import { appConfigs, workspaces, setWorkspaces } from "../../../stores/uiStore";
 import type { Workspace } from "../../../types/config";
 
@@ -90,8 +90,7 @@ const WorkspacesTab: Component = () => {
             setAutoHibernate(v);
             try {
               const config = await getConfig();
-              const updated = { ...config, workspaces: { ...config.workspaces, auto_hibernate_on_workspace_switch: v } };
-              await importConfigJson(JSON.stringify(updated));
+              await updateWorkspacesConfig({ ...config.workspaces, auto_hibernate_on_workspace_switch: v });
             } catch (err) {
               console.error("Failed to save auto-hibernate setting:", err);
             }

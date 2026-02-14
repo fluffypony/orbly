@@ -1,6 +1,7 @@
 import { Component, createSignal, onMount } from "solid-js";
 import { SettingSection, SettingRow, ToggleSwitch, Button } from "../SettingsControls";
 import { getConfig, exportConfigJson, importConfigJson } from "../../../lib/ipc";
+import { initializeState } from "../../../lib/stateSync";
 
 const SyncTab: Component = () => {
   const [syncEnabled, setSyncEnabled] = createSignal(false);
@@ -39,7 +40,7 @@ const SyncTab: Component = () => {
       try {
         const text = await file.text();
         await importConfigJson(text);
-        window.location.reload();
+        await initializeState();
       } catch (err) {
         console.error("Failed to import config:", err);
       }
