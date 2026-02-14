@@ -79,6 +79,8 @@ export interface ShortcutConfig {
   next_app: string;
   prev_app: string;
   global_mute: string;
+  global_flags: Record<string, boolean>;
+  enabled_flags: Record<string, boolean>;
 }
 
 export interface LinkRoutingRule {

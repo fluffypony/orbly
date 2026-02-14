@@ -2,16 +2,36 @@ import { Component, createSignal } from "solid-js";
 import type { ThemeMode } from "../../types/config";
 
 interface QuickSettingsStepProps {
-  onNext: (settings: { theme: ThemeMode; dndScheduleEnabled: boolean; dndStart: string; dndEnd: string; launchAtLogin: boolean }) => void;
+  onNext: (settings: { theme: ThemeMode; dndScheduleEnabled: boolean; dndStart: string; dndEnd: string; dndDays: string[]; launchAtLogin: boolean }) => void;
   onBack: () => void;
 }
+
+const DAYS = [
+  { value: "mon", label: "Mon" },
+  { value: "tue", label: "Tue" },
+  { value: "wed", label: "Wed" },
+  { value: "thu", label: "Thu" },
+  { value: "fri", label: "Fri" },
+  { value: "sat", label: "Sat" },
+  { value: "sun", label: "Sun" },
+];
 
 const QuickSettingsStep: Component<QuickSettingsStepProps> = (props) => {
   const [theme, setTheme] = createSignal<ThemeMode>("system");
   const [dndScheduleEnabled, setDndScheduleEnabled] = createSignal(false);
   const [dndStart, setDndStart] = createSignal("18:00");
   const [dndEnd, setDndEnd] = createSignal("09:00");
+  const [dndDays, setDndDays] = createSignal<string[]>(["mon", "tue", "wed", "thu", "fri"]);
   const [launchAtLogin, setLaunchAtLogin] = createSignal(false);
+
+  const toggleDay = (day: string) => {
+    const current = dndDays();
+    if (current.includes(day)) {
+      setDndDays(current.filter(d => d !== day));
+    } else {
+      setDndDays([...current, day]);
+    }
+  };
 
   const themes: { value: ThemeMode; label: string; icon: string }[] = [
     { value: "system", label: "System", icon: "💻" },
@@ -51,8 +71,8 @@ const QuickSettingsStep: Component<QuickSettingsStepProps> = (props) => {
         <div>
           <div class="flex items-center justify-between mb-3">
             <div>
-              <label class="text-sm font-medium text-gray-800 dark:text-gray-200 block">Do Not Disturb Schedule</label>
-              <p class="text-xs text-gray-400 mt-0.5">Automatically mute notifications outside work hours</p>
+              <label class="text-sm font-medium text-gray-800 dark:text-gray-200 block">Quiet Hours Schedule</label>
+              <p class="text-xs text-gray-400 mt-0.5">Set quiet hours when notifications are silenced</p>
             </div>
             <button
               class={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${dndScheduleEnabled() ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
@@ -64,26 +84,42 @@ const QuickSettingsStep: Component<QuickSettingsStepProps> = (props) => {
             </button>
           </div>
           {dndScheduleEnabled() && (
-            <div class="flex items-center gap-3 ml-1">
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500">From</span>
-                <input
-                  type="time"
-                  value={dndStart()}
-                  onInput={(e) => setDndStart(e.currentTarget.value)}
-                  class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none"
-                />
+            <>
+              <div class="flex items-center gap-3 ml-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500">From</span>
+                  <input
+                    type="time"
+                    value={dndStart()}
+                    onInput={(e) => setDndStart(e.currentTarget.value)}
+                    class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none"
+                  />
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500">To</span>
+                  <input
+                    type="time"
+                    value={dndEnd()}
+                    onInput={(e) => setDndEnd(e.currentTarget.value)}
+                    class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none"
+                  />
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500">To</span>
-                <input
-                  type="time"
-                  value={dndEnd()}
-                  onInput={(e) => setDndEnd(e.currentTarget.value)}
-                  class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none"
-                />
+              <div class="flex gap-1 mt-2 ml-1">
+                {DAYS.map(day => (
+                  <button
+                    class={`px-2 py-1 text-xs rounded cursor-pointer transition-colors ${
+                      dndDays().includes(day.value)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                    }`}
+                    onClick={() => toggleDay(day.value)}
+                  >
+                    {day.label}
+                  </button>
+                ))}
               </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -119,6 +155,7 @@ const QuickSettingsStep: Component<QuickSettingsStepProps> = (props) => {
             dndScheduleEnabled: dndScheduleEnabled(),
             dndStart: dndStart(),
             dndEnd: dndEnd(),
+            dndDays: dndDays(),
             launchAtLogin: launchAtLogin(),
           })}
         >

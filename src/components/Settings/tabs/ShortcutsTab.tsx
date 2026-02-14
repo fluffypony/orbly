@@ -1,9 +1,9 @@
 import { Component, For, onMount, createSignal, Show, onCleanup } from "solid-js";
 import { SettingSection, Button } from "../SettingsControls";
-import { getConfig, importConfigJson } from "../../../lib/ipc";
+import { getConfig, updateShortcutsConfig } from "../../../lib/ipc";
 import type { ShortcutConfig } from "../../../types/config";
 
-const SHORTCUT_LABELS: { key: keyof ShortcutConfig; label: string }[] = [
+const SHORTCUT_LABELS: { key: keyof Omit<ShortcutConfig, 'global_flags' | 'enabled_flags'>; label: string }[] = [
   { key: "quick_switcher", label: "Quick Switcher" },
   { key: "toggle_dnd", label: "Toggle DND" },
   { key: "toggle_sidebar", label: "Toggle Sidebar" },
@@ -34,6 +34,8 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
   next_app: "CmdOrCtrl+]",
   prev_app: "CmdOrCtrl+[",
   global_mute: "CmdOrCtrl+Shift+M",
+  global_flags: {},
+  enabled_flags: {},
 };
 
 const isMac = navigator.platform.includes("Mac");
@@ -109,9 +111,7 @@ const ShortcutsTab: Component = () => {
 
   const saveShortcuts = async (updated: ShortcutConfig) => {
     try {
-      const fullConfig = await getConfig();
-      fullConfig.shortcuts = updated;
-      await importConfigJson(JSON.stringify(fullConfig));
+      await updateShortcutsConfig(updated);
     } catch (err) {
       console.error("Failed to save shortcuts:", err);
     }
@@ -135,6 +135,8 @@ const ShortcutsTab: Component = () => {
           <tr class="border-b border-gray-200 dark:border-gray-700">
             <th class="text-left py-2 font-medium text-gray-600 dark:text-gray-400">Action</th>
             <th class="text-right py-2 font-medium text-gray-600 dark:text-gray-400">Binding</th>
+            <th class="text-center py-2 font-medium text-gray-600 dark:text-gray-400" title="Register as global shortcut">Global</th>
+            <th class="text-center py-2 font-medium text-gray-600 dark:text-gray-400" title="Enable/disable">Enabled</th>
           </tr>
         </thead>
         <tbody>
@@ -157,6 +159,32 @@ const ShortcutsTab: Component = () => {
                     {recording() === item.key ? "Press keys..." : formatKey(shortcuts()[item.key])}
                   </button>
                 </td>
+                <td class="py-2.5 text-center">
+                  <input
+                    type="checkbox"
+                    checked={shortcuts().global_flags[item.key] ?? false}
+                    onChange={(e) => {
+                      const updated = { ...shortcuts(), global_flags: { ...shortcuts().global_flags, [item.key]: e.currentTarget.checked } };
+                      setShortcuts(updated);
+                      saveShortcuts(updated);
+                    }}
+                    class="cursor-pointer"
+                    title="Register as global shortcut (works even when app is not focused)"
+                  />
+                </td>
+                <td class="py-2.5 text-center">
+                  <input
+                    type="checkbox"
+                    checked={shortcuts().enabled_flags[item.key] !== false}
+                    onChange={(e) => {
+                      const updated = { ...shortcuts(), enabled_flags: { ...shortcuts().enabled_flags, [item.key]: e.currentTarget.checked } };
+                      setShortcuts(updated);
+                      saveShortcuts(updated);
+                    }}
+                    class="cursor-pointer"
+                    title="Enable or disable this shortcut"
+                  />
+                </td>
               </tr>
             )}
           </For>
@@ -169,6 +197,8 @@ const ShortcutsTab: Component = () => {
                     {formatKey(item.binding)}
                   </kbd>
                 </td>
+                <td />
+                <td />
               </tr>
             )}
           </For>

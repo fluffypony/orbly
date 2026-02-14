@@ -1,4 +1,4 @@
-import { Component, Show, createSignal } from "solid-js";
+import { Component, Show, createSignal, onMount } from "solid-js";
 import {
   sidebarExpanded,
   dndEnabled,
@@ -8,7 +8,7 @@ import {
   setAppsManagerVisible,
   setSettingsVisible,
 } from "../../stores/uiStore";
-import { getConfig, updateGeneralConfig, toggleGlobalMute } from "../../lib/ipc";
+import { getConfig, updateGeneralConfig, toggleGlobalMute, getGlobalMuteState } from "../../lib/ipc";
 
 interface IconButtonProps {
   label: string;
@@ -43,6 +43,15 @@ const IconButton: Component<IconButtonProps> = (props) => {
 
 const SidebarFooter: Component = () => {
   const [globalMuted, setGlobalMuted] = createSignal(false);
+
+  onMount(async () => {
+    try {
+      const muted = await getGlobalMuteState();
+      setGlobalMuted(muted);
+    } catch (err) {
+      console.error("Failed to get global mute state:", err);
+    }
+  });
 
   return (
     <div class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-1.5 py-2">

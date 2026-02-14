@@ -8,6 +8,8 @@ import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput, Bu
 import AddAppDialog from "../AddAppDialog";
 import InjectionEditor from "../../AppSettings/InjectionEditor";
 
+const isMac = navigator.platform.includes("Mac");
+
 const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) => {
   const [app, setApp] = createStore<AppConfig>({ ...props.app });
   const [saving, setSaving] = createSignal(false);
@@ -185,7 +187,12 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
           </div>
         </SettingRow>
         <SettingRow label="Proxy" description="HTTP/SOCKS5 proxy (protocol://host:port)">
-          <TextInput value={app.proxy} onChange={(v) => setApp("proxy", v)} class="w-64" placeholder="socks5://127.0.0.1:1080" />
+          <div class="flex flex-col gap-1">
+            <TextInput value={app.proxy} onChange={(v) => setApp("proxy", v)} class="w-64" placeholder="socks5://127.0.0.1:1080" />
+            <Show when={isMac && app.proxy.length > 0}>
+              <span class="text-xs text-yellow-600 dark:text-yellow-400">⚠️ Per-app proxy on macOS requires a local proxy workaround.</span>
+            </Show>
+          </div>
         </SettingRow>
         <SettingRow label="Download directory">
           <TextInput value={app.download_directory} onChange={(v) => setApp("download_directory", v)} class="w-64" />

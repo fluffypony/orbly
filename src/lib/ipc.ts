@@ -58,6 +58,7 @@ export const updateFilterLists = () => invoke<void>("update_filter_lists");
 export const addCustomAdblockRule = (rule: string) => invoke<void>("add_custom_adblock_rule", { rule });
 export const updateAdblockConfig = (adblock: import("../types/config").AdblockConfig) => invoke<void>("update_adblock_config", { adblock });
 export const updateDownloadsConfig = (downloads: import("../types/config").DownloadGlobalConfig) => invoke<void>("update_downloads_config", { downloads });
+export const updateShortcutsConfig = (shortcuts: import("../types/config").ShortcutConfig) => invoke<void>("update_shortcuts_config", { shortcuts });
 
 // Download commands
 export const getDownloads = () => invoke<import("../types/downloads").DownloadEntry[]>("get_downloads");
@@ -85,6 +86,7 @@ export const deleteWorkspace = (workspaceId: string) =>
 export const setAudioMuted = (appId: string, muted: boolean) =>
   invoke<void>("set_audio_muted", { app_id: appId, muted });
 export const toggleGlobalMute = () => invoke<boolean>("toggle_global_mute");
+export const getGlobalMuteState = () => invoke<boolean>("get_global_mute_state");
 
 // Zoom commands
 export const setZoomLevel = (appId: string, zoom: number) =>

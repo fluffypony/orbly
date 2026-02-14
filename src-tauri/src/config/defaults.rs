@@ -86,11 +86,11 @@ pub fn default_shortcut_toggle_sidebar() -> String {
 }
 
 pub fn default_shortcut_next_app() -> String {
-    "CmdOrCtrl+Tab".to_string()
+    "CmdOrCtrl+]".to_string()
 }
 
 pub fn default_shortcut_prev_app() -> String {
-    "CmdOrCtrl+Shift+Tab".to_string()
+    "CmdOrCtrl+[".to_string()
 }
 
 pub fn default_shortcut_global_mute() -> String {
@@ -182,6 +182,8 @@ impl Default for ShortcutConfig {
             next_app: default_shortcut_next_app(),
             prev_app: default_shortcut_prev_app(),
             global_mute: default_shortcut_global_mute(),
+            global_flags: std::collections::HashMap::new(),
+            enabled_flags: std::collections::HashMap::new(),
         }
     }
 }

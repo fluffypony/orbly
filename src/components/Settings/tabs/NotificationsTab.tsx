@@ -86,21 +86,21 @@ const NotificationsTab: Component = () => {
         <ToggleSwitch checked={config.dnd_enabled} onChange={(v) => saveGeneral({ dnd_enabled: v })} />
       </SettingRow>
 
-      <SettingRow label="Work hours schedule" description="Auto-enable DND outside work hours">
+      <SettingRow label="DND schedule" description="Automatically silence notifications during these hours">
         <ToggleSwitch checked={config.dnd_schedule_enabled} onChange={(v) => saveGeneral({ dnd_schedule_enabled: v })} />
       </SettingRow>
 
       {config.dnd_schedule_enabled && (
         <div class="py-3 border-b border-gray-100 dark:border-gray-800 pl-4 space-y-3">
           <div class="flex items-center gap-4">
-            <label class="text-xs text-gray-500 w-12">Start</label>
+            <label class="text-xs text-gray-500 w-16">DND start</label>
             <input
               type="time"
               value={config.dnd_schedule_start}
               onInput={(e) => saveGeneral({ dnd_schedule_start: e.currentTarget.value })}
               class="bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200"
             />
-            <label class="text-xs text-gray-500 w-12">End</label>
+            <label class="text-xs text-gray-500 w-16">DND end</label>
             <input
               type="time"
               value={config.dnd_schedule_end}

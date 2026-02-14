@@ -60,7 +60,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
     setStep(2);
   };
 
-  const handleQuickSettings = async (settings: { theme: ThemeMode; dndScheduleEnabled: boolean; dndStart: string; dndEnd: string; launchAtLogin: boolean }) => {
+  const handleQuickSettings = async (settings: { theme: ThemeMode; dndScheduleEnabled: boolean; dndStart: string; dndEnd: string; dndDays: string[]; launchAtLogin: boolean }) => {
     try {
       const config = await getConfig();
       const updatedGeneral = {
@@ -69,6 +69,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         dnd_schedule_enabled: settings.dndScheduleEnabled,
         dnd_schedule_start: settings.dndStart,
         dnd_schedule_end: settings.dndEnd,
+        dnd_schedule_days: settings.dndDays,
         launch_at_login: settings.launchAtLogin,
       };
       await updateGeneralConfig(updatedGeneral);

@@ -27,6 +27,9 @@ export function createDefaultBindings(
     { action: "quick_switcher", keys: "CmdOrCtrl+K", global: false, handler: handlers.quickSwitcher },
     { action: "toggle_sidebar", keys: "CmdOrCtrl+\\", global: false, handler: handlers.toggleSidebar },
     { action: "toggle_dnd", keys: "CmdOrCtrl+Shift+D", global: false, handler: handlers.toggleDnd },
+    // Note: Cmd+Tab is the macOS system app switcher and can't be captured.
+    // Using CmdOrCtrl+] / CmdOrCtrl+[ as the default. Backend config default
+    // is CmdOrCtrl+] / CmdOrCtrl+[ to match.
     { action: "next_app", keys: "CmdOrCtrl+]", global: false, handler: handlers.nextApp },
     { action: "prev_app", keys: "CmdOrCtrl+[", global: false, handler: handlers.prevApp },
     { action: "reload_app", keys: "CmdOrCtrl+R", global: false, handler: handlers.reloadCurrentApp },
@@ -60,6 +63,20 @@ export function createDefaultBindings(
         binding.keys = overrideMap[binding.action];
       }
     }
+
+    // Apply global flags from config
+    if (overrides.global_flags) {
+      for (const binding of bindings) {
+        if (overrides.global_flags[binding.action] !== undefined) {
+          binding.global = overrides.global_flags[binding.action];
+        }
+      }
+    }
+  }
+
+  // Filter out disabled shortcuts
+  if (overrides?.enabled_flags) {
+    return bindings.filter(binding => overrides.enabled_flags[binding.action] !== false);
   }
 
   return bindings;

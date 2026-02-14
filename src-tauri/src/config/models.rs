@@ -173,6 +173,12 @@ pub struct ShortcutConfig {
     pub prev_app: String,
     #[serde(default = "default_shortcut_global_mute")]
     pub global_mute: String,
+    /// Per-shortcut global registration flags (key: action name, value: is_global).
+    #[serde(default)]
+    pub global_flags: std::collections::HashMap<String, bool>,
+    /// Per-shortcut enabled flags (key: action name, value: is_enabled).
+    #[serde(default)]
+    pub enabled_flags: std::collections::HashMap<String, bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
