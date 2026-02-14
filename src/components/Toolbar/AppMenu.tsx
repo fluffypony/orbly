@@ -1,6 +1,6 @@
 import { Component, createSignal, onMount, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { reloadApp, hibernateApp, disableApp, getConfig } from "../../lib/ipc";
+import { reloadApp, hibernateApp, disableApp, getConfig, evalInApp } from "../../lib/ipc";
 import { appStates, setSettingsVisible } from "../../stores/uiStore";
 
 interface AppMenuProps {
@@ -64,8 +64,22 @@ const AppMenu: Component<AppMenuProps> = (props) => {
           setSettingsVisible(true);
           break;
         case "inject-console":
-          // TODO: Requires eval_in_app command to inject console overlay
-          // Eruda or vConsole could be injected for developer debugging
+          await evalInApp(props.appId, `
+            (function() {
+              if (window.__orblyConsole) {
+                window.__orblyConsole.destroy();
+                delete window.__orblyConsole;
+                return;
+              }
+              var s = document.createElement('script');
+              s.src = 'https://cdn.jsdelivr.net/npm/eruda@3/eruda.min.js';
+              s.onload = function() {
+                eruda.init();
+                window.__orblyConsole = eruda;
+              };
+              document.head.appendChild(s);
+            })();
+          `);
           break;
         default:
           break;

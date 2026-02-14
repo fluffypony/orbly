@@ -29,9 +29,9 @@ export async function setupEventListeners() {
   unlisteners.push(
     await listen<string>("app-activated", (event) => {
       setActiveAppId(event.payload);
-      // Track recent app order for quick switcher
+      // Track recent app order for quick switcher (capped at 50)
       const appId = event.payload;
-      setRecentAppIds([appId, ...recentAppIds().filter(id => id !== appId)]);
+      setRecentAppIds([appId, ...recentAppIds().filter(id => id !== appId)].slice(0, 50));
       refreshAppStates();
     }),
     await listen<string>("app-hibernated", () => {

@@ -43,10 +43,6 @@
 
 /* Accessibility: high contrast mode */
 @media (prefers-contrast: more) {
-  * {
-    border-color: currentColor !important;
-  }
-
   button, a, input, select, textarea, [role="button"], [tabindex] {
     outline: 1px solid currentColor;
   }
@@ -67,10 +63,12 @@
   }
 
   .border-gray-100, .border-gray-200 {
+    border-color: #a3a3a3 !important;
     border-width: 2px !important;
   }
 
   .dark .border-gray-700, .dark .border-gray-800 {
+    border-color: #737373 !important;
     border-width: 2px !important;
   }
 }

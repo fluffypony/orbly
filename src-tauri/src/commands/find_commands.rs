@@ -31,7 +31,7 @@ pub fn get_find_count(
 ) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&app_id) {
         let query_js = serde_json::to_string(&query).map_err(|e| e.to_string())?;
-        // Count matches using TreeWalker and emit result via invoke
+        // Count matches using case-insensitive indexOf and emit result via invoke
         let script = format!(
             r#"(function() {{
                 var q = {};

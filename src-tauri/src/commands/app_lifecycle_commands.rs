@@ -509,3 +509,19 @@ pub fn on_url_changed(
     }));
     Ok(())
 }
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn eval_in_app(
+    app_id: String,
+    script: String,
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    if let Some(webview) = app_handle.get_webview(&app_id) {
+        webview
+            .eval(&script)
+            .map_err(|e| format!("Failed to eval script: {e}"))?;
+        Ok(())
+    } else {
+        Err(format!("Webview '{}' not found", app_id))
+    }
+}

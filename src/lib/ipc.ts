@@ -24,6 +24,8 @@ export const notifyAppInteraction = (appId: string) => invoke<void>("notify_app_
 export const navigateBack = (appId: string) => invoke<void>("navigate_back", { app_id: appId });
 export const navigateForward = (appId: string) => invoke<void>("navigate_forward", { app_id: appId });
 export const getCurrentUrl = (appId: string) => invoke<string>("get_current_url", { app_id: appId });
+export const evalInApp = (appId: string, script: string) =>
+  invoke<void>("eval_in_app", { app_id: appId, script });
 
 // Content area bounds
 export const setContentAreaBounds = (x: number, y: number, width: number, height: number) =>
