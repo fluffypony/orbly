@@ -7,7 +7,7 @@ import {
   recentAppIds,
   setRecentAppIds,
 } from "../stores/uiStore";
-import { refreshAppStates } from "./stateSync";
+import { refreshAppStates, persistRecentAppIds } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
 import { activateApp, getActiveDownloadCount, getConfig } from "./ipc";
 
@@ -31,7 +31,9 @@ export async function setupEventListeners() {
       setActiveAppId(event.payload);
       // Track recent app order for quick switcher (capped at 50)
       const appId = event.payload;
-      setRecentAppIds([appId, ...recentAppIds().filter(id => id !== appId)].slice(0, 50));
+      const updated = [appId, ...recentAppIds().filter(id => id !== appId)].slice(0, 50);
+      setRecentAppIds(updated);
+      persistRecentAppIds(updated);
       refreshAppStates();
     }),
     await listen<string>("app-hibernated", () => {
