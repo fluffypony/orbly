@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::config::manager::ConfigManager;
 use crate::config::models::{AppConfig, GeneralConfig, OrblyConfig};
@@ -58,12 +58,15 @@ pub fn remove_app(
     crate::commands::require_main_webview(&webview)?;
     let result = config_manager.remove_app(&app_id).map_err(|e| e.to_string())?;
 
-    if delete_data {
-        // Attempt to close webview if active
-        if let Some(webview) = app_handle.get_webview(&app_id) {
+    // Always close the webview if it exists
+    if let Some(webview) = app_handle.get_webview(&app_id) {
+        if delete_data {
             let _ = webview.clear_all_browsing_data();
-            let _ = webview.close();
         }
+        let _ = webview.close();
+    }
+
+    if delete_data {
         // Best-effort filesystem cleanup of data store
         if let Some(ref removed_app) = result {
             let data_dir = app_handle
@@ -187,12 +190,15 @@ pub fn import_config_json(
 pub fn update_shortcuts_config(
     shortcuts: crate::config::models::ShortcutConfig,
     webview: tauri::Webview,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<(), String> {
     crate::commands::require_main_webview(&webview)?;
     let mut config = config_manager.get_config();
     config.shortcuts = shortcuts;
-    config_manager.save_config(config).map_err(|e| e.to_string())
+    config_manager.save_config(config).map_err(|e| e.to_string())?;
+    let _ = app_handle.emit("shortcuts-updated", ());
+    Ok(())
 }
 
 #[tauri::command]

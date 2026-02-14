@@ -54,16 +54,32 @@ pub fn create_app_webview(
     }
 
     // Network-level ad blocking via navigation handler
-    if app_config.adblock_enabled {
+    // Always attached; checks per-app config at call time so toggling works
+    {
         let adblock_app_id = app_config.id.clone();
         let adblock_source_url = app_config.url.clone();
         let nav_handle = app_handle.clone();
         builder = builder.on_navigation(move |url| {
-            let url_str = url.as_str();
-            if let Some(adblock_state) = nav_handle.try_state::<AdblockState>() {
-                if adblock_state.should_block(url_str, &adblock_source_url, "document") {
-                    adblock_state.increment_blocked(&adblock_app_id);
-                    return false;
+            // Check current config to see if adblock is enabled for this app
+            let is_enabled = nav_handle
+                .try_state::<crate::config::manager::ConfigManager>()
+                .map(|cm| {
+                    cm.get_config()
+                        .apps
+                        .iter()
+                        .find(|a| a.id == adblock_app_id)
+                        .map(|a| a.adblock_enabled)
+                        .unwrap_or(false)
+                })
+                .unwrap_or(false);
+
+            if is_enabled {
+                let url_str = url.as_str();
+                if let Some(adblock_state) = nav_handle.try_state::<AdblockState>() {
+                    if adblock_state.should_block(url_str, &adblock_source_url, "document") {
+                        adblock_state.increment_blocked(&adblock_app_id);
+                        return false;
+                    }
                 }
             }
             true

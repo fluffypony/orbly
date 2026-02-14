@@ -15,6 +15,7 @@ let localHandler: ((e: KeyboardEvent) => void) | null = null;
 let registeredGlobalKeys: string[] = [];
 
 export async function registerShortcuts(bindings: ShortcutBinding[]) {
+  await unregisterAllShortcuts();
   const globalBindings = bindings.filter((b) => b.global);
   for (const binding of globalBindings) {
     try {

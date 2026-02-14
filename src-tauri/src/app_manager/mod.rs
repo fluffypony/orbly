@@ -38,6 +38,24 @@ pub fn start_crash_detection_task(app_handle: tauri::AppHandle) {
                         }
                     }
                 }
+                // Check for apps stuck in Loading state
+                if let state::AppRuntimeState::Loading { .. } = &runtime.state {
+                    if let Some(last_interaction) = runtime.last_interaction {
+                        if last_interaction.elapsed().as_secs() > 30 {
+                            log::warn!(
+                                "App '{}' stuck in Loading state for over 30s, marking as error",
+                                app_id,
+                            );
+                            app_manager.set_state(
+                                app_id,
+                                state::AppRuntimeState::Error {
+                                    message: "Page took too long to load".to_string(),
+                                },
+                            );
+                            let _ = app_handle.emit("app-state-changed", app_id.clone());
+                        }
+                    }
+                }
             }
         }
     });

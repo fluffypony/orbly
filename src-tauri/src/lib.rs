@@ -348,25 +348,26 @@ pub fn run() {
                         window.app_handle().state::<ConfigManager>();
                     let config = config_manager.get_config();
 
+                    // Persist session state for crash recovery
+                    let session_state = window.app_handle().state::<SessionState>();
+                    let app_manager = window.app_handle().state::<AppManager>();
+                    let apps = app_manager.apps.lock().expect("apps lock");
+                    for (app_id, runtime) in apps.iter() {
+                        match &runtime.state {
+                            AppRuntimeState::Active { current_url } => {
+                                session_state.set_active(app_id, current_url);
+                            }
+                            AppRuntimeState::Loading { target_url } => {
+                                session_state.set_active(app_id, target_url);
+                            }
+                            _ => {}
+                        }
+                    }
+                    drop(apps);
+
                     if config.general.tray_mode {
                         api.prevent_close();
                         let _ = window.hide();
-                    } else {
-                        // Persist session state for crash recovery before closing
-                        let session_state = window.app_handle().state::<SessionState>();
-                        let app_manager = window.app_handle().state::<AppManager>();
-                        let apps = app_manager.apps.lock().expect("apps lock");
-                        for (app_id, runtime) in apps.iter() {
-                            match &runtime.state {
-                                AppRuntimeState::Active { current_url } => {
-                                    session_state.set_active(app_id, current_url);
-                                }
-                                AppRuntimeState::Loading { target_url } => {
-                                    session_state.set_active(app_id, target_url);
-                                }
-                                _ => {}
-                            }
-                        }
                     }
                 }
                 tauri::WindowEvent::Moved(pos) => {

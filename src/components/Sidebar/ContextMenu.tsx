@@ -2,7 +2,7 @@ import { Component, For, Show, onMount, onCleanup, createSignal } from "solid-js
 import { Portal } from "solid-js/web";
 import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp, checkUnsavedWork } from "../../lib/ipc";
 import { appConfigs, appStates, setSettingsVisible, workspaces } from "../../stores/uiStore";
-import { refreshAppConfigs } from "../../lib/stateSync";
+import { refreshAppConfigs, refreshAppStates } from "../../lib/stateSync";
 import ConfirmDialog from "../Dialogs/ConfirmDialog";
 
 interface ContextMenuProps {
@@ -132,6 +132,7 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
     try {
       await removeApp(props.appId, deleteData());
       await refreshAppConfigs();
+      await refreshAppStates();
     } catch (err) {
       console.error("Failed to remove app:", err);
     }
