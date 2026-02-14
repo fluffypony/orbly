@@ -89,6 +89,10 @@ pub fn default_shortcut_prev_app() -> String {
     "CmdOrCtrl+Shift+Tab".to_string()
 }
 
+pub fn default_shortcut_global_mute() -> String {
+    "CmdOrCtrl+Shift+M".to_string()
+}
+
 pub fn default_link_routing_rules() -> Vec<LinkRoutingRule> {
     vec![LinkRoutingRule {
         pattern: "*".to_string(),
@@ -163,6 +167,7 @@ impl Default for ShortcutConfig {
             toggle_sidebar: default_shortcut_toggle_sidebar(),
             next_app: default_shortcut_next_app(),
             prev_app: default_shortcut_prev_app(),
+            global_mute: default_shortcut_global_mute(),
         }
     }
 }

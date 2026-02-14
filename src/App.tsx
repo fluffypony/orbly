@@ -27,7 +27,7 @@ import {
   settingsVisible,
   setSettingsVisible,
 } from "./stores/uiStore";
-import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset, getConfig, frontendReady, updateGeneralConfig } from "./lib/ipc";
+import { activateApp, reloadApp, zoomIn, zoomOut, zoomReset, getConfig, frontendReady, updateGeneralConfig, toggleGlobalMute } from "./lib/ipc";
 import { showToast } from "./components/Toast/ToastContainer";
 
 const App: Component = () => {
@@ -128,6 +128,14 @@ const App: Component = () => {
         }
       },
       findInPage: () => setFindBarVisible((v) => !v),
+      globalMute: async () => {
+        try {
+          const muted = await toggleGlobalMute();
+          showToast(muted ? "All apps muted" : "All apps unmuted", "info", 1500);
+        } catch (err) {
+          console.error("Global mute failed:", err);
+        }
+      },
       switchToApp: (index) => {
         const apps = [...appConfigs]
           .filter((a) => a.enabled)

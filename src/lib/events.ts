@@ -55,6 +55,7 @@ export async function setupEventListeners() {
     }),
     await listen<string>("download-finished", () => {
       refreshDownloadCount();
+      showToast("Download complete", "info");
     }),
     await listen<string>("workspace-switched", (event) => {
       setActiveWorkspaceId(event.payload);

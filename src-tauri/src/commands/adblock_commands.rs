@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::adblock::engine::AdblockState;
 use crate::adblock::filter_lists::FilterListManager;
@@ -58,6 +58,7 @@ pub fn update_filter_lists(app_handle: AppHandle) -> Result<(), String> {
                 let _ = config_manager.save_config(config);
 
                 log::info!("Filter lists updated successfully");
+                let _ = app_handle.emit("filter-lists-updated", ());
             }
             Err(e) => {
                 log::error!("Failed to update filter lists: {}", e);

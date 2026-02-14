@@ -157,6 +157,8 @@ pub struct ShortcutConfig {
     pub next_app: String,
     #[serde(default = "default_shortcut_prev_app")]
     pub prev_app: String,
+    #[serde(default = "default_shortcut_global_mute")]
+    pub global_mute: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

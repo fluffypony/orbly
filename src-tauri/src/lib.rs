@@ -12,7 +12,7 @@ mod tray;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 use adblock::engine::AdblockState;
 use adblock::filter_lists::FilterListManager;
@@ -132,6 +132,37 @@ pub fn run() {
                     }
                     Err(e) => {
                         log::error!("Failed to load adblock filter lists: {}", e);
+                    }
+                }
+            });
+
+            // Schedule periodic filter list updates (every 24 hours)
+            let periodic_handle = app.handle().clone();
+            let periodic_data_dir = app_data_dir.clone();
+            tauri::async_runtime::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(86400));
+                interval.tick().await; // Skip the initial immediate tick
+                loop {
+                    interval.tick().await;
+                    let config_manager = periodic_handle.state::<ConfigManager>();
+                    let config = config_manager.get_config();
+                    if !config.adblock.enabled {
+                        continue;
+                    }
+                    let manager = FilterListManager::new(periodic_data_dir.clone());
+                    match manager.get_filter_rules(&config.adblock.filter_lists, false).await {
+                        Ok(rules_text) => {
+                            let state = periodic_handle.state::<AdblockState>();
+                            state.load_rules(&rules_text, &config.adblock.custom_rules);
+                            let mut cfg = config_manager.get_config();
+                            cfg.adblock.last_updated = chrono::Utc::now().to_rfc3339();
+                            let _ = config_manager.save_config(cfg);
+                            let _ = periodic_handle.emit("filter-lists-updated", ());
+                            log::info!("Periodic filter list update completed");
+                        }
+                        Err(e) => {
+                            log::error!("Periodic filter list update failed: {}", e);
+                        }
                     }
                 }
             });

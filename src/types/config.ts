@@ -71,6 +71,7 @@ export interface ShortcutConfig {
   toggle_sidebar: string;
   next_app: string;
   prev_app: string;
+  global_mute: string;
 }
 
 export interface LinkRoutingRule {

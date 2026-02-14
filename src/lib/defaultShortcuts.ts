@@ -14,6 +14,7 @@ export interface ShortcutHandlers {
   zoomOut: () => void;
   zoomReset: () => void;
   findInPage: () => void;
+  globalMute: () => void;
   switchToApp: (index: number) => void;
 }
 
@@ -34,6 +35,7 @@ export function createDefaultBindings(
     { action: "zoom_out", keys: "CmdOrCtrl+-", global: false, handler: handlers.zoomOut },
     { action: "zoom_reset", keys: "CmdOrCtrl+0", global: false, handler: handlers.zoomReset },
     { action: "find_in_page", keys: "CmdOrCtrl+F", global: false, handler: handlers.findInPage },
+    { action: "global_mute", keys: "CmdOrCtrl+Shift+M", global: false, handler: handlers.globalMute },
     ...Array.from({ length: 9 }, (_, i) => ({
       action: `switch_to_app_${i + 1}`,
       keys: `CmdOrCtrl+${i + 1}`,

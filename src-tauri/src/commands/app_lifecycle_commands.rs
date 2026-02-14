@@ -446,6 +446,18 @@ pub async fn frontend_ready(
         }
     }
 
+    // Aggregate badge counts on startup for tray badge
+    {
+        let apps_lock = app_manager.apps.lock().expect("apps lock");
+        let total: u32 = apps_lock.values()
+            .filter_map(|a| a.badge_count)
+            .filter(|c| *c > 0)
+            .map(|c| c as u32)
+            .sum();
+        drop(apps_lock);
+        crate::tray::update_tray_badge(&app_handle, total);
+    }
+
     Ok(())
 }
 

@@ -1,4 +1,5 @@
-import { Component, For, onMount, createSignal } from "solid-js";
+import { Component, For, onMount, onCleanup, createSignal } from "solid-js";
+import { listen } from "@tauri-apps/api/event";
 import { createStore } from "solid-js/store";
 import { SettingSection, SettingRow, ToggleSwitch, TextInput, Button } from "../SettingsControls";
 import { getConfig, updateFilterLists, updateApp, addCustomAdblockRule, updateAdblockConfig, getRecipeStatus, updateRecipes } from "../../../lib/ipc";
@@ -20,6 +21,8 @@ const AdBlockingTab: Component = () => {
   const [updatingRecipes, setUpdatingRecipes] = createSignal(false);
   let initialized = false;
 
+  let unlistenFilterUpdate: (() => void) | undefined;
+
   onMount(async () => {
     try {
       const config = await getConfig();
@@ -34,7 +37,15 @@ const AdBlockingTab: Component = () => {
     } catch (err) {
       console.error("Failed to load recipe status:", err);
     }
+    unlistenFilterUpdate = await listen("filter-lists-updated", async () => {
+      try {
+        const config = await getConfig();
+        setAdblock(config.adblock);
+      } catch {}
+    });
   });
+
+  onCleanup(() => unlistenFilterUpdate?.());
 
   const saveAdblock = async (updates: Partial<AdblockConfig>) => {
     setAdblock(updates);

@@ -1,4 +1,4 @@
-import { Component, Show } from "solid-js";
+import { Component, Show, createSignal } from "solid-js";
 import {
   sidebarExpanded,
   dndEnabled,
@@ -8,7 +8,7 @@ import {
   setAppsManagerVisible,
   setSettingsVisible,
 } from "../../stores/uiStore";
-import { getConfig, updateGeneralConfig } from "../../lib/ipc";
+import { getConfig, updateGeneralConfig, toggleGlobalMute } from "../../lib/ipc";
 
 interface IconButtonProps {
   label: string;
@@ -42,6 +42,8 @@ const IconButton: Component<IconButtonProps> = (props) => {
 };
 
 const SidebarFooter: Component = () => {
+  const [globalMuted, setGlobalMuted] = createSignal(false);
+
   return (
     <div class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-1.5 py-2">
       <div
@@ -72,6 +74,19 @@ const SidebarFooter: Component = () => {
           label="Settings"
           icon="⚙️"
           onClick={() => setSettingsVisible((v) => !v)}
+        />
+        <IconButton
+          label={globalMuted() ? "Unmute All" : "Mute All"}
+          icon={globalMuted() ? "🔇" : "🔊"}
+          active={globalMuted()}
+          onClick={async () => {
+            try {
+              const muted = await toggleGlobalMute();
+              setGlobalMuted(muted);
+            } catch (err) {
+              console.error("Failed to toggle global mute:", err);
+            }
+          }}
         />
         <IconButton
           label="Resource Monitor"
