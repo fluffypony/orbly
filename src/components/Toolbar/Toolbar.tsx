@@ -12,7 +12,7 @@ const Toolbar: Component = () => {
   const activeState = () => appStates.find((a) => a.id === activeAppId());
 
   return (
-    <div class="h-10 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
+    <div role="toolbar" aria-label="App toolbar" class="h-10 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
       <Show
         when={activeApp()}
         fallback={

@@ -22,7 +22,7 @@ export function showToast(
 
 const ToastContainer: Component = () => {
   return (
-    <div class="fixed top-2 right-2 z-40 flex flex-col gap-2 pointer-events-none">
+    <div role="status" aria-live="polite" class="fixed top-2 right-2 z-40 flex flex-col gap-2 pointer-events-none">
       <For each={toasts()}>
         {(toast) => (
           <div

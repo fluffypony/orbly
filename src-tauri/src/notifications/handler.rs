@@ -43,7 +43,7 @@ pub fn on_web_notification(
     match app_config.notification_style {
         NotificationStyle::Off => {}
         NotificationStyle::Private => {
-            send_native_notification(&app_handle, &app_config.name, "New notification")?;
+            send_native_notification(&app_handle, &app_config.name, "New notification", &notification.app_id)?;
         }
         NotificationStyle::Full => {
             let title = if notification.title.is_empty() {
@@ -51,7 +51,7 @@ pub fn on_web_notification(
             } else {
                 format!("{}: {}", app_config.name, notification.title)
             };
-            send_native_notification(&app_handle, &title, &notification.body)?;
+            send_native_notification(&app_handle, &title, &notification.body, &notification.app_id)?;
         }
     }
 
@@ -86,7 +86,7 @@ pub fn on_badge_update(
     Ok(())
 }
 
-fn send_native_notification(app_handle: &AppHandle, title: &str, body: &str) -> Result<(), String> {
+fn send_native_notification(app_handle: &AppHandle, title: &str, body: &str, _app_id: &str) -> Result<(), String> {
     app_handle
         .notification()
         .builder()

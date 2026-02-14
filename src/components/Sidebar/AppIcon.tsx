@@ -32,6 +32,7 @@ const AppIcon: Component<AppIconProps> = (props) => {
         props.onContextMenu(e, props.id);
       }}
       title={props.name}
+      aria-label={`${props.name}, ${props.state}${props.badgeCount ? `, ${props.badgeCount} unread` : ''}`}
       style={{ "min-height": "44px" }}
     >
       <div class="relative w-10 h-10 flex items-center justify-center flex-shrink-0">

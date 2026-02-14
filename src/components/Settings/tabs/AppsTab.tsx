@@ -1,7 +1,7 @@
-import { Component, For, Show, createSignal } from "solid-js";
+import { Component, For, Show, createSignal, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 import { appConfigs } from "../../../stores/uiStore";
-import { updateApp, hibernateApp, disableApp, enableApp } from "../../../lib/ipc";
+import { updateApp, hibernateApp, disableApp, enableApp, getUaPresets } from "../../../lib/ipc";
 import { refreshAppConfigs } from "../../../lib/stateSync";
 import type { AppConfig, NotificationStyle, DarkModeType } from "../../../types/config";
 import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput, Button } from "../SettingsControls";
@@ -12,6 +12,23 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
   const [app, setApp] = createStore<AppConfig>({ ...props.app });
   const [saving, setSaving] = createSignal(false);
   const [showInjection, setShowInjection] = createSignal(false);
+  const [uaPresets, setUaPresets] = createSignal<[string, string][]>([]);
+  const [uaMode, setUaMode] = createSignal<string>(props.app.user_agent ? "custom" : "default");
+
+  onMount(async () => {
+    try {
+      const presets = await getUaPresets();
+      setUaPresets(presets);
+      if (app.user_agent) {
+        const match = presets.find(([, ua]) => ua === app.user_agent);
+        setUaMode(match ? match[0] : "custom");
+      } else {
+        setUaMode("default");
+      }
+    } catch (err) {
+      console.error("Failed to load UA presets:", err);
+    }
+  });
 
   const save = async () => {
     setSaving(true);
@@ -40,8 +57,31 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         <SettingRow label="URL">
           <TextInput value={app.url} onChange={(v) => setApp("url", v)} class="w-64" />
         </SettingRow>
-        <SettingRow label="User Agent" description="Leave empty for system default">
-          <TextInput value={app.user_agent} onChange={(v) => setApp("user_agent", v)} class="w-64" placeholder="Default" />
+        <SettingRow label="User Agent" description="Override the browser user agent string">
+          <div class="flex flex-col gap-1.5">
+            <SelectDropdown
+              value={uaMode()}
+              options={[
+                { value: "default", label: "Default" },
+                ...uaPresets().map(([name]) => ({ value: name, label: name })),
+                { value: "custom", label: "Custom" },
+              ]}
+              onChange={(v) => {
+                setUaMode(v);
+                if (v === "default") {
+                  setApp("user_agent", "");
+                } else if (v === "custom") {
+                  // Keep current value
+                } else {
+                  const preset = uaPresets().find(([name]) => name === v);
+                  if (preset) setApp("user_agent", preset[1]);
+                }
+              }}
+            />
+            <Show when={uaMode() === "custom"}>
+              <TextInput value={app.user_agent} onChange={(v) => setApp("user_agent", v)} class="w-64" placeholder="Custom user agent..." />
+            </Show>
+          </div>
         </SettingRow>
         <SettingRow label="Notification style">
           <SelectDropdown

@@ -26,7 +26,7 @@ const IconButton: Component<IconButtonProps> = (props) => {
           ? "text-[#FF9500] dark:text-[#FF9F0A]"
           : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
       }`}
-      style={{ width: "36px", height: "36px", "min-height": "36px" }}
+      style={{ width: "44px", height: "44px", "min-height": "44px" }}
       onClick={props.onClick}
       title={props.label}
       aria-label={props.label}

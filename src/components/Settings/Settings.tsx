@@ -44,7 +44,7 @@ const Settings: Component<SettingsProps> = (props) => {
 
   return (
     <Show when={props.visible}>
-      <div class="fixed inset-0 bg-white dark:bg-[#121212] z-50 flex">
+      <div role="dialog" aria-label="Settings" class="fixed inset-0 bg-white dark:bg-[#121212] z-50 flex">
         {/* Tab sidebar */}
         <div class="w-48 bg-[#F5F5F7] dark:bg-[#1E1E1E] border-r border-gray-200 dark:border-gray-700 py-4 flex flex-col">
           <div class="flex items-center justify-between px-4 mb-4">

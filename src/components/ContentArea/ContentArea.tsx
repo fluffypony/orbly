@@ -72,7 +72,7 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
   };
 
   return (
-    <div ref={containerRef} class="flex-1 relative bg-white dark:bg-[#121212] overflow-hidden">
+    <div ref={containerRef} role="main" aria-label="Content area" class="flex-1 relative bg-white dark:bg-[#121212] overflow-hidden">
       <FindBar
         visible={props.findBarVisible}
         onClose={props.onCloseFindBar}

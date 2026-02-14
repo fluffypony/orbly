@@ -1,8 +1,8 @@
-import { Component, onMount, onCleanup, createSignal, Show } from "solid-js";
+import { Component, For, Show, onMount, onCleanup, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
-import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted } from "../../lib/ipc";
+import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp } from "../../lib/ipc";
+import { appConfigs, appStates, setSettingsVisible, workspaces } from "../../stores/uiStore";
 import { refreshAppConfigs } from "../../lib/stateSync";
-import { appConfigs, appStates, setSettingsVisible } from "../../stores/uiStore";
 import ConfirmDialog from "../Dialogs/ConfirmDialog";
 
 interface ContextMenuProps {
@@ -28,6 +28,13 @@ const menuItems = [
 
 const ContextMenu: Component<ContextMenuProps> = (props) => {
   const [showRemoveConfirm, setShowRemoveConfirm] = createSignal(false);
+  const [showSectionMenu, setShowSectionMenu] = createSignal(false);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = createSignal(false);
+
+  const sections = () => {
+    const set = new Set(appConfigs.map((a) => a.sidebar_section).filter(Boolean));
+    return [...set];
+  };
 
   const handleAction = async (action: string) => {
     try {
@@ -70,12 +77,36 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           setSettingsVisible(true);
           break;
         case "move-section":
+          setShowSectionMenu(true);
+          return; // Don't close menu
         case "move-workspace":
-          break;
+          setShowWorkspaceMenu(true);
+          return; // Don't close menu
       }
     } catch (err) {
       console.error(`Failed to execute ${action}:`, err);
     }
+    props.onClose();
+  };
+
+  const handleMoveSection = async (section: string) => {
+    const config = appConfigs.find((a) => a.id === props.appId);
+    if (config) {
+      await updateApp({ ...config, sidebar_section: section });
+      await refreshAppConfigs();
+    }
+    setShowSectionMenu(false);
+    props.onClose();
+  };
+
+  const handleMoveWorkspace = async (workspaceId: string) => {
+    const ws = workspaces.find((w) => w.id === workspaceId);
+    if (ws && !ws.app_ids.includes(props.appId)) {
+      const { updateWorkspace } = await import("../../lib/ipc");
+      await updateWorkspace({ ...ws, app_ids: [...ws.app_ids, props.appId] });
+      await refreshAppConfigs();
+    }
+    setShowWorkspaceMenu(false);
     props.onClose();
   };
 
@@ -143,6 +174,57 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           );
         })}
       </div>
+      <Show when={showSectionMenu()}>
+        <div
+          data-context-menu
+          class="fixed z-50 min-w-[160px] bg-white dark:bg-[#2D2D2D] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1"
+          style={{ left: `${props.position.x + 180}px`, top: `${props.position.y}px` }}
+        >
+          <button class="w-full text-left px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400" disabled>
+            Move to Section
+          </button>
+          <div class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+          <button
+            class="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+            onClick={() => handleMoveSection("")}
+          >
+            (No section)
+          </button>
+          <For each={sections()}>
+            {(s) => (
+              <button
+                class="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                onClick={() => handleMoveSection(s)}
+              >
+                {s}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
+      <Show when={showWorkspaceMenu()}>
+        <div
+          data-context-menu
+          class="fixed z-50 min-w-[160px] bg-white dark:bg-[#2D2D2D] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1"
+          style={{ left: `${props.position.x + 180}px`, top: `${props.position.y}px` }}
+        >
+          <button class="w-full text-left px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400" disabled>
+            Move to Workspace
+          </button>
+          <div class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+          <For each={workspaces}>
+            {(ws) => (
+              <button
+                class="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                onClick={() => handleMoveWorkspace(ws.id)}
+              >
+                {ws.name}
+                {ws.app_ids.includes(props.appId) ? " ✓" : ""}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
       <Show when={showRemoveConfirm()}>
         <ConfirmDialog
           title="Remove App"

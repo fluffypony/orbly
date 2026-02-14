@@ -63,6 +63,8 @@ const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
   return (
     <Show when={props.visible}>
       <div
+        role="dialog"
+        aria-label="Quick Switcher"
         class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-start justify-center pt-[15vh]"
         onClick={props.onClose}
       >
@@ -83,7 +85,7 @@ const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
             }}
             onKeyDown={handleKeyDown}
           />
-          <div class="max-h-[300px] overflow-y-auto">
+          <div role="listbox" class="max-h-[300px] overflow-y-auto">
             <For each={results()}>
               {(app, index) => (
                 <button
