@@ -201,6 +201,26 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
                 >
                   {fetchingIcon() ? "Fetching..." : "Fetch Icon"}
                 </button>
+                <button
+                  class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
+                    input.onchange = () => {
+                      const file = input.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        if (typeof reader.result === "string") setIcon(reader.result);
+                      };
+                      reader.readAsDataURL(file);
+                    };
+                    input.click();
+                  }}
+                >
+                  Upload
+                </button>
               </div>
               <div class="flex gap-3">
                 <div class="flex-1">

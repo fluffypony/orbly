@@ -32,6 +32,18 @@ pub fn route_link(
             }
             // Check if target is an app id
             if config.apps.iter().any(|a| a.id == rule.target) {
+                // If target is a different app, activate it
+                if rule.target != source_app_id {
+                    // Check if the app has a webview; if not, it may be hibernated
+                    if app_handle.get_webview(&rule.target).is_none() {
+                        // Emit switch-to-app first to wake the hibernated app
+                        let _ = app_handle.emit("switch-to-app", rule.target.clone());
+                        // The frontend will activate (and create the webview for) the app,
+                        // then we can't navigate yet. Store the URL for post-activation nav.
+                        log::info!("Target app {} is not active; switch-to-app emitted", rule.target);
+                        return Ok(());
+                    }
+                }
                 // Navigate the target app's webview to this URL
                 if let Some(webview) = app_handle.get_webview(&rule.target) {
                     let nav_js = format!(
@@ -40,7 +52,9 @@ pub fn route_link(
                     );
                     let _ = webview.eval(&nav_js);
                 }
-                let _ = app_handle.emit("switch-to-app", rule.target.clone());
+                if rule.target != source_app_id {
+                    let _ = app_handle.emit("switch-to-app", rule.target.clone());
+                }
                 return Ok(());
             }
         }

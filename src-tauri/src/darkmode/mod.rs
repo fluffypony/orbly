@@ -83,7 +83,11 @@ if (window.__ORBLY_DARK_MODE__) {{
         let mode_json = serde_json::to_string(mode).unwrap_or_else(|_| "\"off\"".to_string());
 
         if mode == "off" {
-            return "if (window.__ORBLY_DARK_MODE__) window.__ORBLY_DARK_MODE__.disable();".to_string();
+            return r#"
+                if (window.__ORBLY_DARK_MODE__) window.__ORBLY_DARK_MODE__.disable();
+                var csEl = document.getElementById('__orbly_color_scheme__');
+                if (csEl) csEl.remove();
+            "#.to_string();
         }
 
         let bg_json = serde_json::to_string(bg_color).unwrap_or_else(|_| "\"\"".to_string());

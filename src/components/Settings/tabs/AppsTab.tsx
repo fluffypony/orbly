@@ -91,6 +91,25 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
             >
               {fetchingIcon() ? "Fetching..." : "Fetch Icon"}
             </Button>
+            <Button
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/*";
+                input.onchange = () => {
+                  const file = input.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    if (typeof reader.result === "string") setApp("icon", reader.result);
+                  };
+                  reader.readAsDataURL(file);
+                };
+                input.click();
+              }}
+            >
+              Upload
+            </Button>
           </div>
         </SettingRow>
         <SettingRow label="Sidebar section">
@@ -187,6 +206,9 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
           </SettingRow>
           <SettingRow label="Text color" description="Override dark mode text color">
             <TextInput value={app.dark_mode_text_color} onChange={(v) => setApp("dark_mode_text_color", v)} class="w-32" placeholder="#e0e0e0" />
+          </SettingRow>
+          <SettingRow label="Custom dark mode CSS" description="Additional CSS injected in dark mode">
+            <TextInput value={app.dark_mode_custom_css} onChange={(v) => setApp("dark_mode_custom_css", v)} class="w-64" placeholder="body { background: #111; }" />
           </SettingRow>
         </Show>
         <SettingRow label="Auto-hibernate timeout" description="Minutes of inactivity (0 = never)">

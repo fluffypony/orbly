@@ -26,13 +26,13 @@ pub fn toggle_adblock(
         .save_config(config)
         .map_err(|e| e.to_string())?;
 
-    // When disabling, clear cosmetic filter styles from the running webview
+    // When disabling, remove cosmetic filter styles from the running webview
     if !new_state {
         if let Some(webview) = app_handle.get_webview(&app_id) {
             let script = r#"
                 (function() {
                     var el = document.getElementById('__orbly_adblock_cosmetic__');
-                    if (el) el.textContent = '';
+                    if (el) el.remove();
                 })();
             "#;
             let _ = webview.eval(script);

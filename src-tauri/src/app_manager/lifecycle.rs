@@ -306,7 +306,7 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
             app_config.dark_mode_sepia,
             &app_config.dark_mode_bg_color,
             &app_config.dark_mode_text_color,
-            "",
+            &app_config.dark_mode_custom_css,
         );
         if !dm_script.is_empty() {
             scripts.push(dm_script);
@@ -686,6 +686,12 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         if (!href) return;
         try {{
             var url = new URL(href, location.href);
+            // Handle same-origin target="_blank" by navigating in-place
+            if (link.target === '_blank' && url.origin === pageOrigin) {{
+                e.preventDefault();
+                window.location.href = url.href;
+                return;
+            }}
             if (url.origin !== pageOrigin && (url.protocol === 'http:' || url.protocol === 'https:')) {{
                 e.preventDefault();
                 e.stopPropagation();
