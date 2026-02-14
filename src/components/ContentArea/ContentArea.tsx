@@ -19,7 +19,10 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
   let containerRef: HTMLDivElement | undefined;
   let prevState: string | undefined;
 
-  // Track state transitions for hibernate fade-out
+  // Track state transitions for hibernate fade-out.
+  // When the backend destroys the webview (active → hibernated), the native
+  // child webview disappears. We show a brief opaque overlay that then fades
+  // out to smooth the visual transition.
   createEffect(on(
     () => activeState()?.state,
     (currentState) => {
@@ -76,9 +79,12 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
         onClose={props.onCloseFindBar}
       />
 
-      {/* Hibernate fade-out overlay */}
+      {/* Hibernate fade-out overlay: briefly covers the content area after
+          the native webview is destroyed, then fades out over 300ms */}
       <Show when={fadingOut()}>
-        <div class="absolute inset-0 z-20 bg-white dark:bg-[#121212] transition-opacity duration-300 opacity-100 pointer-events-none" />
+        <div
+          class="absolute inset-0 z-50 bg-white dark:bg-[#121212] pointer-events-none animate-[fadeOut_300ms_ease-out_forwards]"
+        />
       </Show>
 
       <Show when={activeApp()} fallback={<EmptyState hasApps={appConfigs.length > 0} />}>

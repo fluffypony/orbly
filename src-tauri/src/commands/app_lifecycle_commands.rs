@@ -90,17 +90,18 @@ pub async fn activate_app(
     let position = tauri::LogicalPosition::new(bounds.x, bounds.y);
     let size = tauri::LogicalSize::new(bounds.width, bounds.height);
 
-    // Determine the URL to load: preserve current URL if active, use last_url if hibernated
-    let load_url = {
+    // Determine the URL to load and whether app is still loading
+    let (load_url, is_still_loading) = {
         let apps_lock = app_manager.apps.lock().expect("apps lock");
         if let Some(runtime) = apps_lock.get(&app_id) {
             match &runtime.state {
-                AppRuntimeState::Active { current_url } => current_url.clone(),
-                AppRuntimeState::Hibernated { last_url } => last_url.clone(),
-                _ => app_config.url.clone(),
+                AppRuntimeState::Active { current_url } => (current_url.clone(), false),
+                AppRuntimeState::Hibernated { last_url } => (last_url.clone(), false),
+                AppRuntimeState::Loading { target_url } => (target_url.clone(), true),
+                _ => (app_config.url.clone(), false),
             }
         } else {
-            app_config.url.clone()
+            (app_config.url.clone(), false)
         }
     };
 
@@ -139,9 +140,9 @@ pub async fn activate_app(
     lifecycle::set_webview_visible(&app_handle, &app_id, true, Some(position), Some(size))?;
     app_manager.set_visible(&app_id, true);
 
-    // For new webviews, keep Loading state until on_url_changed fires.
-    // For existing webviews, set Active immediately.
-    if !is_new_webview {
+    // For new or still-loading webviews, keep Loading state until on_url_changed fires.
+    // For existing active webviews, set Active immediately.
+    if !is_new_webview && !is_still_loading {
         app_manager.set_state(
             &app_id,
             AppRuntimeState::Active {
@@ -443,6 +444,7 @@ pub async fn frontend_ready(
     // Show only the first active app
     if let Some(ref first_id) = first_active_id {
         let _ = lifecycle::set_webview_visible(&app_handle, first_id, true, Some(position), Some(size));
+        app_manager.set_visible(first_id, true);
 
         // Update runtime state
         if let Some(app_config) = config.apps.iter().find(|a| a.id == *first_id) {
