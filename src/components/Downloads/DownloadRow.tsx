@@ -1,5 +1,6 @@
 import { Component, Show, Switch, Match } from "solid-js";
 import { openDownloadFile, openDownloadFolder, cancelDownload as ipcCancelDownload, retryDownload as ipcRetryDownload } from "../../lib/ipc";
+import { appConfigs } from "../../stores/uiStore";
 import type { DownloadEntry } from "../../types/downloads";
 
 interface DownloadRowProps {
@@ -83,7 +84,19 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
         </button>
       </td>
       <td class="px-3 py-1.5 text-gray-500 dark:text-gray-400 truncate max-w-[120px]">
-        {props.download.source_app_name}
+        <span class="inline-flex items-center gap-1.5">
+          {(() => {
+            const config = appConfigs.find(a => a.id === props.download.source_app_id);
+            const icon = config?.icon ?? "";
+            if (icon.startsWith("data:")) {
+              return <img src={icon} class="w-4 h-4 rounded object-cover inline-block" alt="" />;
+            } else if (icon.length > 0 && icon.length <= 2) {
+              return <span class="text-xs">{icon}</span>;
+            }
+            return null;
+          })()}
+          {props.download.source_app_name}
+        </span>
       </td>
       <td class="px-3 py-1.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
         {formatSize(props.download.size_bytes)}

@@ -26,7 +26,7 @@ const NavButtons: Component = () => {
   return (
     <div class="flex items-center gap-0.5">
       <button
-        class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
+        class="w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
         title="Back"
         aria-label="Go back"
         onClick={handleBack}
@@ -37,7 +37,7 @@ const NavButtons: Component = () => {
         </svg>
       </button>
       <button
-        class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
+        class="w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
         title="Forward"
         aria-label="Go forward"
         onClick={handleForward}

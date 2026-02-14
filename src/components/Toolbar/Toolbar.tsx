@@ -18,7 +18,7 @@ const Toolbar: Component<ToolbarProps> = (props) => {
   const [showLayoutPicker, setShowLayoutPicker] = createSignal(false);
 
   return (
-    <div role="toolbar" aria-label="App toolbar" class="h-10 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
+    <div role="toolbar" aria-label="App toolbar" class="h-11 bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 flex items-center px-3 gap-2 flex-shrink-0">
       <Show
         when={activeApp()}
         fallback={
@@ -55,6 +55,9 @@ const Toolbar: Component<ToolbarProps> = (props) => {
                 appId={app().id}
                 adblockEnabled={app().adblock_enabled}
               />
+              <Show when={app().zoom_level !== 100}>
+                <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 ml-1">{app().zoom_level}%</span>
+              </Show>
             </div>
 
             {(() => {
@@ -63,7 +66,7 @@ const Toolbar: Component<ToolbarProps> = (props) => {
                 <>
                   <button
                     ref={tilingBtnRef}
-                    class={`w-7 h-7 flex items-center justify-center rounded cursor-pointer ${
+                    class={`w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded cursor-pointer ${
                       layoutMode() !== "single"
                         ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30"
                         : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -90,7 +93,7 @@ const Toolbar: Component<ToolbarProps> = (props) => {
             })()}
             <Show when={props.onToggleFindBar && activeState()?.state === "active"}>
               <button
-                class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer"
+                class="w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer"
                 title="Find in page"
                 aria-label="Find in page"
                 onClick={props.onToggleFindBar}

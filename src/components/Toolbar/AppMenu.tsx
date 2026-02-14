@@ -122,7 +122,7 @@ const AppMenu: Component<AppMenuProps> = (props) => {
       <button
         ref={buttonRef}
         data-app-menu
-        class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+        class="w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
         onClick={toggleMenu}
         title="App menu"
         aria-label="App menu"

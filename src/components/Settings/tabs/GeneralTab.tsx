@@ -27,6 +27,7 @@ const GeneralTab: Component = () => {
     selection_color: null,
     local_scripts_only: false,
     cpu_alert_threshold: 30,
+    sidebar_hover_expand: true,
     recipe_cache_ttl_hours: 24,
     window_state: { maximized: false },
   });
@@ -118,6 +119,13 @@ const GeneralTab: Component = () => {
         <ToggleSwitch
           checked={config.developer_mode}
           onChange={(v) => save({ developer_mode: v })}
+        />
+      </SettingRow>
+
+      <SettingRow label="Sidebar hover expand" description="Expand sidebar when hovering over it">
+        <ToggleSwitch
+          checked={config.sidebar_hover_expand}
+          onChange={(v) => save({ sidebar_hover_expand: v })}
         />
       </SettingRow>
 

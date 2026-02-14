@@ -50,7 +50,7 @@ const AdblockToggle: Component<AdblockToggleProps> = (props) => {
 
   return (
     <button
-      class={`relative w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
+      class={`relative w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
         props.adblockEnabled
           ? "text-green-500"
           : "text-gray-500 dark:text-gray-400"

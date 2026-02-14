@@ -43,6 +43,7 @@ const IconButton: Component<IconButtonProps> = (props) => {
 
 const SidebarFooter: Component = () => {
   const [globalMuted, setGlobalMuted] = createSignal(false);
+  const [downloadsEnabled, setDownloadsEnabled] = createSignal(true);
 
   onMount(async () => {
     try {
@@ -51,6 +52,10 @@ const SidebarFooter: Component = () => {
     } catch (err) {
       console.error("Failed to get global mute state:", err);
     }
+    try {
+      const config = await getConfig();
+      setDownloadsEnabled(config.downloads.unified_manager_enabled);
+    } catch {}
   });
 
   return (
@@ -73,12 +78,14 @@ const SidebarFooter: Component = () => {
             }
           }}
         />
-        <IconButton
-          label="Downloads"
-          icon="⬇️"
-          badge={activeDownloadCount()}
-          onClick={() => setDownloadsVisible((v) => !v)}
-        />
+        <Show when={downloadsEnabled()}>
+          <IconButton
+            label="Downloads"
+            icon="⬇️"
+            badge={activeDownloadCount()}
+            onClick={() => setDownloadsVisible((v) => !v)}
+          />
+        </Show>
         <IconButton
           label="Settings"
           icon="⚙️"

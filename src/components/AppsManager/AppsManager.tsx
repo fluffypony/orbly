@@ -1,6 +1,7 @@
 import { Component, For, Show, createSignal, createEffect, onCleanup } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
-import { getResourceUsage, reloadApp, hibernateApp, disableApp, enableApp, killApp } from "../../lib/ipc";
+import { getResourceUsage, reloadApp, hibernateApp, disableApp, enableApp, killApp, getConfig } from "../../lib/ipc";
+import { appConfigs } from "../../stores/uiStore";
 
 interface AppsManagerProps {
   visible: boolean;
@@ -21,6 +22,7 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
   const [usages, setUsages] = createSignal<AppResourceUsage[]>([]);
   const [sortBy, setSortBy] = createSignal<SortField>("name");
   const [sortAsc, setSortAsc] = createSignal(true);
+  const [cpuThreshold, setCpuThreshold] = createSignal(30);
 
   createEffect(() => {
     if (!props.visible) return;
@@ -28,6 +30,8 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
     getResourceUsage()
       .then((data) => setUsages(data as AppResourceUsage[]))
       .catch(console.error);
+
+    getConfig().then((config) => setCpuThreshold(config.general.cpu_alert_threshold)).catch(() => {});
 
     const unlistenPromise = listen<AppResourceUsage[]>("resource-usage-updated", (event) => {
       setUsages(event.payload);
@@ -99,10 +103,11 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
   };
 
   const rowClass = (usage: AppResourceUsage) => {
-    if (usage.cpu_percent !== null && usage.cpu_percent > 50) {
+    const threshold = cpuThreshold();
+    if (usage.cpu_percent !== null && usage.cpu_percent > threshold * 1.5) {
       return "bg-red-50 dark:bg-red-900/20";
     }
-    if (usage.cpu_percent !== null && usage.cpu_percent > 30) {
+    if (usage.cpu_percent !== null && usage.cpu_percent > threshold) {
       return "bg-yellow-50 dark:bg-yellow-900/20";
     }
     return "";
@@ -162,6 +167,7 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
               <table class="w-full text-xs text-gray-700 dark:text-gray-300">
                 <thead class="bg-gray-50 dark:bg-gray-800 sticky top-0">
                   <tr>
+                    <th class="w-8 px-2 py-2"></th>
                     <th
                       class="text-left px-3 py-2 font-medium cursor-pointer select-none hover:text-gray-900 dark:hover:text-gray-100"
                       onClick={() => toggleSort("name")}
@@ -193,6 +199,19 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
                   <For each={sorted()}>
                     {(usage) => (
                       <tr class={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${rowClass(usage)}`}>
+                        <td class="px-2 py-2">
+                          {(() => {
+                            const config = appConfigs.find(a => a.id === usage.app_id);
+                            const icon = config?.icon ?? "";
+                            if (icon.startsWith("data:")) {
+                              return <img src={icon} class="w-5 h-5 rounded object-cover" alt="" />;
+                            } else if (icon.length > 0 && icon.length <= 2) {
+                              return <span class="text-sm">{icon}</span>;
+                            } else {
+                              return <span class="text-xs font-bold text-gray-400">{usage.app_name.charAt(0).toUpperCase()}</span>;
+                            }
+                          })()}
+                        </td>
                         <td class="px-3 py-2">{usage.app_name}</td>
                         <td class="px-3 py-2">
                           <span class="mr-1">{statusIcon(usage.status)}</span>

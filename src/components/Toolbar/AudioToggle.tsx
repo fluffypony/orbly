@@ -29,7 +29,7 @@ const AudioToggle: Component<AudioToggleProps> = (props) => {
 
   return (
     <button
-      class={`w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
+      class={`w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
         props.audioMuted
           ? "text-red-400"
           : "text-gray-500 dark:text-gray-400"

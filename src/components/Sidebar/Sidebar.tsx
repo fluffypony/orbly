@@ -1,5 +1,6 @@
 import { Component, onMount, onCleanup, createSignal } from "solid-js";
 import { sidebarExpanded, setSidebarExpanded } from "../../stores/uiStore";
+import { getConfig } from "../../lib/ipc";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import AppIconList from "./AppIconList";
 import SidebarFooter from "./SidebarFooter";
@@ -7,9 +8,17 @@ import SidebarFooter from "./SidebarFooter";
 const Sidebar: Component = () => {
   let hoverTimeout: ReturnType<typeof setTimeout> | undefined;
   const [forceCollapsed, setForceCollapsed] = createSignal(false);
+  const [hoverEnabled, setHoverEnabled] = createSignal(true);
+
+  onMount(async () => {
+    try {
+      const config = await getConfig();
+      setHoverEnabled(config.general.sidebar_hover_expand);
+    } catch {}
+  });
 
   const handleMouseEnter = () => {
-    if (forceCollapsed()) return;
+    if (forceCollapsed() || !hoverEnabled()) return;
     hoverTimeout = setTimeout(() => setSidebarExpanded(true), 300);
   };
 
