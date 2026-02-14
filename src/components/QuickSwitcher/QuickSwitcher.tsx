@@ -105,8 +105,14 @@ const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
                   onClick={() => selectAndClose(app)}
                   onMouseEnter={() => setSelectedIndex(index())}
                 >
-                  <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-sm flex-shrink-0">
-                    {app.name.charAt(0)}
+                  <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-sm flex-shrink-0 overflow-hidden">
+                    {app.icon && app.icon.startsWith("data:") ? (
+                      <img src={app.icon} class="w-8 h-8 rounded-lg object-cover" alt="" />
+                    ) : app.icon && app.icon.length <= 2 ? (
+                      <span class="text-lg">{app.icon}</span>
+                    ) : (
+                      app.name.charAt(0)
+                    )}
                   </div>
                   <span class="text-sm text-gray-800 dark:text-gray-200 truncate">
                     {app.name}

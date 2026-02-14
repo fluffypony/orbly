@@ -408,6 +408,11 @@ pub async fn frontend_ready(
         session_state.clear();
     }
 
+    // Emit session recovery notification
+    if !previous_session.is_empty() {
+        let _ = app_handle.emit("session-recovered", previous_session.len());
+    }
+
     // Hide all webviews initially
     for id in &created_ids {
         let _ = lifecycle::set_webview_visible(&app_handle, id, false, None, None);
@@ -523,4 +528,31 @@ pub fn eval_in_app(
     } else {
         Err(format!("Webview '{}' not found", app_id))
     }
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn check_unsaved_work(
+    app_id: String,
+    app_handle: AppHandle,
+) -> Result<bool, String> {
+    if let Some(app_manager) = app_handle.try_state::<crate::app_manager::state::AppManager>() {
+        let apps = app_manager.apps.lock().expect("apps lock");
+        if let Some(runtime) = apps.get(&app_id) {
+            return Ok(runtime.has_unsaved_work);
+        }
+    }
+    Ok(false)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn set_has_unsaved_work(
+    app_id: String,
+    has_unsaved: bool,
+    app_manager: State<'_, crate::app_manager::state::AppManager>,
+) -> Result<(), String> {
+    let mut apps = app_manager.apps.lock().expect("apps lock");
+    if let Some(runtime) = apps.get_mut(&app_id) {
+        runtime.has_unsaved_work = has_unsaved;
+    }
+    Ok(())
 }

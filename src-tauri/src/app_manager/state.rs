@@ -22,6 +22,7 @@ pub struct AppRuntime {
     pub badge_count: Option<i32>,
     pub last_interaction: Option<Instant>,
     pub is_playing_media: bool,
+    pub has_unsaved_work: bool,
 }
 
 pub struct AppManager {
@@ -60,6 +61,7 @@ impl AppManager {
                     badge_count: None,
                     last_interaction: None,
                     is_playing_media: false,
+                    has_unsaved_work: false,
                 },
             );
         }

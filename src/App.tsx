@@ -35,6 +35,7 @@ const App: Component = () => {
   const [findBarVisible, setFindBarVisible] = createSignal(false);
   const [showOnboarding, setShowOnboarding] = createSignal(false);
   let cleanupHighUsage: (() => void) | undefined;
+  let cleanupSessionRecovered: (() => void) | undefined;
 
   const initializeApp = async () => {
     await setupEventListeners();
@@ -54,6 +55,18 @@ const App: Component = () => {
       },
     );
     cleanupHighUsage = unlistenHighUsage;
+
+    const unlistenSessionRecovered = await listen<number>(
+      "session-recovered",
+      (event) => {
+        showToast(
+          `Restored ${event.payload} app${event.payload === 1 ? '' : 's'} from previous session`,
+          "info",
+          5000,
+        );
+      },
+    );
+    cleanupSessionRecovered = unlistenSessionRecovered;
 
     const bindings = createDefaultBindings({
       quickSwitcher: () => setQuickSwitcherVisible((v) => !v),
@@ -175,6 +188,7 @@ const App: Component = () => {
     teardownEventListeners();
     unregisterAllShortcuts();
     cleanupHighUsage?.();
+    cleanupSessionRecovered?.();
   });
 
   return (

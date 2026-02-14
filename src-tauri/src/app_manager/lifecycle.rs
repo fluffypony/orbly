@@ -294,6 +294,43 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
         app_config.id
     ));
 
+    // Unsaved work detection (checks document.title periodically)
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+    var lastUnsaved = false;
+
+    function checkUnsaved() {{
+        var title = document.title || '';
+        var unsaved = false;
+        if (title.charAt(0) === '*' || title.charAt(0) === '●') unsaved = true;
+        if (!unsaved) {{
+            var lower = title.toLowerCase();
+            var indicators = ['draft', 'editing', 'unsaved', 'composing', 'modified'];
+            for (var i = 0; i < indicators.length; i++) {{
+                if (lower.indexOf(indicators[i]) !== -1) {{ unsaved = true; break; }}
+            }}
+        }}
+        if (unsaved !== lastUnsaved) {{
+            lastUnsaved = unsaved;
+            if (window.__TAURI_INTERNALS__) {{
+                window.__TAURI_INTERNALS__.invoke('set_has_unsaved_work', {{
+                    app_id: ORBLY_APP_ID,
+                    has_unsaved: unsaved
+                }}).catch(function() {{}});
+            }}
+        }}
+    }}
+
+    setInterval(checkUnsaved, 5000);
+    document.addEventListener('visibilitychange', checkUnsaved);
+}})();
+"#,
+        app_config.id
+    ));
+
     // Report user interaction for auto-hibernate tracking
     scripts.push(format!(
         r#"

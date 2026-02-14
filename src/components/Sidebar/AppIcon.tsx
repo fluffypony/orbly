@@ -6,6 +6,7 @@ interface AppIconProps {
   name: string;
   state: "active" | "hibernated" | "disabled";
   badgeCount: number | null;
+  icon?: string;
   audioMuted: boolean;
   onClick: (id: string) => void;
   onContextMenu: (e: MouseEvent, id: string) => void;
@@ -36,8 +37,14 @@ const AppIcon: Component<AppIconProps> = (props) => {
       style={{ "min-height": "44px" }}
     >
       <div class="relative w-10 h-10 flex items-center justify-center flex-shrink-0">
-        <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
-          {props.name.charAt(0).toUpperCase()}
+        <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+          {props.icon && props.icon.startsWith("data:") ? (
+            <img src={props.icon} class="w-8 h-8 rounded-lg object-cover" alt="" />
+          ) : props.icon && props.icon.length <= 2 ? (
+            <span class="text-lg">{props.icon}</span>
+          ) : (
+            props.name.charAt(0).toUpperCase()
+          )}
         </div>
 
         <Show

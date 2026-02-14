@@ -8,7 +8,7 @@ export const getApps = () => invoke<AppConfig[]>("get_apps");
 export const getApp = (appId: string) => invoke<AppConfig | null>("get_app", { app_id: appId });
 export const addApp = (app: AppConfig) => invoke<void>("add_app", { app });
 export const updateApp = (app: AppConfig) => invoke<void>("update_app", { app });
-export const removeApp = (appId: string) => invoke<AppConfig | null>("remove_app", { app_id: appId });
+export const removeApp = (appId: string, deleteData: boolean = false) => invoke<AppConfig | null>("remove_app", { app_id: appId, delete_data: deleteData });
 export const updateGeneralConfig = (general: GeneralConfig) => invoke<void>("update_general_config", { general });
 
 // App lifecycle commands
@@ -26,6 +26,7 @@ export const navigateForward = (appId: string) => invoke<void>("navigate_forward
 export const getCurrentUrl = (appId: string) => invoke<string>("get_current_url", { app_id: appId });
 export const evalInApp = (appId: string, script: string) =>
   invoke<void>("eval_in_app", { app_id: appId, script });
+export const checkUnsavedWork = (appId: string) => invoke<boolean>("check_unsaved_work", { app_id: appId });
 
 // Content area bounds
 export const setContentAreaBounds = (x: number, y: number, width: number, height: number) =>

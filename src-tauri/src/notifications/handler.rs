@@ -86,18 +86,19 @@ pub fn on_badge_update(
     Ok(())
 }
 
-fn send_native_notification(app_handle: &AppHandle, title: &str, body: &str, _app_id: &str) -> Result<(), String> {
+fn send_native_notification(app_handle: &AppHandle, title: &str, body: &str, app_id: &str) -> Result<(), String> {
     app_handle
         .notification()
         .builder()
         .title(title)
         .body(body)
+        .group(app_id)
         .show()
         .map_err(|e| e.to_string())?;
     Ok(())
 }
 
-fn is_in_dnd_schedule(config: &OrblyConfig) -> bool {
+pub fn is_in_dnd_schedule(config: &OrblyConfig) -> bool {
     if !config.general.dnd_schedule_enabled {
         return false;
     }
@@ -137,7 +138,7 @@ fn is_in_dnd_schedule(config: &OrblyConfig) -> bool {
     }
 }
 
-fn parse_time(time_str: &str) -> Option<u32> {
+pub fn parse_time(time_str: &str) -> Option<u32> {
     let parts: Vec<&str> = time_str.split(':').collect();
     if parts.len() != 2 {
         return None;

@@ -22,8 +22,14 @@ const Toolbar: Component = () => {
         {(app) => (
           <>
             <div class="flex items-center gap-2 min-w-0">
-              <div class="w-5 h-5 rounded bg-blue-500 flex items-center justify-center text-white text-[10px] flex-shrink-0 font-medium">
-                {app().name.charAt(0).toUpperCase()}
+              <div class="w-5 h-5 rounded bg-blue-500 flex items-center justify-center text-white text-[10px] flex-shrink-0 font-medium overflow-hidden">
+                {app().icon && app().icon.startsWith("data:") ? (
+                  <img src={app().icon} class="w-5 h-5 rounded object-cover" alt="" />
+                ) : app().icon && app().icon.length <= 2 ? (
+                  <span class="text-sm">{app().icon}</span>
+                ) : (
+                  app().name.charAt(0).toUpperCase()
+                )}
               </div>
               <span class="text-[13px] font-medium text-gray-800 dark:text-gray-200 truncate">
                 {app().name}

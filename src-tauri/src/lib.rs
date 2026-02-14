@@ -180,6 +180,26 @@ pub fn run() {
                 });
             }
 
+            // DND schedule automation task
+            let dnd_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+                loop {
+                    interval.tick().await;
+                    let config_manager = dnd_handle.state::<ConfigManager>();
+                    let mut config = config_manager.get_config();
+                    if !config.general.dnd_schedule_enabled {
+                        continue;
+                    }
+                    let should_be_dnd = crate::notifications::handler::is_in_dnd_schedule(&config);
+                    if should_be_dnd != config.general.dnd_enabled {
+                        config.general.dnd_enabled = should_be_dnd;
+                        let _ = config_manager.save_config(config);
+                        let _ = dnd_handle.emit("dnd-toggled", ());
+                    }
+                }
+            });
+
             app_manager::start_auto_hibernate_task(app.handle().clone());
             resource_monitor::poller::start_resource_polling(app.handle().clone());
 
@@ -278,6 +298,8 @@ pub fn run() {
             commands::recipe_commands::get_recipe_status,
             commands::app_lifecycle_commands::on_url_changed,
             commands::app_lifecycle_commands::eval_in_app,
+            commands::app_lifecycle_commands::check_unsaved_work,
+            commands::app_lifecycle_commands::set_has_unsaved_work,
             commands::link_routing_commands::route_link,
             commands::favicon_commands::fetch_favicon,
         ])

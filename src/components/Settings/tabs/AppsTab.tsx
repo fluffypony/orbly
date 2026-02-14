@@ -197,8 +197,14 @@ const AppsTab: Component = () => {
             <div>
               <div class="flex items-center justify-between py-2.5 px-3 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xs font-bold text-gray-500">
-                    {app.name.charAt(0).toUpperCase()}
+                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xs font-bold text-gray-500 overflow-hidden">
+                    {app.icon && app.icon.startsWith("data:") ? (
+                      <img src={app.icon} class="w-8 h-8 rounded-lg object-cover" alt="" />
+                    ) : app.icon && app.icon.length <= 2 ? (
+                      <span class="text-lg">{app.icon}</span>
+                    ) : (
+                      app.name.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div>
                     <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{app.name}</p>

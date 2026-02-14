@@ -1,6 +1,6 @@
 import { Component, For, Show, onMount, onCleanup, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
-import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp } from "../../lib/ipc";
+import { hibernateApp, disableApp, enableApp, reloadApp, removeApp, setAudioMuted, updateApp, checkUnsavedWork } from "../../lib/ipc";
 import { appConfigs, appStates, setSettingsVisible, workspaces } from "../../stores/uiStore";
 import { refreshAppConfigs } from "../../lib/stateSync";
 import ConfirmDialog from "../Dialogs/ConfirmDialog";
@@ -28,6 +28,8 @@ const menuItems = [
 
 const ContextMenu: Component<ContextMenuProps> = (props) => {
   const [showRemoveConfirm, setShowRemoveConfirm] = createSignal(false);
+  const [showHibernateConfirm, setShowHibernateConfirm] = createSignal(false);
+  const [deleteData, setDeleteData] = createSignal(false);
   const [showSectionMenu, setShowSectionMenu] = createSignal(false);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = createSignal(false);
 
@@ -42,9 +44,15 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
         case "reload":
           await reloadApp(props.appId);
           break;
-        case "hibernate":
+        case "hibernate": {
+          const hasUnsaved = await checkUnsavedWork(props.appId);
+          if (hasUnsaved) {
+            setShowHibernateConfirm(true);
+            return;
+          }
           await hibernateApp(props.appId);
           break;
+        }
         case "disable": {
           const state = appStates.find((s) => s.id === props.appId);
           if (state?.state === "disabled") {
@@ -110,9 +118,19 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
     props.onClose();
   };
 
+  const handleHibernateConfirm = async () => {
+    try {
+      await hibernateApp(props.appId);
+    } catch (err) {
+      console.error("Failed to hibernate app:", err);
+    }
+    setShowHibernateConfirm(false);
+    props.onClose();
+  };
+
   const handleRemoveConfirm = async () => {
     try {
-      await removeApp(props.appId);
+      await removeApp(props.appId, deleteData());
       await refreshAppConfigs();
     } catch (err) {
       console.error("Failed to remove app:", err);
@@ -225,6 +243,16 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           </For>
         </div>
       </Show>
+      <Show when={showHibernateConfirm()}>
+        <ConfirmDialog
+          title="Unsaved Work Detected"
+          message="This app appears to have unsaved work. Hibernate anyway?"
+          confirmLabel="Hibernate"
+          variant="danger"
+          onConfirm={handleHibernateConfirm}
+          onCancel={() => { setShowHibernateConfirm(false); props.onClose(); }}
+        />
+      </Show>
       <Show when={showRemoveConfirm()}>
         <ConfirmDialog
           title="Remove App"
@@ -233,7 +261,17 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           variant="danger"
           onConfirm={handleRemoveConfirm}
           onCancel={() => { setShowRemoveConfirm(false); props.onClose(); }}
-        />
+        >
+          <label class="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={deleteData()}
+              onChange={(e) => setDeleteData(e.currentTarget.checked)}
+              class="rounded"
+            />
+            Also delete all app data (cookies, cache, sessions)
+          </label>
+        </ConfirmDialog>
       </Show>
     </Portal>
   );

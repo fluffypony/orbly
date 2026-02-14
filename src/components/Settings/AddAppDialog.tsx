@@ -1,7 +1,7 @@
 import { Component, For, Show, createSignal, createMemo } from "solid-js";
 import { Portal } from "solid-js/web";
 import { SERVICE_TEMPLATES, CATEGORIES } from "../../lib/serviceTemplates";
-import { addApp } from "../../lib/ipc";
+import { addApp, fetchFavicon } from "../../lib/ipc";
 import { refreshAppConfigs } from "../../lib/stateSync";
 import { appConfigs } from "../../stores/uiStore";
 import type { AppConfig } from "../../types/config";
@@ -19,6 +19,8 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
   const [url, setUrl] = createSignal("");
   const [sidebarSection, setSidebarSection] = createSignal("");
   const [adding, setAdding] = createSignal(false);
+  const [icon, setIcon] = createSignal("🌐");
+  const [fetchingIcon, setFetchingIcon] = createSignal(false);
 
   const filteredTemplates = createMemo(() => {
     let list = SERVICE_TEMPLATES;
@@ -40,6 +42,7 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
       setSelectedTemplateId(id);
       setName(tmpl.name);
       setUrl(tmpl.url);
+      setIcon(tmpl.icon);
       setShowCustom(false);
     }
   };
@@ -49,6 +52,21 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
     setShowCustom(true);
     setName("");
     setUrl("");
+    setIcon("🌐");
+  };
+
+  const handleFetchIcon = async () => {
+    const u = url().trim();
+    if (!u) return;
+    setFetchingIcon(true);
+    try {
+      const result = await fetchFavicon(u);
+      if (result) setIcon(result);
+    } catch (err) {
+      console.error("Failed to fetch favicon:", err);
+    } finally {
+      setFetchingIcon(false);
+    }
   };
 
   const handleAdd = async () => {
@@ -64,7 +82,7 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
         name: n,
         service_type: template?.id ?? "custom",
         url: u,
-        icon: template?.icon ?? "🌐",
+        icon: icon(),
         data_store_uuid: crypto.randomUUID(),
         enabled: true,
         hibernated: false,
@@ -167,6 +185,22 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
 
           <Show when={selectedTemplateId() || showCustom()}>
             <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {icon().startsWith("data:") ? (
+                    <img src={icon()} class="w-8 h-8 rounded" alt="App icon" />
+                  ) : (
+                    <span class="text-xl">{icon()}</span>
+                  )}
+                </div>
+                <button
+                  class="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer disabled:opacity-50"
+                  onClick={handleFetchIcon}
+                  disabled={fetchingIcon() || !url().trim()}
+                >
+                  {fetchingIcon() ? "Fetching..." : "Fetch Icon"}
+                </button>
+              </div>
               <div class="flex gap-3">
                 <div class="flex-1">
                   <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Name</label>

@@ -34,6 +34,7 @@ interface SortableAppIconProps {
     name: string;
     state: "active" | "hibernated" | "disabled";
     badgeCount: number | null;
+    icon?: string;
     audioMuted: boolean;
   };
   onClick: (id: string) => void;
@@ -54,6 +55,7 @@ const SortableAppIcon: Component<SortableAppIconProps> = (props) => {
       <AppIcon
         id={props.app.id}
         name={props.app.name}
+        icon={props.app.icon}
         state={props.app.state}
         badgeCount={props.app.badgeCount}
         audioMuted={props.app.audioMuted}
@@ -86,6 +88,7 @@ const AppIconList: Component = () => {
             | "disabled",
           badgeCount: state?.badge_count ?? null,
           audioMuted: config.audio_muted,
+          icon: config.icon,
           sidebarSection: config.sidebar_section,
         };
       });
@@ -214,6 +217,7 @@ const AppIconList: Component = () => {
                 <AppIcon
                   id={app().id}
                   name={app().name}
+                  icon={app().icon}
                   state={app().state}
                   badgeCount={app().badgeCount}
                   audioMuted={app().audioMuted}
