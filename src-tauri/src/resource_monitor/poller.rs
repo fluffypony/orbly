@@ -66,14 +66,11 @@ pub fn start_resource_polling(app_handle: AppHandle) {
                 .filter(|r| matches!(r.state, crate::app_manager::state::AppRuntimeState::Active { .. }))
                 .count();
 
-            let (total_cpu, total_memory) = if active_count > 0 {
+            let (_total_cpu, _total_memory) = if active_count > 0 {
                 get_process_tree_resources(&monitor)
             } else {
                 (0.0, 0.0)
             };
-
-            let per_app_cpu = if active_count > 0 { total_cpu / active_count as f64 } else { 0.0 };
-            let per_app_mem = if active_count > 0 { total_memory / active_count as f64 } else { 0.0 };
 
             let mut usages = Vec::new();
             for (app_id, runtime) in &apps {
@@ -81,9 +78,9 @@ pub fn start_resource_polling(app_handle: AppHandle) {
                 let name = app_config.map(|a| a.name.clone()).unwrap_or_default();
                 let (status, cpu, mem) = match &runtime.state {
                     crate::app_manager::state::AppRuntimeState::Loading { .. } =>
-                        ("loading", Some(per_app_cpu), Some(per_app_mem)),
+                        ("loading", None, None),
                     crate::app_manager::state::AppRuntimeState::Active { .. } =>
-                        ("active", Some(per_app_cpu), Some(per_app_mem)),
+                        ("active", None, None),
                     crate::app_manager::state::AppRuntimeState::Hibernated { .. } =>
                         ("hibernated", Some(0.0), Some(0.0)),
                     crate::app_manager::state::AppRuntimeState::Disabled =>
@@ -145,7 +142,7 @@ fn check_high_usage_alerts(app_handle: &AppHandle, usages: &[super::AppResourceU
                         .builder()
                         .title("High CPU Usage")
                         .body(&format!(
-                            "{} is using {:.0}% CPU. Consider reloading or hibernating it.",
+                            "{} is using {:.0}% CPU. Right-click the app in the sidebar to reload or hibernate it.",
                             usage.app_name, cpu,
                         ))
                         .show();

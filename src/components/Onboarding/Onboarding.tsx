@@ -5,6 +5,7 @@ import QuickSettingsStep from "./QuickSettingsStep";
 import DoneStep from "./DoneStep";
 import { addApp, updateGeneralConfig, getConfig, setLaunchAtLogin } from "../../lib/ipc";
 import type { AppConfig, ThemeMode } from "../../types/config";
+import type { ServiceTemplate } from "../../lib/serviceTemplates";
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -14,7 +15,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
   const [step, setStep] = createSignal(0);
   const [addedCount, setAddedCount] = createSignal(0);
 
-  const handleAddApps = async (selected: { template: { id: string; name: string; url: string; icon: string; category: string }; customName: string; customUrl: string }[]) => {
+  const handleAddApps = async (selected: { template: ServiceTemplate; customName: string; customUrl: string }[]) => {
     let count = 0;
     for (let i = 0; i < selected.length; i++) {
       const s = selected[i];
@@ -28,7 +29,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         enabled: true,
         hibernated: false,
         audio_muted: false,
-        user_agent: "",
+        user_agent: s.template.suggestedUserAgent ?? "",
         custom_css: "",
         custom_js: "",
         proxy: "",

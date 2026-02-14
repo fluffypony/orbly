@@ -20,13 +20,17 @@ export function showToast(
   }, duration);
 }
 
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const ToastContainer: Component = () => {
   return (
     <div role="status" aria-live="polite" class="fixed top-2 right-2 z-40 flex flex-col gap-2 pointer-events-none">
       <For each={toasts()}>
         {(toast) => (
           <div
-            class={`pointer-events-auto px-4 py-2.5 rounded-lg shadow-lg text-sm max-w-xs animate-[slideInRight_200ms_ease-out] ${
+            class={`pointer-events-auto px-4 py-2.5 rounded-lg shadow-lg text-sm max-w-xs ${
+              reduceMotion ? '' : 'animate-[slideInRight_200ms_ease-out]'
+            } ${
               toast.type === "error"
                 ? "bg-red-500 text-white"
                 : toast.type === "warning"

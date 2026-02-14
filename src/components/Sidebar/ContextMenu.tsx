@@ -23,7 +23,7 @@ const menuItems = [
   { label: "Remove", action: "remove" },
   { label: "---", action: "separator" },
   { label: "Move to Section", action: "move-section" },
-  { label: "Move to Workspace", action: "move-workspace" },
+  { label: "Add to Workspace", action: "move-workspace" },
 ] as const;
 
 const ContextMenu: Component<ContextMenuProps> = (props) => {
@@ -241,7 +241,7 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           style={{ left: `${props.position.x + 180}px`, top: `${props.position.y}px` }}
         >
           <button class="w-full text-left px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400" disabled>
-            Move to Workspace
+            Add to Workspace
           </button>
           <div class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
           <For each={workspaces}>

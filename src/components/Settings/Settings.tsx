@@ -57,9 +57,11 @@ const Settings: Component<SettingsProps> = (props) => {
               ✕
             </button>
           </div>
-          <nav class="space-y-0.5 px-2 flex-1">
+          <nav role="tablist" aria-label="Settings sections" class="space-y-0.5 px-2 flex-1">
             {TABS.map(tab => (
               <button
+                role="tab"
+                aria-selected={activeTab() === tab.id}
                 class={`w-full text-left px-3 py-1.5 rounded-md text-sm cursor-pointer transition-colors
                   ${activeTab() === tab.id
                     ? 'bg-[#E8E8ED] dark:bg-[#2D2D2D] text-blue-600 dark:text-blue-400 font-medium'

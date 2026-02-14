@@ -239,6 +239,9 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
               <div>
                 <label class="text-xs text-gray-500 dark:text-gray-400 mb-1 block">URL</label>
                 <input type="text" value={url()} onInput={(e) => setUrl(e.currentTarget.value)} placeholder="https://..." class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1.5 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500" />
+                <Show when={SERVICE_TEMPLATES.find(t => t.id === selectedTemplateId())?.requiresCustomUrl}>
+                  <p class="text-xs text-amber-500 mt-1">This service requires a custom instance URL</p>
+                </Show>
               </div>
               <div class="flex justify-end">
                 <button

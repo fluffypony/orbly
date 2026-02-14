@@ -66,6 +66,7 @@ export interface GeneralConfig {
   local_scripts_only: boolean;
   cpu_alert_threshold: number;
   sidebar_hover_expand: boolean;
+  recipe_manifest_url?: string | null;
 }
 
 export interface AdblockConfig {

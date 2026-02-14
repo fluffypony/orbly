@@ -59,7 +59,7 @@ const SidebarFooter: Component = () => {
   });
 
   return (
-    <div class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-1.5 py-2">
+    <div role="toolbar" aria-label="App controls" class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-1.5 py-2">
       <div
         class={`flex ${sidebarExpanded() ? "flex-row justify-around" : "flex-col items-center gap-1"}`}
       >

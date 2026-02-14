@@ -151,6 +151,8 @@ pub struct GeneralConfig {
     pub recipe_cache_ttl_hours: u64,
     #[serde(default = "default_true")]
     pub sidebar_hover_expand: bool,
+    #[serde(default)]
+    pub recipe_manifest_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -278,9 +278,14 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
     ));
 
     // Badge scraping — use recipe-specific script if available, otherwise generic
-    let recipe = app_handle
-        .try_state::<RecipeManager>()
-        .and_then(|rm| rm.get_recipe(&app_config.service_type));
+    let local_scripts_only = general_config.as_ref().map(|g| g.local_scripts_only).unwrap_or(false);
+    let recipe = if local_scripts_only {
+        None
+    } else {
+        app_handle
+            .try_state::<RecipeManager>()
+            .and_then(|rm| rm.get_recipe(&app_config.service_type))
+    };
 
     if let Some(ref r) = recipe {
         if let Some(ref badge_js) = r.badge_script {

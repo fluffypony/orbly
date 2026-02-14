@@ -164,7 +164,7 @@ const AppsManager: Component<AppsManagerProps> = (props) => {
                 </div>
               }
             >
-              <table class="w-full text-xs text-gray-700 dark:text-gray-300">
+              <table class="w-full text-xs text-gray-700 dark:text-gray-300" aria-label="Apps resource usage">
                 <thead class="bg-gray-50 dark:bg-gray-800 sticky top-0">
                   <tr>
                     <th class="w-8 px-2 py-2"></th>

@@ -10,6 +10,7 @@ interface QuickSwitcherProps {
 }
 
 const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [query, setQuery] = createSignal("");
   const [selectedIndex, setSelectedIndex] = createSignal(0);
   let inputRef: HTMLInputElement | undefined;
@@ -79,7 +80,7 @@ const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
         <div
           class="w-[500px] bg-white dark:bg-[#2D2D2D] rounded-xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
-          style={{ animation: "quickSwitcherIn 100ms ease-out" }}
+          style={{ animation: reduceMotion ? "none" : "quickSwitcherIn 100ms ease-out" }}
         >
           <input
             ref={inputRef}

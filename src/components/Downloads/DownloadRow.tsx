@@ -79,6 +79,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
           class="text-left hover:text-blue-500 hover:underline truncate block w-full"
           onClick={openFile}
           title={props.download.filename}
+          aria-label={props.download.filename}
         >
           {props.download.filename}
         </button>

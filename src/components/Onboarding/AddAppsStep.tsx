@@ -41,13 +41,20 @@ const AddAppsStep: Component<AddAppsStepProps> = (props) => {
     if (isSelected(template.id)) {
       setSelected(selected.filter(s => s.template.id !== template.id));
     } else {
-      setSelected([...selected, { template, customName: template.name, customUrl: template.url }]);
+      setSelected([...selected, { template, customName: template.name, customUrl: template.requiresCustomUrl ? "" : template.url }]);
     }
   };
 
   const updateSelectedName = (id: string, name: string) => {
     setSelected(s => s.template.id === id, "customName", name);
   };
+
+  const updateSelectedUrl = (id: string, url: string) => {
+    setSelected(s => s.template.id === id, "customUrl", url);
+  };
+
+  const hasIncompleteCustomUrl = () =>
+    selected.some(s => s.template.requiresCustomUrl && !s.customUrl.trim());
 
   const removeSelected = (id: string) => {
     setSelected(selected.filter(s => s.template.id !== id));
@@ -188,6 +195,18 @@ const AddAppsStep: Component<AddAppsStepProps> = (props) => {
                     onInput={(e) => updateSelectedName(s.template.id, e.currentTarget.value)}
                     class="bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 w-24 text-xs"
                   />
+                  <Show when={s.template.requiresCustomUrl}>
+                    <input
+                      type="text"
+                      value={s.customUrl}
+                      onInput={(e) => updateSelectedUrl(s.template.id, e.currentTarget.value)}
+                      placeholder="https://your-instance.example.com"
+                      class="bg-transparent border-b border-gray-300 dark:border-gray-600 outline-none text-gray-700 dark:text-gray-300 w-48 text-xs mt-0.5"
+                    />
+                    <Show when={!s.customUrl.trim()}>
+                      <span class="text-red-400 text-[10px]">URL required</span>
+                    </Show>
+                  </Show>
                   <button
                     class="text-gray-400 hover:text-red-500 cursor-pointer ml-0.5"
                     onClick={() => removeSelected(s.template.id)}
@@ -217,8 +236,13 @@ const AddAppsStep: Component<AddAppsStepProps> = (props) => {
             Skip
           </button>
           <button
-            class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+            class={`px-6 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+              hasIncompleteCustomUrl()
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600 text-white"
+            }`}
             onClick={() => props.onNext([...selected])}
+            disabled={hasIncompleteCustomUrl()}
           >
             Next →
           </button>

@@ -22,10 +22,12 @@ const WorkspaceSwitcher: Component = () => {
     <>
       <Show when={workspaces.length > 1}>
         <div class="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-1.5 py-2">
-          <div class="flex items-center gap-1 overflow-x-auto">
+          <div role="tablist" aria-label="Workspaces" class="flex items-center gap-1 overflow-x-auto">
             <For each={workspaces}>
               {(ws) => (
                 <button
+                  role="tab"
+                  aria-selected={activeWorkspaceId() === ws.id}
                   class={`flex-shrink-0 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
                     activeWorkspaceId() === ws.id
                       ? "bg-[#E8E8ED] dark:bg-[#2D2D2D] text-gray-900 dark:text-gray-100"

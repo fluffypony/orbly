@@ -97,11 +97,18 @@ impl ConfigManager {
     }
 
     fn migrate_config(config: &mut OrblyConfig) {
-        let current_version = 1u32;
-        if config.general.config_version < current_version {
-            // Future migrations would go here, e.g.:
-            // if config.general.config_version < 2 { migrate_v1_to_v2(config); }
-            config.general.config_version = current_version;
+        loop {
+            match config.general.config_version {
+                0 => {
+                    // v0 → v1: initial migration
+                    config.general.config_version = 1;
+                }
+                1 => break,
+                v => {
+                    log::warn!("Unknown config version {v}, skipping migration");
+                    break;
+                }
+            }
         }
     }
 

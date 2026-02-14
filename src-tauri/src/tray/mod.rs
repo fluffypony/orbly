@@ -138,6 +138,21 @@ pub fn rebuild_tray_menu(app_handle: &AppHandle) {
 }
 
 pub fn update_tray_badge(app_handle: &AppHandle, total_count: u32) {
+    let show_badge = app_handle
+        .try_state::<crate::config::manager::ConfigManager>()
+        .map(|cm| cm.get_config().general.show_badge_in_tray)
+        .unwrap_or(true);
+
+    if !show_badge {
+        if let Some(tray) = app_handle.tray_by_id("main") {
+            let _ = tray.set_tooltip(Some("Orbly"));
+        }
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = window.set_badge_count(None);
+        }
+        return;
+    }
+
     if let Some(tray) = app_handle.tray_by_id("main") {
         if total_count > 0 {
             let _ = tray.set_tooltip(Some(&format!("Orbly — {} unread", total_count)));

@@ -97,7 +97,10 @@ pub fn run() {
 
             let session_state = SessionState::new(app_data_dir.clone());
 
-            let recipe_manager = RecipeManager::new(app_data_dir.clone(), None);
+            let recipe_manager = RecipeManager::new(
+                app_data_dir.clone(),
+                config_manager.get_config().general.recipe_manifest_url.clone(),
+            );
 
             app.manage(config_manager);
             app.manage(app_mgr);

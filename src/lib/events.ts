@@ -1,12 +1,14 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   setActiveAppId,
+  activeAppId,
   setActiveDownloadCount,
   setActiveWorkspaceId,
   setDndEnabled,
   recentAppIds,
   setRecentAppIds,
   appConfigs,
+  visibleApps,
 } from "../stores/uiStore";
 import { refreshAppStates, persistRecentAppIds } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
@@ -70,6 +72,17 @@ export async function setupEventListeners() {
     await listen<string>("workspace-switched", (event) => {
       setActiveWorkspaceId(event.payload);
       refreshAppStates();
+      // If the currently active app is no longer visible in the new workspace, switch to first visible or clear
+      const currentActive = activeAppId();
+      const visible = visibleApps();
+      if (currentActive && !visible.some(a => a.id === currentActive)) {
+        const firstEnabled = visible.find(a => a.enabled);
+        if (firstEnabled) {
+          activateApp(firstEnabled.id);
+        } else {
+          setActiveAppId(null);
+        }
+      }
     }),
     await listen<string>("switch-to-app", (event) => {
       activateApp(event.payload);

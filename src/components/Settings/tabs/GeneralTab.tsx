@@ -1,7 +1,7 @@
 import { Component, createSignal, onMount, For, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { SettingSection, SettingRow, ToggleSwitch, SelectDropdown, TextInput } from "../SettingsControls";
-import { getConfig, updateGeneralConfig, getCertificateExceptions, removeCertificateException, getRecipeStatus, updateRecipes } from "../../../lib/ipc";
+import { getConfig, updateGeneralConfig, getCertificateExceptions, removeCertificateException, getRecipeStatus, updateRecipes, setLaunchAtLogin } from "../../../lib/ipc";
 import { setTheme } from "../../../stores/uiStore";
 import type { GeneralConfig } from "../../../types/config";
 
@@ -29,6 +29,7 @@ const GeneralTab: Component = () => {
     cpu_alert_threshold: 30,
     sidebar_hover_expand: true,
     recipe_cache_ttl_hours: 24,
+    recipe_manifest_url: null,
     window_state: { maximized: false },
   });
 
@@ -90,7 +91,10 @@ const GeneralTab: Component = () => {
       <SettingRow label="Launch at login" description="Start Orbly when you log in">
         <ToggleSwitch
           checked={config.launch_at_login}
-          onChange={(v) => save({ launch_at_login: v })}
+          onChange={async (v) => {
+            save({ launch_at_login: v });
+            try { await setLaunchAtLogin(v); } catch (err) { console.error("Failed to set launch at login:", err); }
+          }}
         />
       </SettingRow>
 
@@ -173,6 +177,15 @@ const GeneralTab: Component = () => {
           value={config.recipe_cache_ttl_hours}
           onInput={(e) => save({ recipe_cache_ttl_hours: parseInt(e.currentTarget.value) || 24 })}
           class="w-20 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </SettingRow>
+
+      <SettingRow label="Recipe manifest URL" description="Custom URL for the recipe manifest (leave empty for default)">
+        <TextInput
+          value={config.recipe_manifest_url ?? ''}
+          onChange={(v) => save({ recipe_manifest_url: v || null })}
+          placeholder="https://recipes.getorb.ly/manifest.json"
+          class="w-64"
         />
       </SettingRow>
 
