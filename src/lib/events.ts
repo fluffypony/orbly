@@ -4,6 +4,8 @@ import {
   setActiveDownloadCount,
   setActiveWorkspaceId,
   setDndEnabled,
+  recentAppIds,
+  setRecentAppIds,
 } from "../stores/uiStore";
 import { refreshAppStates } from "./stateSync";
 import { showToast } from "../components/Toast/ToastContainer";
@@ -27,6 +29,9 @@ export async function setupEventListeners() {
   unlisteners.push(
     await listen<string>("app-activated", (event) => {
       setActiveAppId(event.payload);
+      // Track recent app order for quick switcher
+      const appId = event.payload;
+      setRecentAppIds([appId, ...recentAppIds().filter(id => id !== appId)]);
       refreshAppStates();
     }),
     await listen<string>("app-hibernated", () => {
@@ -66,6 +71,9 @@ export async function setupEventListeners() {
       refreshAppStates();
     }),
     await listen<string>("app-error", () => {
+      refreshAppStates();
+    }),
+    await listen<{ appId: string; url: string }>("url-changed", () => {
       refreshAppStates();
     }),
   );

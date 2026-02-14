@@ -476,3 +476,23 @@ pub fn get_certificate_exceptions(
 ) -> Vec<(String, String)> {
     cert_exceptions.get_all()
 }
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn on_url_changed(
+    app_id: String,
+    url: String,
+    app_handle: AppHandle,
+    app_manager: State<'_, AppManager>,
+) -> Result<(), String> {
+    app_manager.set_state(
+        &app_id,
+        AppRuntimeState::Active {
+            current_url: url.clone(),
+        },
+    );
+    let _ = app_handle.emit("url-changed", serde_json::json!({
+        "appId": app_id,
+        "url": url,
+    }));
+    Ok(())
+}

@@ -109,6 +109,9 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
         <SettingRow label="Auto-hibernate timeout" description="Minutes of inactivity (0 = never)">
           <TextInput value={String(app.hibernation_timeout_minutes)} onChange={(v) => setApp("hibernation_timeout_minutes", parseInt(v) || 0)} class="w-20" />
         </SettingRow>
+        <SettingRow label="Proxy" description="HTTP/SOCKS5 proxy (protocol://host:port)">
+          <TextInput value={app.proxy} onChange={(v) => setApp("proxy", v)} class="w-64" placeholder="socks5://127.0.0.1:1080" />
+        </SettingRow>
         <SettingRow label="Download directory">
           <TextInput value={app.download_directory} onChange={(v) => setApp("download_directory", v)} class="w-64" />
         </SettingRow>

@@ -6,6 +6,7 @@ import type { AppStateInfo } from "../types/appState";
 // Sidebar state
 export const [sidebarExpanded, setSidebarExpanded] = createSignal(false);
 export const [activeAppId, setActiveAppId] = createSignal<string | null>(null);
+export const [recentAppIds, setRecentAppIds] = createSignal<string[]>([]);
 
 // App data (will be populated from backend in Phase 6)
 export const [appConfigs, setAppConfigs] = createStore<AppConfig[]>([]);

@@ -1,6 +1,6 @@
 import { Component, Show, For, createSignal, createEffect } from "solid-js";
 import { fuzzySearch } from "../../lib/fuzzySearch";
-import { appConfigs } from "../../stores/uiStore";
+import { appConfigs, recentAppIds } from "../../stores/uiStore";
 import { activateApp } from "../../lib/ipc";
 import type { AppConfig } from "../../types/config";
 
@@ -17,7 +17,15 @@ const QuickSwitcher: Component<QuickSwitcherProps> = (props) => {
   const results = (): AppConfig[] => {
     const enabled = [...appConfigs].filter((a) => a.enabled);
     if (!query()) {
-      return enabled.sort((a, b) => a.position - b.position);
+      const recent = recentAppIds();
+      return enabled.sort((a, b) => {
+        const aIdx = recent.indexOf(a.id);
+        const bIdx = recent.indexOf(b.id);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return a.position - b.position;
+      });
     }
     return fuzzySearch(enabled, query(), (a) => a.name).map((r) => r.item);
   };

@@ -240,6 +240,7 @@ pub fn run() {
             commands::app_lifecycle_commands::get_certificate_exceptions,
             commands::recipe_commands::update_recipes,
             commands::recipe_commands::get_recipe_status,
+            commands::app_lifecycle_commands::on_url_changed,
             commands::link_routing_commands::route_link,
             commands::favicon_commands::fetch_favicon,
         ])

@@ -34,3 +34,43 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Accessibility: focus indicators */
+*:focus-visible {
+  outline: 2px solid var(--color-accent, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Accessibility: high contrast mode */
+@media (prefers-contrast: more) {
+  * {
+    border-color: currentColor !important;
+  }
+
+  button, a, input, select, textarea, [role="button"], [tabindex] {
+    outline: 1px solid currentColor;
+  }
+
+  button:focus-visible, a:focus-visible, input:focus-visible,
+  select:focus-visible, textarea:focus-visible,
+  [role="button"]:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid var(--color-accent, #3b82f6);
+    outline-offset: 2px;
+  }
+
+  .text-gray-400, .text-gray-500 {
+    color: #737373 !important;
+  }
+
+  .dark .text-gray-400, .dark .text-gray-500 {
+    color: #a3a3a3 !important;
+  }
+
+  .border-gray-100, .border-gray-200 {
+    border-width: 2px !important;
+  }
+
+  .dark .border-gray-700, .dark .border-gray-800 {
+    border-width: 2px !important;
+  }
+}

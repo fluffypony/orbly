@@ -35,6 +35,11 @@ pub fn create_app_webview(
         builder = builder.user_agent(&app_config.user_agent);
     }
 
+    // Per-app proxy support
+    if !app_config.proxy.is_empty() {
+        builder = builder.proxy_url(&app_config.proxy);
+    }
+
     let init_js = build_initialization_script(app_handle, app_config);
     if !init_js.is_empty() {
         builder = builder.initialization_script(&init_js);
@@ -329,6 +334,35 @@ fn build_initialization_script(app_handle: &AppHandle, app_config: &AppConfig) -
             }
         }
     }
+
+    // URL tracking during in-page navigation
+    scripts.push(format!(
+        r#"
+(function() {{
+    'use strict';
+    var ORBLY_APP_ID = '{}';
+    var lastUrl = location.href;
+
+    function reportUrlChange() {{
+        var currentUrl = location.href;
+        if (currentUrl !== lastUrl) {{
+            lastUrl = currentUrl;
+            if (window.__TAURI_INTERNALS__) {{
+                window.__TAURI_INTERNALS__.invoke('on_url_changed', {{
+                    app_id: ORBLY_APP_ID,
+                    url: currentUrl
+                }}).catch(function() {{}});
+            }}
+        }}
+    }}
+
+    window.addEventListener('popstate', reportUrlChange);
+    window.addEventListener('hashchange', reportUrlChange);
+    setInterval(reportUrlChange, 2000);
+}})();
+"#,
+        app_config.id
+    ));
 
     // Link interception for link routing
     scripts.push(format!(
