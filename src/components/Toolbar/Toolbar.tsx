@@ -53,8 +53,8 @@ const Toolbar: Component = () => {
 
             <button
               class="w-7 h-7 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 cursor-not-allowed"
-              title="Tiling layout — Coming soon"
-              aria-label="Tiling layout (coming soon)"
+              title="Tiling layout — Available in a future update"
+              aria-label="Tiling layout (available in a future update)"
               disabled
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

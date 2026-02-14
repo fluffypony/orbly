@@ -128,7 +128,7 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
           <div class="px-6 pt-5 pb-3">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">Add App</h2>
-              <button onClick={props.onClose} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">✕</button>
+              <button onClick={props.onClose} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" aria-label="Close dialog">✕</button>
             </div>
             <input
               type="text"

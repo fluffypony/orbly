@@ -1,6 +1,6 @@
 import { Component, For, Show, createSignal, onMount } from "solid-js";
 import { SettingSection, SettingRow, ToggleSwitch, TextInput, Button } from "../SettingsControls";
-import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, getConfig } from "../../../lib/ipc";
+import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, getConfig, importConfigJson } from "../../../lib/ipc";
 import { appConfigs, workspaces, setWorkspaces } from "../../../stores/uiStore";
 import type { Workspace } from "../../../types/config";
 
@@ -89,10 +89,9 @@ const WorkspacesTab: Component = () => {
           onChange={async (v) => {
             setAutoHibernate(v);
             try {
-              const { invoke } = await import("@tauri-apps/api/core");
               const config = await getConfig();
-              (config as any).workspaces.auto_hibernate_on_workspace_switch = v;
-              await invoke("import_config_json", { json: JSON.stringify(config) });
+              const updated = { ...config, workspaces: { ...config.workspaces, auto_hibernate_on_workspace_switch: v } };
+              await importConfigJson(JSON.stringify(updated));
             } catch (err) {
               console.error("Failed to save auto-hibernate setting:", err);
             }

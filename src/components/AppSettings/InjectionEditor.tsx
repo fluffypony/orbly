@@ -40,6 +40,7 @@ const InjectionEditor: Component<InjectionEditorProps> = (props) => {
           <button
             class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
             onClick={props.onClose}
+            aria-label="Close injection editor"
           >✕</button>
         </div>
         <div class="flex border-b border-gray-200 dark:border-gray-700">

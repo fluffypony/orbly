@@ -49,7 +49,7 @@ const AppEditor: Component<{ app: AppConfig; onClose: () => void }> = (props) =>
     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-2 bg-gray-50 dark:bg-[#1E1E1E]">
       <div class="flex items-center justify-between mb-4">
         <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Edit: {props.app.name}</h4>
-        <button onClick={props.onClose} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">✕</button>
+        <button onClick={props.onClose} class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" aria-label="Close app editor">✕</button>
       </div>
 
       <div class="space-y-0">

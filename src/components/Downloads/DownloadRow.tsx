@@ -125,6 +125,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
               class="text-gray-400 hover:text-blue-500 cursor-pointer"
               onClick={openFile}
               title="Open file"
+              aria-label="Open file"
             >
               📄
             </button>
@@ -132,6 +133,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
               class="text-gray-400 hover:text-blue-500 cursor-pointer"
               onClick={openFolder}
               title="Open folder"
+              aria-label="Open folder"
             >
               📁
             </button>
@@ -141,6 +143,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
               class="text-gray-400 hover:text-red-500 cursor-pointer"
               onClick={cancelDownload}
               title="Cancel"
+              aria-label="Cancel download"
             >
               ✕
             </button>
@@ -150,6 +153,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
               class="text-gray-400 hover:text-blue-500 cursor-pointer"
               onClick={retryFailed}
               title="Retry"
+              aria-label="Retry download"
             >
               🔄
             </button>
@@ -159,6 +163,7 @@ const DownloadRow: Component<DownloadRowProps> = (props) => {
               class="text-gray-400 hover:text-red-500 cursor-pointer"
               onClick={() => props.onRemove(props.download.id)}
               title="Remove"
+              aria-label="Remove download"
             >
               🗑
             </button>

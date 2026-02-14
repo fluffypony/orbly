@@ -80,8 +80,8 @@ const LinkRoutingTab: Component = () => {
           {(rule, index) => (
             <div class="flex items-center gap-2 py-1.5">
               <div class="flex flex-col gap-0.5">
-                <button onClick={() => moveRule(index(), -1)} class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer leading-none" disabled={index() === 0}>▲</button>
-                <button onClick={() => moveRule(index(), 1)} class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer leading-none" disabled={index() === rules.length - 1}>▼</button>
+                <button onClick={() => moveRule(index(), -1)} class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer leading-none" disabled={index() === 0} aria-label="Move rule up">▲</button>
+                <button onClick={() => moveRule(index(), 1)} class="text-gray-400 hover:text-gray-600 text-xs cursor-pointer leading-none" disabled={index() === rules.length - 1} aria-label="Move rule down">▼</button>
               </div>
               <TextInput value={rule.pattern} onChange={(v) => updateRule(index(), "pattern", v)} class="flex-1 font-mono" placeholder="*.example.com/*" />
               <span class="text-xs text-gray-400">→</span>
@@ -92,7 +92,7 @@ const LinkRoutingTab: Component = () => {
               >
                 {targetOptions().map(opt => <option value={opt.value}>{opt.label}</option>)}
               </select>
-              <button onClick={() => removeRule(index())} class="text-red-400 hover:text-red-600 cursor-pointer">✕</button>
+              <button onClick={() => removeRule(index())} class="text-red-400 hover:text-red-600 cursor-pointer" aria-label="Remove rule">✕</button>
             </div>
           )}
         </For>

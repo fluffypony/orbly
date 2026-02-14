@@ -136,7 +136,7 @@ const AdBlockingTab: Component = () => {
             {(url) => (
               <div class="flex items-center justify-between py-1.5 px-2 bg-gray-50 dark:bg-gray-800 rounded text-xs">
                 <span class="text-gray-600 dark:text-gray-300 truncate mr-2">{url}</span>
-                <button onClick={() => removeFilterList(url)} class="text-red-400 hover:text-red-600 cursor-pointer flex-shrink-0">✕</button>
+                <button onClick={() => removeFilterList(url)} class="text-red-400 hover:text-red-600 cursor-pointer flex-shrink-0" aria-label="Remove filter list">✕</button>
               </div>
             )}
           </For>
