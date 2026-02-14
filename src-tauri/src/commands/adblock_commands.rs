@@ -7,6 +7,7 @@ use crate::config::manager::ConfigManager;
 #[tauri::command(rename_all = "snake_case")]
 pub fn toggle_adblock(
     app_id: String,
+    app_handle: AppHandle,
     config_manager: State<'_, ConfigManager>,
 ) -> Result<bool, String> {
     let mut config = config_manager.get_config();
@@ -22,6 +23,19 @@ pub fn toggle_adblock(
     config_manager
         .save_config(config)
         .map_err(|e| e.to_string())?;
+
+    // When disabling, clear cosmetic filter styles from the running webview
+    if !new_state {
+        if let Some(webview) = app_handle.get_webview(&app_id) {
+            let script = r#"
+                (function() {
+                    var el = document.getElementById('__orbly_adblock_cosmetic__');
+                    if (el) el.textContent = '';
+                })();
+            "#;
+            let _ = webview.eval(script);
+        }
+    }
 
     Ok(new_state)
 }

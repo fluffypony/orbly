@@ -5,6 +5,7 @@ import EmptyState from "./EmptyState";
 import LoadingState from "./LoadingState";
 import ErrorState from "./ErrorState";
 import CrashedState from "./CrashedState";
+import CertificateWarning from "./CertificateWarning";
 import FindBar from "./FindBar";
 
 interface ContentAreaProps {
@@ -116,6 +117,13 @@ const ContentArea: Component<ContentAreaProps> = (props) => {
             </Match>
             <Match when={activeState()?.state === "crashed"}>
               <CrashedState appName={app().name} onReload={handleReload} />
+            </Match>
+            <Match when={activeState()?.state === "certificate_error"}>
+              <CertificateWarning
+                appId={app().id}
+                appName={app().name}
+                message={activeState()?.error_message}
+              />
             </Match>
           </Switch>
         )}

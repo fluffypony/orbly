@@ -34,6 +34,7 @@ export interface AppConfig {
   adblock_enabled: boolean;
   zoom_level: number;
   suppress_high_usage_alert: boolean;
+  suppress_hibernate_confirm: boolean;
 }
 
 export interface WindowState {

@@ -32,6 +32,7 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
   const [deleteData, setDeleteData] = createSignal(false);
   const [showSectionMenu, setShowSectionMenu] = createSignal(false);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = createSignal(false);
+  const [suppressForApp, setSuppressForApp] = createSignal(false);
 
   const sections = () => {
     const set = new Set(appConfigs.map((a) => a.sidebar_section).filter(Boolean));
@@ -45,10 +46,13 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           await reloadApp(props.appId);
           break;
         case "hibernate": {
-          const hasUnsaved = await checkUnsavedWork(props.appId);
-          if (hasUnsaved) {
-            setShowHibernateConfirm(true);
-            return;
+          const config = appConfigs.find((a) => a.id === props.appId);
+          if (!config?.suppress_hibernate_confirm) {
+            const hasUnsaved = await checkUnsavedWork(props.appId);
+            if (hasUnsaved) {
+              setShowHibernateConfirm(true);
+              return;
+            }
           }
           await hibernateApp(props.appId);
           break;
@@ -120,10 +124,18 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
 
   const handleHibernateConfirm = async () => {
     try {
+      if (suppressForApp()) {
+        const config = appConfigs.find((a) => a.id === props.appId);
+        if (config) {
+          await updateApp({ ...config, suppress_hibernate_confirm: true });
+          await refreshAppConfigs();
+        }
+      }
       await hibernateApp(props.appId);
     } catch (err) {
       console.error("Failed to hibernate app:", err);
     }
+    setSuppressForApp(false);
     setShowHibernateConfirm(false);
     props.onClose();
   };
@@ -251,8 +263,18 @@ const ContextMenu: Component<ContextMenuProps> = (props) => {
           confirmLabel="Hibernate"
           variant="danger"
           onConfirm={handleHibernateConfirm}
-          onCancel={() => { setShowHibernateConfirm(false); props.onClose(); }}
-        />
+          onCancel={() => { setSuppressForApp(false); setShowHibernateConfirm(false); props.onClose(); }}
+        >
+          <label class="flex items-center gap-2 mt-3 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={suppressForApp()}
+              onChange={(e) => setSuppressForApp(e.currentTarget.checked)}
+              class="rounded"
+            />
+            Don't warn me again for this app
+          </label>
+        </ConfirmDialog>
       </Show>
       <Show when={showRemoveConfirm()}>
         <ConfirmDialog

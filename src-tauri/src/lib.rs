@@ -255,6 +255,16 @@ pub fn run() {
             // Set up system tray
             tray::setup_tray(app)?;
 
+            // Ensure clicking on the app in dock/taskbar shows and focuses the window
+            if let Some(window) = app.get_webview_window("main") {
+                let win_handle = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Focused(true) = event {
+                        let _ = win_handle.show();
+                    }
+                });
+            }
+
             log::info!("Orbly v{} starting up", env!("CARGO_PKG_VERSION"));
             Ok(())
         })

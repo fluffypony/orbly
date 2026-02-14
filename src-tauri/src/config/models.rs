@@ -80,6 +80,8 @@ pub struct AppConfig {
     pub zoom_level: u32,
     #[serde(default)]
     pub suppress_high_usage_alert: bool,
+    #[serde(default)]
+    pub suppress_hibernate_confirm: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

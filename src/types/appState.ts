@@ -1,7 +1,7 @@
 export interface AppStateInfo {
   id: string;
   name: string;
-  state: 'loading' | 'active' | 'hibernated' | 'disabled' | 'error' | 'crashed';
+  state: 'loading' | 'active' | 'hibernated' | 'disabled' | 'error' | 'crashed' | 'certificate_error';
   badge_count: number | null;
   current_url: string | null;
   error_message?: string;
