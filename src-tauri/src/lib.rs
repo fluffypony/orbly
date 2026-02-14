@@ -161,6 +161,7 @@ pub fn run() {
                             cfg.adblock.last_updated = chrono::Utc::now().to_rfc3339();
                             let _ = config_manager.save_config(cfg);
                             let _ = periodic_handle.emit("filter-lists-updated", ());
+                            let _ = periodic_handle.emit("content-rules-updated", ());
                             log::info!("Periodic filter list update completed");
                         }
                         Err(e) => {
