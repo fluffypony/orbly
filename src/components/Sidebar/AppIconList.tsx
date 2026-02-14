@@ -143,7 +143,7 @@ const AppIconList: Component = () => {
       if (fromIndex !== toIndex) {
         // Determine the target section from the droppable app
         const droppableApp = sortedApps().find((a) => a.id === droppable.id);
-        const targetSection = droppableApp?.sidebarSection || "";
+        const targetSection = droppableApp?.sidebarSection || "default";
 
         const reordered = ids.slice();
         reordered.splice(toIndex, 0, ...reordered.splice(fromIndex, 1));
