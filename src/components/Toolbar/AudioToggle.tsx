@@ -9,7 +9,8 @@ interface AudioToggleProps {
 
 const AudioToggle: Component<AudioToggleProps> = (props) => {
   const toggle = async () => {
-    const newMuted = !props.audioMuted;
+    const prevMuted = props.audioMuted;
+    const newMuted = !prevMuted;
     setAppConfigs(
       (a) => a.id === props.appId,
       "audio_muted",
@@ -22,7 +23,7 @@ const AudioToggle: Component<AudioToggleProps> = (props) => {
       setAppConfigs(
         (a) => a.id === props.appId,
         "audio_muted",
-        props.audioMuted
+        prevMuted
       );
     }
   };

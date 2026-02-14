@@ -33,14 +33,25 @@ const AppIcon: Component<AppIconProps> = (props) => {
         props.onContextMenu(e, props.id);
       }}
       onKeyDown={(e) => {
+        const findSibling = (start: Element | null, dir: 'next' | 'prev'): HTMLElement | null => {
+          let el = dir === 'next' ? start?.nextElementSibling : start?.previousElementSibling;
+          while (el) {
+            if (el.getAttribute("role") === "option") {
+              const btn = el.querySelector("button");
+              if (btn instanceof HTMLElement) return btn;
+            }
+            el = dir === 'next' ? el.nextElementSibling : el.previousElementSibling;
+          }
+          return null;
+        };
         if (e.key === "ArrowDown") {
           e.preventDefault();
-          const next = (e.currentTarget as HTMLElement).closest("[role='option']")?.nextElementSibling?.querySelector("button");
-          if (next instanceof HTMLElement) next.focus();
+          const btn = findSibling((e.currentTarget as HTMLElement).closest("[role='option']"), 'next');
+          btn?.focus();
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
-          const prev = (e.currentTarget as HTMLElement).closest("[role='option']")?.previousElementSibling?.querySelector("button");
-          if (prev instanceof HTMLElement) prev.focus();
+          const btn = findSibling((e.currentTarget as HTMLElement).closest("[role='option']"), 'prev');
+          btn?.focus();
         }
       }}
       title={props.name}

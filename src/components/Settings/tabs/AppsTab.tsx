@@ -1,4 +1,4 @@
-import { Component, For, Show, createSignal, onMount } from "solid-js";
+import { Component, For, Show, createSignal, createEffect } from "solid-js";
 import { createStore } from "solid-js/store";
 import { appConfigs, appStates, editingAppIdFromContextMenu, setEditingAppIdFromContextMenu } from "../../../stores/uiStore";
 import { updateApp, hibernateApp, disableApp, enableApp, getUaPresets, fetchFavicon, removeApp } from "../../../lib/ipc";
@@ -300,7 +300,7 @@ const AppsTab: Component = () => {
   const [editingAppId, setEditingAppId] = createSignal<string | null>(null);
   const [showAddApp, setShowAddApp] = createSignal(false);
 
-  onMount(() => {
+  createEffect(() => {
     const pendingId = editingAppIdFromContextMenu();
     if (pendingId) {
       setEditingAppId(pendingId);
