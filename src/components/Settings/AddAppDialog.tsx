@@ -88,6 +88,7 @@ const AddAppDialog: Component<AddAppDialogProps> = (props) => {
         notification_style: "full",
         adblock_enabled: true,
         zoom_level: 100,
+        suppress_high_usage_alert: false,
       };
       await addApp(newApp);
       await refreshAppConfigs();

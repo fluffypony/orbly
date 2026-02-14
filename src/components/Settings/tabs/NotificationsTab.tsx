@@ -30,6 +30,11 @@ const NotificationsTab: Component = () => {
     launch_at_login: false,
     check_for_updates: true,
     developer_mode: false,
+    scrollbar_color: null,
+    selection_color: null,
+    local_scripts_only: false,
+    cpu_alert_threshold: 30,
+    recipe_cache_ttl_hours: 24,
     window_state: { maximized: false },
   });
 

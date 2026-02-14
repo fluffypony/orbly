@@ -35,7 +35,7 @@ pub fn notification_intercept_script(app_id: &str, notification_style: &str) -> 
         get icon() {{ return this._options.icon || ''; }}
         get tag() {{ return this._options.tag || ''; }}
 
-        close() {{}}
+        close() {{ if (typeof this.onclose === 'function') this.onclose(); }}
 
         static get permission() {{ return 'granted'; }}
         static requestPermission(callback) {{

@@ -24,7 +24,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         service_type: s.template.id,
         url: s.customUrl,
         icon: s.template.icon,
-        data_store_uuid: "00000000-0000-0000-0000-000000000000",
+        data_store_uuid: crypto.randomUUID(),
         enabled: true,
         hibernated: false,
         audio_muted: false,
@@ -47,6 +47,7 @@ const Onboarding: Component<OnboardingProps> = (props) => {
         notification_style: "full",
         adblock_enabled: true,
         zoom_level: 100,
+        suppress_high_usage_alert: false,
       };
       try {
         await addApp(app);

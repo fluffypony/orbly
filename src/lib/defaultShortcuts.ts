@@ -1,4 +1,5 @@
 import type { ShortcutBinding } from "./shortcuts";
+import type { ShortcutConfig } from "../types/config";
 
 export interface ShortcutHandlers {
   quickSwitcher: () => void;
@@ -20,8 +21,9 @@ export interface ShortcutHandlers {
 
 export function createDefaultBindings(
   handlers: ShortcutHandlers,
+  overrides?: ShortcutConfig,
 ): ShortcutBinding[] {
-  return [
+  const bindings: ShortcutBinding[] = [
     { action: "quick_switcher", keys: "CmdOrCtrl+K", global: false, handler: handlers.quickSwitcher },
     { action: "toggle_sidebar", keys: "CmdOrCtrl+\\", global: false, handler: handlers.toggleSidebar },
     { action: "toggle_dnd", keys: "CmdOrCtrl+Shift+D", global: false, handler: handlers.toggleDnd },
@@ -43,4 +45,22 @@ export function createDefaultBindings(
       handler: () => handlers.switchToApp(i),
     })),
   ];
+
+  if (overrides) {
+    const overrideMap: Record<string, string> = {
+      quick_switcher: overrides.quick_switcher,
+      toggle_sidebar: overrides.toggle_sidebar,
+      toggle_dnd: overrides.toggle_dnd,
+      next_app: overrides.next_app,
+      prev_app: overrides.prev_app,
+      global_mute: overrides.global_mute,
+    };
+    for (const binding of bindings) {
+      if (overrideMap[binding.action] && overrideMap[binding.action].trim()) {
+        binding.keys = overrideMap[binding.action];
+      }
+    }
+  }
+
+  return bindings;
 }

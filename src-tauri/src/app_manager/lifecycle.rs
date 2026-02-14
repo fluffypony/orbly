@@ -71,17 +71,27 @@ pub fn create_app_webview(
     }
 
     // Download handler
-    let download_dir = if app_config.download_directory.is_empty() {
-        dirs::download_dir().unwrap_or_else(|| PathBuf::from("Downloads"))
-    } else {
+    let download_dir = if !app_config.download_directory.is_empty() {
         PathBuf::from(
             shellexpand::tilde(&app_config.download_directory).to_string(),
         )
+    } else {
+        // Fall back to global downloads config, then system default
+        let global_dir = app_handle
+            .try_state::<crate::config::manager::ConfigManager>()
+            .map(|cm| cm.get_config().downloads.default_directory)
+            .unwrap_or_default();
+        if !global_dir.is_empty() && global_dir != "~/Downloads" {
+            PathBuf::from(shellexpand::tilde(&global_dir).to_string())
+        } else {
+            dirs::download_dir().unwrap_or_else(|| PathBuf::from("Downloads"))
+        }
     };
     if let Err(e) = std::fs::create_dir_all(&download_dir) {
         log::warn!("Failed to create download directory {:?}: {}", download_dir, e);
     }
 
+    let skip_dialog = app_config.skip_download_dialog;
     let app_id_clone = app_config.id.clone();
     let app_name_clone = app_config.name.clone();
     let handle_clone = app_handle.clone();
@@ -106,7 +116,9 @@ pub fn create_app_webview(
                 };
 
                 let save_path = downloads::resolve_filename_conflict(&download_dir.join(&filename));
-                *destination = save_path.clone();
+                if skip_dialog {
+                    *destination = save_path.clone();
+                }
 
                 if let Some(dm) = handle_clone.try_state::<DownloadManager>() {
                     let entry = DownloadEntry {

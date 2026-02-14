@@ -463,8 +463,7 @@ pub async fn frontend_ready(
 }
 
 #[tauri::command]
-pub fn open_in_external_browser(url: String, webview: tauri::Webview) -> Result<(), String> {
-    crate::commands::require_main_webview(&webview)?;
+pub fn open_in_external_browser(url: String) -> Result<(), String> {
     let parsed = url::Url::parse(&url).map_err(|_| "Invalid URL".to_string())?;
     match parsed.scheme() {
         "http" | "https" | "mailto" => {}

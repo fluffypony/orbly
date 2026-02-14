@@ -41,6 +41,8 @@ const App: Component = () => {
     await initializeState();
     initThemeManager();
 
+    const config = await getConfig();
+
     const unlistenHighUsage = await listen<{ appId: string; appName: string; cpu: number }>(
       "high-usage-alert",
       (event) => {
@@ -142,7 +144,7 @@ const App: Component = () => {
           .sort((a, b) => a.position - b.position);
         if (apps[index]) activateApp(apps[index].id);
       },
-    });
+    }, config.shortcuts);
 
     await registerShortcuts(bindings);
   };

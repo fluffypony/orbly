@@ -32,6 +32,7 @@ const mockAppConfigs: AppConfig[] = [
     notification_style: "full",
     adblock_enabled: true,
     zoom_level: 100,
+    suppress_high_usage_alert: false,
   },
   {
     id: "slack-work",
@@ -62,6 +63,7 @@ const mockAppConfigs: AppConfig[] = [
     notification_style: "full",
     adblock_enabled: true,
     zoom_level: 100,
+    suppress_high_usage_alert: false,
   },
   {
     id: "gmail-personal",
@@ -92,6 +94,7 @@ const mockAppConfigs: AppConfig[] = [
     notification_style: "private",
     adblock_enabled: true,
     zoom_level: 100,
+    suppress_high_usage_alert: false,
   },
   {
     id: "discord-gaming",
@@ -122,6 +125,7 @@ const mockAppConfigs: AppConfig[] = [
     notification_style: "full",
     adblock_enabled: false,
     zoom_level: 100,
+    suppress_high_usage_alert: false,
   },
   {
     id: "telegram-personal",
@@ -152,6 +156,7 @@ const mockAppConfigs: AppConfig[] = [
     notification_style: "full",
     adblock_enabled: true,
     zoom_level: 100,
+    suppress_high_usage_alert: false,
   },
 ];
 

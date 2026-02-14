@@ -8,6 +8,7 @@ mod notifications;
 mod recipes;
 mod resource_monitor;
 mod tray;
+mod utils;
 
 use std::sync::Mutex;
 use std::time::Instant;
